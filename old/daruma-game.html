@@ -1,0 +1,1018 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>だるまさんがころんだ</title>
+<style>
+  :root {
+    --bg: #FBF3E7;
+    --surface: #FFFDF9;
+    --surface-2: #F3E6D3;
+    --ink: #3A2A22;
+    --ink-soft: #7A6A5D;
+    --accent: #C97E32;
+    --accent-ink: #FFFFFF;
+    --pink: #D9748F;
+    --green: #6E8B4F;
+    --blue: #5B84A8;
+    --purple: #8D6FA6;
+    --teal: #4F8F86;
+    --orange: #C97D3E;
+    --mustard: #B8963C;
+    --brown: #8B6B4A;
+    --slate: #6B7C8C;
+    --coral: #C96B5C;
+    --border: #E4D4BE;
+    --danger: #B85450;
+    --shadow: 0 2px 8px rgba(58, 42, 34, 0.08);
+  }
+  :root[data-theme="dark"] {
+    --bg: #221A1C;
+    --surface: #2E2426;
+    --surface-2: #3A2E2F;
+    --ink: #F3E9DD;
+    --ink-soft: #C4B3A6;
+    --accent: #E0A059;
+    --accent-ink: #2A1D0E;
+    --pink: #E38AA0;
+    --green: #8CAE68;
+    --blue: #7FA6C9;
+    --purple: #AB94C7;
+    --teal: #6FB3AA;
+    --orange: #E0985C;
+    --mustard: #D4B860;
+    --brown: #AD8A66;
+    --slate: #93A4B4;
+    --coral: #E08F7F;
+    --border: #4A3B3B;
+    --danger: #E08782;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #221A1C;
+      --surface: #2E2426;
+      --surface-2: #3A2E2F;
+      --ink: #F3E9DD;
+      --ink-soft: #C4B3A6;
+      --accent: #E0A059;
+      --accent-ink: #2A1D0E;
+      --pink: #E38AA0;
+      --green: #8CAE68;
+      --blue: #7FA6C9;
+      --purple: #AB94C7;
+      --teal: #6FB3AA;
+      --orange: #E0985C;
+      --mustard: #D4B860;
+      --brown: #AD8A66;
+      --slate: #93A4B4;
+      --coral: #E08F7F;
+      --border: #4A3B3B;
+      --danger: #E08782;
+      --shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Yu Gothic UI", "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px 60px;
+  }
+  .app { width: 100%; max-width: 560px; }
+  h1 {
+    font-family: "Hiragino Maru Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+    font-weight: 700;
+    font-size: clamp(22px, 6vw, 30px);
+    text-align: center;
+    margin: 4px 0 2px;
+    letter-spacing: 0.04em;
+    text-wrap: balance;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 13px;
+    margin: 0 0 20px;
+    letter-spacing: 0.02em;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 22px 20px;
+    box-shadow: var(--shadow);
+  }
+  .adopted-banner {
+    margin: 0 0 14px; padding: 8px 10px; border-radius: 10px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    font-size: 11.5px; color: var(--ink-soft); line-height: 1.5;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .adopted-banner button {
+    flex: none; padding: 4px 10px; border-radius: 8px;
+    border: 1.5px solid var(--border); background: var(--surface);
+    color: var(--ink); font-size: 11px; font-weight: 700; cursor: pointer;
+  }
+  .type-pick { margin: 0 0 18px; }
+  .type-pick-label {
+    font-size: 11.5px; font-weight: 700; color: var(--ink-soft);
+    letter-spacing: 0.06em; margin: 0 0 8px;
+  }
+  .type-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .type-btn {
+    flex: 1 1 0; min-width: 84px; padding: 9px 6px;
+    border-radius: 10px; border: 1.5px solid var(--border);
+    background: var(--surface-2); color: var(--ink);
+    font-size: 12.5px; font-weight: 700; cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .type-btn.selected { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .type-btn:active { transform: translateY(1px); }
+  .type-note {
+    font-size: 11.5px; line-height: 1.7; color: var(--ink-soft);
+    margin: 8px 0 0; min-height: 2.4em;
+  }
+
+  .rule-list { margin: 0 0 20px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .rule-list li { display: flex; gap: 10px; font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+  .rule-list .mark {
+    flex: none; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--surface-2); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+  }
+  .primary-btn {
+    width: 100%; padding: 14px 0; border-radius: 14px; border: none;
+    background: var(--accent); color: var(--accent-ink);
+    font-size: 16px; font-weight: 700; letter-spacing: 0.04em;
+    cursor: pointer; box-shadow: var(--shadow);
+  }
+  .primary-btn:active { transform: translateY(1px); }
+
+  /* ---- status ---- */
+  .cycle-line {
+    text-align: center; font-size: 12px; color: var(--ink-soft); font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stamina-bar-wrap {
+    flex: 1; height: 6px; border-radius: 3px; background: var(--surface-2);
+    border: 1px solid var(--border); overflow: hidden;
+  }
+  .stamina-bar-fill {
+    height: 100%; width: 100%;
+    background: linear-gradient(90deg, var(--green), var(--accent));
+    transition: width .25s ease, background .3s ease;
+  }
+  .stamina-bar-fill.low { background: linear-gradient(90deg, var(--danger), #E08782); }
+  .crow-value.hot { color: var(--danger); }
+
+  /* ---- track ---- */
+  .track-wrap { margin-bottom: 16px; }
+  .track {
+    position: relative;
+    height: 190px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, var(--surface), var(--surface-2));
+    border: 1.5px solid var(--border);
+    overflow: hidden;
+  }
+  .track::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(90deg, transparent 0 6%, var(--border) 6% 6.4%);
+    opacity: 0.5;
+  }
+  .track.paused::after {
+    content: attr(data-pause-label);
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--surface) 55%, transparent);
+    color: var(--ink-soft); font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
+    z-index: 5;
+  }
+  .goal-marker {
+    position: absolute; top: 50%; left: 94%; transform: translateY(-50%);
+    font-size: 11px; color: var(--ink-soft); font-weight: 700; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .goal-marker .icon {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-ink);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; box-shadow: var(--shadow);
+    transition: transform .15s ease, box-shadow .4s ease;
+  }
+  .goal-marker.turning .icon { animation: turn-pop .3s ease; }
+  @keyframes turn-pop { 0%,100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.2) rotate(-8deg); } }
+  .goal-marker.exhausted .icon { filter: saturate(0.5) brightness(0.9); animation: exhausted-breathe 1.4s ease-in-out infinite; }
+  @keyframes exhausted-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.92); } }
+
+  /* 強気度 aura — the boldness the daruma is visibly giving off this cycle */
+  .goal-marker[data-aura="low"] .icon {
+    box-shadow: var(--shadow), 0 0 0 5px color-mix(in srgb, var(--blue) 35%, transparent);
+  }
+  .goal-marker[data-aura="mid"] .icon {
+    box-shadow: var(--shadow), 0 0 0 5px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  .goal-marker[data-aura="high"] .icon {
+    box-shadow: var(--shadow), 0 0 0 7px color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+  .goal-marker[data-aura="max"] .icon {
+    animation: aura-pulse-max 1s ease-in-out infinite;
+  }
+  @keyframes aura-pulse-max {
+    0%, 100% { box-shadow: var(--shadow), 0 0 0 8px color-mix(in srgb, var(--danger) 55%, transparent); }
+    50% { box-shadow: var(--shadow), 0 0 0 13px color-mix(in srgb, var(--danger) 25%, transparent); }
+  }
+
+  .runner {
+    position: absolute; top: 50%;
+    width: 30px; height: 30px; margin-top: -15px; margin-left: -15px;
+    border-radius: 50%;
+    background: var(--rcolor);
+    border: 2px solid var(--surface);
+    box-shadow: var(--shadow);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    transition: left .1s linear;
+    z-index: 3;
+  }
+  .runner .rface { line-height: 1; }
+  .runner .rlabel {
+    position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+    font-size: 9px; font-weight: 700; color: var(--ink-soft); white-space: nowrap;
+  }
+  .runner.caught { animation: caught-flash .5s ease; }
+  @keyframes caught-flash {
+    0% { box-shadow: 0 0 0 0 rgba(184,84,80,0.7); }
+    50% { box-shadow: 0 0 0 8px rgba(184,84,80,0); transform: scale(1.15); }
+    100% { box-shadow: 0 0 0 0 rgba(184,84,80,0); }
+  }
+  .runner.bursting {
+    z-index: 4;
+    box-shadow: 0 0 0 3px var(--danger), var(--shadow);
+    animation: burst-shake .18s linear infinite;
+  }
+  @keyframes burst-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px) scale(1.05); }
+    75% { transform: translateX(2px) scale(1.05); }
+  }
+  .runner.winded { opacity: 0.6; filter: saturate(0.6); }
+
+  /* ---- chant ---- */
+  .chant-wrap { margin-bottom: 16px; }
+  .chant-text {
+    text-align: center; font-size: 19px; font-weight: 700;
+    letter-spacing: 0.12em; margin-bottom: 8px; min-height: 26px;
+  }
+  .chant-text .cchar { color: var(--border); transition: color .15s ease; }
+  .chant-text .cchar.done { color: var(--ink); }
+  .chant-text .cchar.cur { color: var(--accent); }
+  .chant-bar-wrap { height: 8px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden; }
+  .chant-bar-fill { height: 100%; width: 0%; background: var(--accent); transition: width .1s linear; }
+
+  /* ---- control card: one compact block for reward / tempo / turn plan ---- */
+  .control-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 12px; margin-bottom: 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .crow { display: flex; align-items: center; gap: 8px; }
+  .crow-label { font-size: 10.5px; color: var(--ink-soft); font-weight: 700; flex: none; width: 38px; }
+  .crow-value { font-size: 11px; color: var(--ink-soft); font-weight: 700; flex: none; width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .btn-row { display: flex; gap: 4px; flex: 1; }
+  .opt-btn {
+    flex: 1; padding: 5px 0; border-radius: 7px; border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--ink); font-size: 11px; font-weight: 700;
+    cursor: pointer;
+  }
+  .opt-btn.selected { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+
+  input[type="range"] {
+    flex: 1; accent-color: var(--accent);
+    height: 5px; cursor: pointer;
+  }
+
+  .crow-turn { gap: 8px; }
+  .turn-arm-btn {
+    flex: 1; padding: 8px 10px; border-radius: 10px; border: 1.5px solid var(--border);
+    font-size: 12px; font-weight: 800; letter-spacing: 0.01em;
+    cursor: pointer; background: var(--surface-2); color: var(--ink);
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    transition: background .2s, color .2s, border-color .2s;
+  }
+  .turn-arm-btn .arm-tag { font-size: 11px; font-weight: 800; opacity: 0.85; flex: none; }
+  .turn-arm-btn.armed { background: var(--danger); color: #fff; border-color: var(--danger); }
+  .turn-arm-btn:active { transform: translateY(1px); }
+
+  .start-sm-btn {
+    flex: none; padding: 8px 14px; border-radius: 10px; border: none;
+    background: var(--accent); color: var(--accent-ink);
+    font-size: 12px; font-weight: 800; cursor: pointer;
+  }
+  .start-sm-btn:active { transform: translateY(1px); }
+
+  .log {
+    font-size: 12px; color: var(--ink-soft); line-height: 1.7;
+    max-height: 96px; overflow-y: auto;
+    border-top: 1px dashed var(--border); padding-top: 8px;
+  }
+
+  /* ---- result ---- */
+  .result-title { text-align: center; font-size: 21px; font-weight: 700; margin: 4px 0 6px; }
+  .result-sub { text-align: center; font-size: 13.5px; color: var(--ink-soft); margin: 0 0 20px; line-height: 1.7; }
+
+  /* ---- 絵 (assets/) ------------------------------------------------------
+     絵ありと記号だけ、どちらでも遊べる。両方のマークアップは常にDOMにあって、
+     .art が付いているかどうかだけで切り替わる。JS 側に描画の分岐は無い。
+     assets/ が無い環境(HTMLだけ持ち出した等)では画像の onerror で
+     自動的に記号に戻るので、壊れた絵が残ることはない。                    */
+  .art-toggle {
+    display: block; margin: 0 auto 14px; padding: 6px 14px;
+    border-radius: 999px; border: 1.5px solid var(--border);
+    background: var(--surface-2); color: var(--ink-soft);
+    font-size: 11.5px; font-weight: 700; cursor: pointer;
+  }
+  .art-toggle:active { transform: translateY(1px); }
+
+  .dsprite, .ksprite, .type-icon, .aura, .aura-ring { display: none; }
+  .art .dsprite, .art .ksprite, .art .type-icon { display: block; }
+  .art .aura, .art .aura-ring { display: block; }
+  .art .dface { display: none; }
+
+  /* 強気度は「その周にいくら賭けたか」で、子供もそれを読んでいる。
+     プレイヤーの手札そのものなので、盤面から読めないと困る。
+     色・大きさ・脈の速さの3つを同時に振って、遠目でも段が分かるようにする。 */
+  .goal-marker { --aura-c: var(--accent); --aura-size: 130%; --aura-op: .55; --aura-speed: 2.2s; }
+  /* 色は青→黄→橙→赤の一本道。--accent と --orange はほぼ同じ色なので、
+     隣り合う段に使うと「中」と「高」が見分けられない。 */
+  .goal-marker[data-aura="low"]  { --aura-c: var(--blue);    --aura-size: 118%; --aura-op: .55; --aura-speed: 2.6s; }
+  .goal-marker[data-aura="mid"]  { --aura-c: var(--mustard); --aura-size: 138%; --aura-op: .7;  --aura-speed: 1.9s; }
+  .goal-marker[data-aura="high"] { --aura-c: var(--orange);  --aura-size: 158%; --aura-op: .88; --aura-speed: 1.25s; }
+  .goal-marker[data-aura="max"]  { --aura-c: var(--danger);  --aura-size: 180%; --aura-op: 1;   --aura-speed: .7s; }
+
+  .dtag {
+    font-size: 10px; font-weight: 800; letter-spacing: .06em;
+    color: var(--aura-c); white-space: nowrap;
+  }
+  .goal-marker[data-aura="max"] .dtag { animation: dtag-blink .75s ease-in-out infinite; }
+  @keyframes dtag-blink { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+
+  .art .type-btn { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .art .type-icon { width: 46px; height: 46px; object-fit: contain; }
+  .art .type-btn.selected .type-icon { filter: drop-shadow(0 1px 3px rgba(0,0,0,0.35)); }
+
+  /* 絵は円より場所を食うので高さを足す。レーンは核が 15%〜85% に置くので、
+     60px の絵と 12px の名前が上下とも切れない条件が 0.15h >= 42 → h >= 280 */
+  .art .track { height: 280px; }
+  /* 円のときは左端基準で右にはみ出しても細かったが、絵だと切れる。
+     中央基準にして、だるま1体ぶんの幅がトラックに収まる位置へ寄せる */
+  .art .goal-marker { left: 87%; transform: translate(-50%, -50%); }
+
+  /* だるま。円と絵文字をやめて、絵そのものを置く */
+  .art .goal-marker .icon {
+    width: 116px; height: 116px; border-radius: 0;
+    background: none; box-shadow: none; filter: none; animation: none;
+  }
+  .art .goal-marker .icon { position: relative; }
+  .art .goal-marker .dsprite {
+    position: relative; z-index: 1;
+    width: 100%; height: 100%; object-fit: contain; object-position: bottom;
+    filter: drop-shadow(0 0 5px color-mix(in srgb, var(--aura-c) 55%, transparent));
+  }
+  /* 透過PNGに縁のリングを付けると四角く出るので、光そのものを後ろに置く。
+     息づく光(.aura)と、外へ抜けていく波(.aura-ring)の二枚重ね。 */
+  .art .aura, .art .aura-ring {
+    position: absolute; left: 50%; top: 54%; z-index: 0;
+    width: var(--aura-size); aspect-ratio: 1; border-radius: 50%;
+    pointer-events: none;
+  }
+  .art .aura {
+    background: radial-gradient(circle,
+      color-mix(in srgb, var(--aura-c) 80%, transparent) 0%,
+      color-mix(in srgb, var(--aura-c) 40%, transparent) 40%,
+      transparent 70%);
+    opacity: var(--aura-op);
+    animation: aura-breathe var(--aura-speed) ease-in-out infinite;
+  }
+  @keyframes aura-breathe {
+    0%, 100% { transform: translate(-50%, -50%) scale(.9); }
+    50%      { transform: translate(-50%, -50%) scale(1.1); }
+  }
+  .art .aura-ring {
+    border: 2.5px solid color-mix(in srgb, var(--aura-c) 70%, transparent);
+    animation: aura-wave var(--aura-speed) ease-out infinite;
+  }
+  @keyframes aura-wave {
+    0%   { transform: translate(-50%, -50%) scale(.5); opacity: calc(var(--aura-op) * .9); }
+    100% { transform: translate(-50%, -50%) scale(1.35); opacity: 0; }
+  }
+  .art .goal-marker.turning .dsprite { animation: turn-pop .3s ease; }
+  .art .goal-marker.exhausted .dsprite {
+    filter: saturate(0.4) brightness(0.82);
+    animation: exhausted-breathe 1.4s ease-in-out infinite;
+  }
+
+  /* 子供。8コマの横一列を steps() で送る。走っている間だけ再生する */
+  .art .runner {
+    width: 44px; height: 60px; margin-top: -30px; margin-left: -22px;
+    border-radius: 0; background: none; border: none; box-shadow: none;
+  }
+  .art .runner .ksprite {
+    position: absolute; inset: 0;
+    background-repeat: no-repeat;
+    background-size: 800% 100%;          /* 1コマ = 要素1つぶん */
+    animation: kid-run .66s steps(8, jump-none) infinite;
+  }
+  /* background-position の % は「要素幅」ではなく「要素幅 − 画像幅」に対する比。
+     8コマなら 0% が1コマ目、100% が8コマ目で、間は 1/7 刻みになる。
+     jump-none は 0% と 100% の両端を含む8段を刻むので、ちょうどコマに乗る
+     (既定の steps(8) だと 12.5% 刻みになり、どのコマにも合わない)。 */
+  @keyframes kid-run {
+    from { background-position-x: 0%; }
+    to   { background-position-x: 100%; }
+  }
+  /* 止まっている子は絵も止まる。だるまが振り向いた瞬間に誰が動いていたかは
+     この足の止まり方でも見えるので、判定と画がずれないようにしている */
+  .art .runner[data-gait="stop"] .ksprite { animation-play-state: paused; }
+  .art .runner[data-gait="slow"] .ksprite { animation-duration: 1s; }
+  .art .runner[data-gait="fast"] .ksprite { animation-duration: .42s; }
+  .art .runner .rlabel { top: -12px; font-size: 8.5px; }
+  /* 顔文字は状態表示だけに降格。平常時は出さない */
+  .art .runner .rface {
+    position: absolute; top: -4px; right: -10px;
+    font-size: 14px; line-height: 1; z-index: 1;
+  }
+  .art .runner[data-state="ok"] .rface { display: none; }
+  /* 送還の点滅は .runner に当てる。.ksprite に当てると animation 一括指定が
+     走りアニメを上書きしてしまい、一度捕まった子が二度と走らなくなる */
+  .art .runner.caught { animation: caught-flash-art .5s ease; }
+  @keyframes caught-flash-art {
+    0% { filter: drop-shadow(0 0 0 var(--danger)); }
+    50% { filter: drop-shadow(0 0 7px var(--danger)) brightness(1.3); transform: scale(1.12); }
+    100% { filter: drop-shadow(0 0 0 var(--danger)); }
+  }
+  .art .runner.bursting { box-shadow: none; }
+  .art .runner.bursting .ksprite {
+    filter: drop-shadow(0 0 5px color-mix(in srgb, var(--danger) 70%, transparent));
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>だるまさんが ころんだ</h1>
+  <p class="subtitle">あなたはだるま。テンポと我慢で子供たちを読み切れ。</p>
+
+  <section id="screen-setup" class="screen active">
+    <div class="card">
+      <ul class="rule-list">
+        <li><span class="mark">1</span>あなたは「だるま」役。10人の候補からランダムに選ばれた子供4人があなたに向かって走ってくる(毎回顔ぶれが変わる)。</li>
+        <li><span class="mark">2</span>詠唱がはじまる前に一時停止して、その周の「強気度」を低〜激から決める。</li>
+        <li><span class="mark">3</span>詠唱中はリアルタイム進行。テンポ(遅い/ふつう/速い)はいつでも切替できる(コストあり)。「振り向く予約」もいつでもON/OFFを変えられる — 子供の動きを見ながらギリギリまで気持ちを変えていい。</li>
+        <li><span class="mark">4</span>詠唱を言い切った瞬間に判定。予約ONなら振り向いて気力を払い、<strong>そのとき動いていた子だけ</strong>を送還。子供は詠唱の終わりが聞こえているので基本は止まろうとする — 見ずに振り向くと半分は空振りする。</li>
+        <li><span class="mark">5</span>予約OFFなら気力を獲得。額は強気度どおりで、何周見送っても変わらない。ただし<strong>子供は振り向かないだるまを覚えている</strong> — 見送りが続くほど、そもそも止まる気のない子が増える。</li>
+        <li><span class="mark">6</span>気力が尽きると振り向く力がなくなり、それは子供に丸見え。誰も止まらなくなるので実質そこで終わる。子供が1人でもタッチしたら負け、制限時間を耐え切ればだるまの勝ち。</li>
+      </ul>
+      <div class="type-pick">
+        <p class="type-pick-label">どのだるまで出るか</p>
+        <div class="type-row" id="type-row"></div>
+        <p class="type-note" id="type-note"></p>
+      </div>
+      <button class="art-toggle" id="art-toggle"></button>
+      <button class="primary-btn" id="start-btn">だるま役で始める</button>
+    </div>
+  </section>
+
+  <section id="screen-game" class="screen">
+    <div class="track-wrap">
+      <div class="track" id="track">
+        <div class="goal-marker" id="goal-marker">
+          <div class="icon">
+            <span class="aura"></span>
+            <span class="aura-ring"></span>
+            <img class="dsprite" id="daruma-sprite" alt="">
+            <span class="dface">🙂</span>
+          </div>
+          <span>だるま</span>
+          <span class="dtag" id="daruma-tag"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chant-wrap">
+      <div class="chant-text" id="chant-text"></div>
+      <div class="chant-bar-wrap"><div class="chant-bar-fill" id="chant-fill"></div></div>
+    </div>
+
+    <!-- One consolidated control card: stamina / tempo / turn plan / reward.
+         Reward is only relevant during prep, so it's hidden entirely once chanting starts. -->
+    <div class="control-card">
+      <div class="cycle-line" id="cycle-tag">残り 40.0 秒</div>
+      <div class="crow">
+        <span class="crow-label">気力</span>
+        <div class="stamina-bar-wrap"><div class="stamina-bar-fill" id="stamina-fill"></div></div>
+        <span class="crow-value" id="stamina-tag">110</span>
+      </div>
+      <div class="crow">
+        <span class="crow-label">速度</span>
+        <input type="range" id="tempo-slider" min="0" max="100" value="45" step="1">
+        <span class="crow-value" id="tempo-readout"></span>
+      </div>
+      <div class="crow crow-turn">
+        <button class="turn-arm-btn" id="turn-arm-btn">
+          🙈 詠唱後、振り向かない<span class="arm-tag" id="arm-tag">+4</span>
+        </button>
+        <button class="start-sm-btn" id="chant-start-btn">詠唱開始</button>
+      </div>
+      <div class="crow" id="reward-crow">
+        <span class="crow-label">強気度</span>
+        <div class="btn-row" id="reward-row">
+          <button class="opt-btn" data-reward="low">低</button>
+          <button class="opt-btn selected" data-reward="mid">中</button>
+          <button class="opt-btn" data-reward="high">高</button>
+          <button class="opt-btn" data-reward="max">激</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="log" id="log"></div>
+  </section>
+
+  <section id="screen-result" class="screen">
+    <div class="card">
+      <p class="result-title" id="result-title"></p>
+      <p class="result-sub" id="result-sub"></p>
+      <button class="primary-btn" id="replay-btn">もう一度遊ぶ</button>
+    </div>
+  </section>
+</div>
+
+<script src="daruma-core.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // All game logic lives in daruma-core.js — this file is input + rendering.
+  var Core = window.DarumaCore;
+  // A balance adopted in daruma-balance-lab.html overrides the shipped values.
+  var adopted = Core.adoptedOverrides();
+  var P = Core.makeConfig(adopted);
+  var REWARD = P.REWARD;
+  var GOAL_TICKS = P.GOAL_TICKS;
+  var STAMINA_MAX = P.STAMINA_MAX;
+  var CHANT_CHARS = Core.CHANT_CHARS;
+
+  var state = null;      // core run state, plus the UI-only fields below
+  var phase = "prep";    // "prep" | "chanting" | "over"
+  var loopHandle = null;
+  var childEls = {};
+
+  var screenSetup = document.getElementById("screen-setup");
+  var screenGame = document.getElementById("screen-game");
+  var screenResult = document.getElementById("screen-result");
+  var track = document.getElementById("track");
+  var goalMarker = document.getElementById("goal-marker");
+  var goalIcon = goalMarker.querySelector(".dface");
+  var goalSprite = document.getElementById("daruma-sprite");
+  var darumaTag = document.getElementById("daruma-tag");
+  var staminaFill = document.getElementById("stamina-fill");
+  var staminaTag = document.getElementById("stamina-tag");
+  var cycleTag = document.getElementById("cycle-tag");
+  var chantTextEl = document.getElementById("chant-text");
+  var chantFill = document.getElementById("chant-fill");
+  var rewardRow = document.getElementById("reward-row");
+  var rewardCrow = document.getElementById("reward-crow");
+  var chantStartBtn = document.getElementById("chant-start-btn");
+  var tempoSlider = document.getElementById("tempo-slider");
+  var tempoReadout = document.getElementById("tempo-readout");
+  var turnArmBtn = document.getElementById("turn-arm-btn");
+  var logEl = document.getElementById("log");
+
+  // --- 絵 ------------------------------------------------------------------
+  // assets/ の切り出し済み素材。無くても遊べるようにしてあり、読み込みに
+  // 失敗した時点で記号表示に落ちる(画像だけ抜け落ちた表示にはならない)。
+  var RUNNER_SPRITES = 10;
+  var appRoot = document.querySelector(".app");
+  var artToggle = document.getElementById("art-toggle");
+  var artOn = localStorage.getItem("daruma_art") !== "off";
+
+  function runnerFor(id) {
+    // 同じ子はいつ出てきても同じ姿。id から決めるので、抽選の順番には依らない
+    var h = 0;
+    for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+    return "assets/runners/run-" + ("0" + (h % RUNNER_SPRITES + 1)).slice(-2) + ".png";
+  }
+
+  // だるまの絵が読めれば assets/ はある、と言い切れないので走者も1枚だけ見る
+  var runProbe = new Image();
+  runProbe.addEventListener("error", function () { dropArt(); });
+  runProbe.src = "assets/runners/run-01.png";
+
+  // 詠唱中は子供に背を向け(右)、振り向いたときだけ子供の側を向く(左)。
+  // 子供は左から来るので、向きがそのまま「見られているか」の合図になる。
+  function faceDaruma(looking) {
+    goalSprite.src = "assets/daruma/" + (state ? state.typeName : pickedType) +
+      "-" + (looking ? "left" : "right") + ".png";
+  }
+
+  function renderArt() {
+    appRoot.classList.toggle("art", artOn);
+    artToggle.textContent = artOn ? "🎨 絵で遊んでいる(記号に戻す)" : "⬜ 記号で遊んでいる(絵にする)";
+  }
+
+  function dropArt() {
+    if (!artOn) return;
+    artOn = false;
+    renderArt();
+    log("画像が読めなかったので記号表示に切り替えた(assets/ がある場所で開くと絵になる)");
+  }
+  goalSprite.addEventListener("error", dropArt);
+
+  artToggle.addEventListener("click", function () {
+    artOn = !artOn;
+    localStorage.setItem("daruma_art", artOn ? "on" : "off");
+    renderArt();
+  });
+
+  // Playing on lab-tuned numbers is not something to discover by surprise —
+  // say so on the setup screen, with a way back to the shipped balance.
+  if (adopted) {
+    var banner = document.createElement("p");
+    banner.className = "adopted-banner";
+    var castNote = adopted.ROSTER
+      ? "、子供は" + adopted.ROSTER.length + "人の独自キャスト" : "";
+    banner.innerHTML = "🧪 ラボで採用したバランスで動作中(" + Object.keys(adopted).length +
+      "項目を上書き" + castNote + " / 走者" + P.ACTIVE_CHILDREN + "人) " +
+      "<button type=\"button\" id=\"unadopt-inline\">出荷値に戻す</button>";
+    document.querySelector("#screen-setup .card").prepend(banner);
+    banner.querySelector("#unadopt-inline").addEventListener("click", function () {
+      Core.clearAdoptedBalance();
+      location.reload();
+    });
+  }
+
+  function showScreen(el) {
+    [screenSetup, screenGame, screenResult].forEach(function (s) {
+      s.classList.toggle("active", s === el);
+    });
+  }
+
+  function log(msg) {
+    var line = document.createElement("div");
+    line.textContent = msg;
+    logEl.insertBefore(line, logEl.firstChild);
+  }
+
+  function clamp(v, lo, hi) { return Core.clamp(v, lo, hi); }
+
+  function initChantText() {
+    chantTextEl.innerHTML = CHANT_CHARS.map(function (ch) {
+      return '<span class="cchar">' + ch + "</span>";
+    }).join("");
+  }
+
+  function renderChant() {
+    var ratio = state.chantProgress / 100;
+    var idx = Math.min(CHANT_CHARS.length - 1, Math.floor(ratio * CHANT_CHARS.length));
+    var spans = chantTextEl.querySelectorAll(".cchar");
+    spans.forEach(function (span, i) {
+      span.classList.toggle("done", i < idx);
+      span.classList.toggle("cur", i === idx);
+    });
+    chantFill.style.width = state.chantProgress + "%";
+  }
+
+  function renderStamina() {
+    var pct = clamp((state.stamina / state.staminaMax) * 100, 0, 100);
+    staminaFill.style.width = pct + "%";
+    staminaFill.classList.toggle("low", state.stamina < state.staminaMax * 0.2);
+    staminaTag.textContent = Math.max(0, Math.round(state.stamina));
+    staminaTag.classList.toggle("hot", state.stamina < state.staminaMax * 0.2);
+
+    var isBroke = state.stamina < Core.turnCostOf(P, state, "low");
+    goalMarker.classList.toggle("exhausted", isBroke);
+    if (!goalMarker.classList.contains("turning")) {
+      goalIcon.textContent = isBroke ? "😩" : "🙂";
+    }
+  }
+
+  function renderCycle() {
+    var left = Math.max(0, (GOAL_TICKS - state.elapsedTicks) * P.TICK_MS / 1000);
+    cycleTag.textContent = "残り " + left.toFixed(1) + " 秒   (" + state.cycle + "回目の詠唱)";
+  }
+
+  function childLeftPercent(pos) {
+    return (4 + (pos / 100) * 90) + "%";
+  }
+
+  function initChildren() {
+    track.querySelectorAll(".runner").forEach(function (el) { el.remove(); });
+    childEls = {};
+    state.children.forEach(function (c) {
+      var el = document.createElement("div");
+      el.className = "runner";
+      el.dataset.childId = c.id; // identity lives on the id; name is just a label
+      el.style.setProperty("--rcolor", c.color);
+      el.style.top = c.lane + "%";
+      el.style.left = childLeftPercent(c.pos);
+      // Only the authored cast carries names worth showing; a generated
+      // population has none, and "ランダム1〜10" over every runner is noise.
+      el.dataset.state = "ok";
+      el.dataset.gait = "stop";
+      el.innerHTML = (c.name ? '<span class="rlabel">' + c.name + '</span>' : "") +
+        '<span class="ksprite" style="background-image:url(' + runnerFor(c.id) + ')"></span>' +
+        '<span class="rface">🙂</span>';
+      track.appendChild(el);
+      childEls[c.id] = el;
+    });
+  }
+
+  function renderChildren() {
+    state.children.forEach(function (c) {
+      var el = childEls[c.id];
+      el.style.left = childLeftPercent(c.pos);
+      var bursting = c.burstTicks > 0;
+      el.classList.toggle("bursting", bursting);
+      el.classList.toggle("winded", c.winded && !bursting);
+      // 絵のときは顔文字が状態バッジになるので、平常時は出さない
+      el.dataset.state = bursting ? "burst" : (c.winded ? "winded" : "ok");
+      // 足の回転はその子自身の全力を1とした割合で決める。バランスの数値が
+      // 変わっても比のままなので、絵の速さを調整し直す必要がない。
+      var gait = c.maxSpeed > 0 ? c.vel / c.maxSpeed : 0;
+      el.dataset.gait = gait < 0.03 ? "stop" : (gait < 0.5 ? "slow" : (gait < 1 ? "mid" : "fast"));
+      el.querySelector(".rface").textContent = bursting ? "💨" : (c.winded ? "😮‍💨" : "🙂");
+    });
+  }
+
+  function renderTempoReadout() {
+    tempoReadout.textContent = Math.round(state.tempoValue) + "%";
+  }
+
+  function renderArmButton() {
+    var r = REWARD[state.reward];
+    goalMarker.dataset.aura = state.reward;
+    // 光の段だけだと「高」と「激」を見分けにくいので、字でも出す
+    darumaTag.textContent = "強気度 " + r.label;
+    if (state.turnArmed) {
+      turnArmBtn.classList.add("armed");
+      turnArmBtn.innerHTML = '👀 詠唱後、振り向く<span class="arm-tag">気力 -' + Math.round(Core.turnCostOf(P, state)) + '</span>';
+    } else {
+      turnArmBtn.classList.remove("armed");
+      turnArmBtn.innerHTML = '🙈 詠唱後、振り向かない' +
+        '<span class="arm-tag">気力 +' + Core.currentSkipReward(P, state) + '</span>';
+    }
+  }
+
+  function showPrepPhase() {
+    phase = "prep";
+    state.turnArmed = true;
+    if (loopHandle) { clearInterval(loopHandle); loopHandle = null; }
+    if (state.cycle === 1) {
+      // before the first chant, nothing was running yet — no "paused" to announce.
+      track.classList.remove("paused");
+    } else {
+      track.dataset.pauseLabel = "時は止まっている。今のうちに作戦を練ろう";
+      track.classList.add("paused");
+    }
+    rewardCrow.style.display = "";
+    chantStartBtn.style.display = "";
+    renderArmButton();
+  }
+
+  function showChantPhase() {
+    phase = "chanting";
+    track.classList.remove("paused");
+    rewardCrow.style.display = "none";
+    chantStartBtn.style.display = "none";
+    renderArmButton();
+    if (loopHandle) clearInterval(loopHandle);
+    loopHandle = setInterval(gameTick, P.TICK_MS);
+  }
+
+  // --- だるまのタイプ選択 ---------------------------------------------------
+  // Described by what it costs you, not by a star rating: each of these is a
+  // different economy rather than a different power level, and which one is
+  // strongest depends entirely on how you play.
+  var TYPE_NOTES = {
+    normal: "クセなし。まずはこれで。",
+    red:    "気力の器が大きいぶん、見送っても実入りが細い。貯めるのではなく最初から持っている型。",
+    oni:    "振り向きが安い。そのかわり詠唱で押すのが高くつく。読んで振り向く型。",
+    attack: "詠唱が安い。そのかわり振り向きが高い。テンポで揺さぶる型。"
+  };
+  var pickedType = P.DARUMA_TYPE || "normal";
+  var typeRow = document.getElementById("type-row");
+  var typeNote = document.getElementById("type-note");
+
+  function renderTypePicker() {
+    typeRow.innerHTML = "";
+    Object.keys(P.DARUMA_TYPES).forEach(function (key) {
+      var btn = document.createElement("button");
+      btn.className = "type-btn" + (key === pickedType ? " selected" : "");
+      btn.innerHTML = '<img class="type-icon" src="assets/daruma/icon-' + key + '.png" alt="">' +
+        '<span>' + P.DARUMA_TYPES[key].label + '</span>';
+      btn.querySelector(".type-icon").addEventListener("error", dropArt);
+      btn.addEventListener("click", function () {
+        pickedType = key;
+        renderTypePicker();
+        faceDaruma(false);
+      });
+      typeRow.appendChild(btn);
+    });
+    typeNote.textContent = TYPE_NOTES[pickedType] || "";
+  }
+  renderArt();
+  renderTypePicker();
+  faceDaruma(false);
+
+  function newGameState() {
+    var defs = Core.pickActiveChildren(P, P.ACTIVE_CHILDREN);
+    var st = Core.newRunState(P, defs, pickedType);
+    st.children.forEach(function (c, i) { c.lane = Core.laneFor(i, st.children.length); });
+    st.turnArmed = true;
+    return st;
+  }
+
+  document.getElementById("start-btn").addEventListener("click", function () {
+    state = newGameState();
+    faceDaruma(false);
+    logEl.innerHTML = "";
+    initChantText();
+    initChildren();
+    rewardRow.querySelectorAll(".opt-btn").forEach(function (b) {
+      b.classList.toggle("selected", b.dataset.reward === "mid");
+    });
+    tempoSlider.value = state.tempoValue;
+    renderTempoReadout();
+    renderChant();
+    renderStamina();
+    renderCycle();
+    showScreen(screenGame);
+    showPrepPhase();
+  });
+
+  document.getElementById("replay-btn").addEventListener("click", function () {
+    showScreen(screenSetup);
+  });
+
+  rewardRow.addEventListener("click", function (e) {
+    var btn = e.target.closest(".opt-btn");
+    if (!btn || !state || phase !== "prep") return;
+    state.reward = btn.dataset.reward;
+    rewardRow.querySelectorAll(".opt-btn").forEach(function (b) {
+      b.classList.toggle("selected", b === btn);
+    });
+    renderArmButton();
+  });
+
+  chantStartBtn.addEventListener("click", function () {
+    if (!state || phase !== "prep") return;
+    showChantPhase();
+  });
+
+  tempoSlider.addEventListener("input", function () {
+    if (!state) return;
+    var wanted = parseFloat(tempoSlider.value);
+    if (phase === "chanting") {
+      // core charges the stamina and queues each kid's delayed reaction; it
+      // also clamps to what's affordable, so read the value back.
+      var applied = Core.applyTempoChange(P, state, wanted);
+      if (applied !== wanted) tempoSlider.value = applied;
+      renderStamina();
+    } else {
+      state.tempoValue = wanted; // free to set the starting pace during prep
+    }
+    renderTempoReadout();
+  });
+
+  turnArmBtn.addEventListener("click", function () {
+    if (!state || (phase !== "chanting" && phase !== "prep")) return;
+    state.turnArmed = !state.turnArmed;
+    renderArmButton();
+  });
+
+  function resolveCycleEnd() {
+    var cycleNo = state.cycle;
+    var cost = Core.turnCostOf(P, state);
+    var out = Core.resolveCycle(P, state);
+
+    if (out.turned) {
+      goalMarker.classList.add("turning");
+      goalIcon.textContent = "👀";
+      faceDaruma(true);
+      setTimeout(function () {
+        goalMarker.classList.remove("turning");
+        faceDaruma(false);
+        renderStamina();
+      }, 400);
+
+      out.caught.forEach(function (c) {
+        var el = childEls[c.id];
+        el.classList.remove("caught");
+        void el.offsetWidth;
+        el.classList.add("caught");
+        el.dataset.state = "caught";
+        el.querySelector(".rface").textContent = "😲";
+        setTimeout(function () {
+          el.querySelector(".rface").textContent = "🙂";
+          el.dataset.state = "ok";
+          el.classList.remove("caught");   // 付けっぱなしだと次の演出が出ない
+        }, 600);
+      });
+      renderChildren();
+
+      if (out.caught.length > 0) {
+        log(cycleNo + "周目、振り向いた!(-" + cost + ") " +
+          out.caught.map(function (c) { return c.name; }).join("、") + " を送還!");
+      } else {
+        log(cycleNo + "周目、振り向いた!(-" + cost + ") でも誰も動いてなかった…");
+      }
+    } else if (out.underpowered) {
+      log(cycleNo + "周目、振り向こうとしたが力尽きた…");
+    } else {
+      log(cycleNo + "周目は見送った。+" + out.gained + " 気力。");
+    }
+
+    renderStamina();
+    renderChant();
+    renderCycle();
+
+    showPrepPhase();
+  }
+
+  function gameTick() {
+    if (!state || phase !== "chanting") return;
+
+    var res = Core.tick(P, state);
+
+    // core may have collapsed the tempo to a crawl when the stamina ran out
+    if (Math.round(tempoSlider.value) !== Math.round(state.tempoValue)) {
+      tempoSlider.value = state.tempoValue;
+      renderTempoReadout();
+    }
+
+    renderChildren();
+    renderChant();
+    renderStamina();
+    renderCycle(); // the clock is the win condition, so keep it live
+
+    if (res.reached) {
+      endGame("child_win", res.reached);
+      return;
+    }
+
+    // lasting the distance is the win, and it can land mid-phrase
+    if (res.timeUp) {
+      endGame("daruma_win");
+      return;
+    }
+
+    if (res.chantDone) {
+      state.chantProgress = 100;
+      renderChant();
+      clearInterval(loopHandle);
+      loopHandle = null;
+      resolveCycleEnd();
+    }
+  }
+
+  function endGame(reason, who) {
+    phase = "over";
+    if (loopHandle) { clearInterval(loopHandle); loopHandle = null; }
+
+    var titleEl = document.getElementById("result-title");
+    var subEl = document.getElementById("result-sub");
+
+    if (reason === "child_win") {
+      titleEl.textContent = "🏃 子供たちの勝ち!";
+      subEl.textContent = (who ? who.name : "子供") + " がだるまにタッチ! " +
+        (GOAL_TICKS - state.elapsedTicks) * P.TICK_MS / 1000 + "秒を残して。捕まえた回数 " + state.catches + " 回でした。";
+    } else {
+      titleEl.textContent = "🧎 だるまの勝ち!";
+      subEl.textContent = (GOAL_TICKS * P.TICK_MS / 1000) + "秒を耐え切った! 捕まえた回数 " + state.catches +
+        " 回、残り気力 " + Math.max(0, Math.round(state.stamina)) + "。見事な読み合いでした。";
+    }
+    showScreen(screenResult);
+  }
+})();
+</script>
+</body>
+</html>

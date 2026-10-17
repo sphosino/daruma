@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>だるまさんがころんだ — バランス調整ラボ</title>
+<style>
+  :root {
+    --bg: #FBF3E7;
+    --surface: #FFFDF9;
+    --surface-2: #F3E6D3;
+    --ink: #3A2A22;
+    --ink-soft: #7A6A5D;
+    --accent: #C97E32;
+    --accent-ink: #FFFFFF;
+    --pink: #D9748F;
+    --green: #6E8B4F;
+    --blue: #5B84A8;
+    --purple: #8D6FA6;
+    --border: #E4D4BE;
+    --danger: #B85450;
+    --shadow: 0 2px 8px rgba(58, 42, 34, 0.08);
+  }
+  :root[data-theme="dark"] {
+    --bg: #221A1C;
+    --surface: #2E2426;
+    --surface-2: #3A2E2F;
+    --ink: #F3E9DD;
+    --ink-soft: #C4B3A6;
+    --accent: #E0A059;
+    --accent-ink: #2A1D0E;
+    --pink: #E38AA0;
+    --green: #8CAE68;
+    --blue: #7FA6C9;
+    --purple: #AB94C7;
+    --border: #4A3B3B;
+    --danger: #E08782;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #221A1C; --surface: #2E2426; --surface-2: #3A2E2F; --ink: #F3E9DD;
+      --ink-soft: #C4B3A6; --accent: #E0A059; --accent-ink: #2A1D0E; --pink: #E38AA0;
+      --green: #8CAE68; --blue: #7FA6C9; --purple: #AB94C7; --border: #4A3B3B; --danger: #E08782;
+      --shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink);
+    font-family: "Yu Gothic UI", "Hiragino Maru Gothic ProN", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  body { padding: 20px 16px 60px; }
+  .app { max-width: 1180px; margin: 0 auto; }
+
+  h1 { font-size: clamp(20px, 4vw, 26px); font-weight: 700; margin: 0 0 2px; letter-spacing: 0.02em; }
+  .subtitle { color: var(--ink-soft); font-size: 13px; margin: 0 0 18px; }
+
+  .layout { display: grid; grid-template-columns: 380px 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 880px) { .layout { grid-template-columns: 1fr; } }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px 16px; box-shadow: var(--shadow); margin-bottom: 14px; }
+  .card h2 { font-size: 13px; font-weight: 700; margin: 0 0 10px; color: var(--ink-soft);
+    text-transform: uppercase; letter-spacing: 0.06em; }
+  .card h3 { font-size: 12px; font-weight: 700; margin: 12px 0 6px; color: var(--accent); }
+  .card-note { font-size: 11.5px; line-height: 1.7; color: var(--ink-soft);
+    margin: -4px 0 10px; }
+
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+  .field { display: flex; flex-direction: column; gap: 3px; }
+  .field label { font-size: 11px; color: var(--ink-soft); }
+  .field input {
+    width: 100%; padding: 6px 8px; border-radius: 8px; border: 1.5px solid var(--border);
+    background: var(--bg); color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums;
+  }
+  .field input:focus { outline: none; border-color: var(--accent); }
+
+  .child-block { border-top: 1px dashed var(--border); padding-top: 8px; margin-top: 8px; }
+  .child-block:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
+  .child-name { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+  .child-name.c1 { color: var(--pink); }
+  .child-name.c2 { color: var(--blue); }
+  .child-name.c3 { color: var(--green); }
+  .child-name.c4 { color: var(--purple); }
+
+  .action-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .primary-btn {
+    padding: 11px 20px; border-radius: 12px; border: none; background: var(--accent);
+    color: var(--accent-ink); font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow);
+  }
+  .primary-btn:active { transform: translateY(1px); }
+  .ghost-btn {
+    padding: 10px 16px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface);
+    color: var(--ink); font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .n-field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-soft); }
+  .n-field input { width: 70px; padding: 6px 8px; border-radius: 8px; border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--ink); font-size: 13px; }
+  .status-note { font-size: 12px; color: var(--ink-soft); }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; min-width: 920px; font-size: 12.5px; }
+  th, td { padding: 8px 10px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child { text-align: left; font-variant-numeric: normal; }
+  thead th { background: var(--surface-2); color: var(--ink-soft); font-weight: 700; font-size: 11px;
+    position: sticky; top: 0; }
+  tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 40%, transparent); }
+  tbody tr:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  td.win-hi { color: var(--green); font-weight: 700; }
+  td.win-lo { color: var(--danger); font-weight: 700; }
+
+  .export-box textarea {
+    width: 100%; min-height: 220px; font-family: "Consolas", "Menlo", monospace; font-size: 11.5px;
+    padding: 10px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--bg);
+    color: var(--ink); resize: vertical; line-height: 1.6;
+  }
+
+  .mode-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .mode-tab {
+    flex: 1; padding: 10px 0; border-radius: 12px; border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--ink); font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .mode-tab.active { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+
+  .range-field { display: flex; flex-direction: column; gap: 3px; }
+  .range-field label { font-size: 11px; color: var(--ink-soft); }
+  .range-field .range-inputs { display: flex; align-items: center; gap: 5px; }
+  .range-field input {
+    width: 100%; padding: 6px 8px; border-radius: 8px; border: 1.5px solid var(--border);
+    background: var(--bg); color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums;
+  }
+  .range-field .range-sep { font-size: 11px; color: var(--ink-soft); flex: none; }
+
+  .pop-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; margin-top: 10px; max-height: 220px; overflow-y: auto; }
+  .pop-table-wrap table { min-width: 640px; font-size: 11.5px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🧎 だるまさんがころんだ — バランス調整ラボ</h1>
+  <p class="subtitle">パラメータを変えて「シミュレーション実行」を押すと、6方針×指定回数を即座に対戦させて勝率などを比較できます。daruma-game.html と同じ daruma-core.js をそのまま動かしています。</p>
+
+  <div class="layout">
+    <!-- Parameter form -->
+    <div>
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="mode-fixed-btn">固定メンバー</button>
+        <button class="mode-tab" id="mode-random-btn">ランダム集団</button>
+      </div>
+      <div class="card" id="fixed-children-card">
+        <h2>子供たち</h2>
+        <div class="field-grid" style="margin-bottom:10px;">
+          <div class="field"><label>走者数(10人から毎回抽選)</label><input type="number" id="p_countFixed" value="4" step="1" min="1" max="10"></div>
+        </div>
+        <!-- Filled in by buildChildBlocks() from Core.ROSTER and CHILD_FIELDS.
+             These used to be written out by hand, four near-identical blocks of
+             them, and the numbers in the value="" attributes had already drifted
+             away from the roster they were supposed to mirror. Adding a trait is
+             now one line in CHILD_FIELDS. -->
+        <div id="child-blocks"></div>
+      </div>
+
+      <div class="card" id="random-pop-card" style="display:none;">
+        <h2>ランダム集団生成</h2>
+        <div class="field-grid" style="margin-bottom:10px;">
+          <div class="field"><label>人数(生成した子が全員そのまま走ります)</label><input type="number" id="p_countRandom" value="4" step="1" min="1" max="10"></div>
+        </div>
+        <div class="field-grid">
+          <div class="range-field">
+            <label>最高速度(min / max)</label>
+            <div class="range-inputs">
+              <input type="number" id="p_range_maxSpeed_min" value="0.28" step="0.01">
+              <span class="range-sep">〜</span>
+              <input type="number" id="p_range_maxSpeed_max" value="0.40" step="0.01">
+            </div>
+          </div>
+          <div class="range-field">
+            <label>加速(min / max)</label>
+            <div class="range-inputs">
+              <input type="number" id="p_range_accel_min" value="0.07" step="0.005">
+              <span class="range-sep">〜</span>
+              <input type="number" id="p_range_accel_max" value="0.11" step="0.005">
+            </div>
+          </div>
+          <div class="range-field">
+            <label>ブレーキ比率(min / max, 対最高速度)</label>
+            <div class="range-inputs">
+              <input type="number" id="p_range_brakeRatio_min" value="0.30" step="0.05">
+              <span class="range-sep">〜</span>
+              <input type="number" id="p_range_brakeRatio_max" value="1.00" step="0.05">
+            </div>
+          </div>
+          <div class="range-field">
+            <label>大胆さ(min / max)</label>
+            <div class="range-inputs">
+              <input type="number" id="p_range_boldness_min" value="0.20" step="0.05">
+              <span class="range-sep">〜</span>
+              <input type="number" id="p_range_boldness_max" value="0.90" step="0.05">
+            </div>
+          </div>
+          <div class="range-field">
+            <label>自制心(min / max)</label>
+            <div class="range-inputs">
+              <input type="number" id="p_range_selfControl_min" value="0.10" step="0.05">
+              <span class="range-sep">〜</span>
+              <input type="number" id="p_range_selfControl_max" value="0.90" step="0.05">
+            </div>
+          </div>
+          <div class="range-field">
+            <label>テンポ敏感さ(min / max)</label>
+            <div class="range-inputs">
+              <input type="number" id="p_range_reaction_min" value="0.10" step="0.05">
+              <span class="range-sep">〜</span>
+              <input type="number" id="p_range_reaction_max" value="1.00" step="0.05">
+            </div>
+          </div>
+          <div class="range-field">
+            <label>判断力(min / max) — 疲労で読みがブレにくいか</label>
+            <div class="range-inputs">
+              <input type="number" id="p_range_judgmentResilience_min" value="0.10" step="0.05">
+              <span class="range-sep">〜</span>
+              <input type="number" id="p_range_judgmentResilience_max" value="0.90" step="0.05">
+            </div>
+          </div>
+          <div class="range-field">
+            <label>身体制御(min / max) — 疲労でブレーキが鈍りにくいか</label>
+            <div class="range-inputs">
+              <input type="number" id="p_range_motorControl_min" value="0.10" step="0.05">
+              <span class="range-sep">〜</span>
+              <input type="number" id="p_range_motorControl_max" value="0.90" step="0.05">
+            </div>
+          </div>
+          <div class="range-field">
+            <label>同調性(min / max) — -1で逆張り、+1で同調(周りに合わせる)</label>
+            <div class="range-inputs">
+              <input type="number" id="p_range_conformity_min" value="-1.00" step="0.05">
+              <span class="range-sep">〜</span>
+              <input type="number" id="p_range_conformity_max" value="1.00" step="0.05">
+            </div>
+          </div>
+          <div class="range-field">
+            <label>持久力(min / max) — 0が短距離型、1が長距離型</label>
+            <div class="range-inputs">
+              <input type="number" id="p_range_endurance_min" value="0.10" step="0.05">
+              <span class="range-sep">〜</span>
+              <input type="number" id="p_range_endurance_max" value="0.90" step="0.05">
+            </div>
+          </div>
+          <div class="range-field">
+            <label>疲労の自覚(min / max) — 低いと「まだいける」と誤る</label>
+            <div class="range-inputs">
+              <input type="number" id="p_range_bodyAwareness_min" value="0.10" step="0.05">
+              <span class="range-sep">〜</span>
+              <input type="number" id="p_range_bodyAwareness_max" value="0.90" step="0.05">
+            </div>
+          </div>
+          <div class="range-field">
+            <label>だるまへの疑い(min / max) — 高いほど実績で読み、高いほど騙される</label>
+            <div class="range-inputs">
+              <input type="number" id="p_range_skepticism_min" value="0.10" step="0.05">
+              <span class="range-sep">〜</span>
+              <input type="number" id="p_range_skepticism_max" value="0.90" step="0.05">
+            </div>
+          </div>
+        </div>
+        <button class="primary-btn" id="gen-pop-btn" style="margin-top:12px;">🎲 ランダム集団を生成</button>
+        <div class="pop-table-wrap" id="pop-preview-wrap" style="display:none;">
+          <table id="pop-preview-table">
+            <thead>
+              <tr><th>id</th><th>最高速度</th><th>加速</th><th>ブレーキ</th><th>持久力</th><th>大胆さ</th><th>自制心</th><th>テンポ敏感</th><th>判断力</th><th>身体制御</th><th>疲労の自覚</th><th>疑い</th><th>同調性</th></tr>
+            </thead>
+            <tbody id="pop-preview-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+
+      <div class="card">
+        <h2>基本設定</h2>
+        <div class="field-grid">
+          <div class="field"><label>スタミナ上限</label><input type="number" id="p_staminaMax" value="110" step="1"></div>
+          <div class="field"><label>制限時間(tick / 100ms刻み)</label><input type="number" id="p_goalTicks" value="400" step="10"></div>
+          <div class="field"><label>ゴール地点(0-100)</label><input type="number" id="p_goalPos" value="96" step="1"></div>
+          <div class="field"><label>捕獲判定の速度閾値</label><input type="number" id="p_catchThresh" value="0.05" step="0.01"></div>
+          <div class="field"><label>テンポ加速コスト(1%あたり)</label><input type="number" id="p_tempoChangeCost" value="0.025" step="0.005"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>詠唱テンポ カーブ</h2>
+        <div class="field-grid">
+          <div class="field"><label>最遅: 進行/tick</label><input type="number" id="p_tempoMinFill" value="1.1" step="0.05"></div>
+          <div class="field"><label>最遅: 消費/tick</label><input type="number" id="p_tempoMinDrain" value="0.04" step="0.01"></div>
+          <div class="field"><label>最速: 進行/tick</label><input type="number" id="p_tempoMaxFill" value="3.8" step="0.05"></div>
+          <div class="field"><label>最速: 消費/tick</label><input type="number" id="p_tempoMaxDrain" value="1.10" step="0.05"></div>
+          <div class="field" style="grid-column:1/-1;"><label>消費カーブの指数(大きいほど遅め優遇)</label><input type="number" id="p_tempoCurve" value="2.8" step="0.1"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>子供が止まる判断</h2>
+        <div class="field-grid">
+          <div class="field"><label>粘り幅: 大胆な子(tick)</label><input type="number" id="p_freezeLeadMin" value="0" step="0.5"></div>
+          <div class="field"><label>粘り幅: 慎重な子(tick)</label><input type="number" id="p_freezeLeadMax" value="5" step="0.5"></div>
+          <div class="field"><label>制動距離の読み違い幅</label><input type="number" id="p_misread" value="0.45" step="0.05"></div>
+          <div class="field"><label>反応の遅さ: 最も鈍い子(tick)</label><input type="number" id="p_reactionMax" value="5" step="0.5"></div>
+          <div class="field"><label>反応のブレ(自分の遅延比)</label><input type="number" id="p_reactionJitter" value="0.6" step="0.1"></div>
+          <div class="field"><label>突っ込む確率の基準</label><input type="number" id="p_gambleBase" value="0.5" step="0.05"></div>
+          <div class="field"><label>読み方針の基準線(先頭がここを越えたら振り向く)</label><input type="number" id="p_creepLine" value="65" step="5"></div>
+          <div class="field"><label>加速タイミング(残り何tickで全速へ)</label><input type="number" id="p_ambushTicks" value="6" step="1"></div>
+        </div>
+        <h3>ヒヤリと責任感</h3>
+        <p class="card-note">ヒヤリは片方向のみ(「余裕だったから次は攻める」は入れていません)。
+          両方向に補正すると、毎周振り直されるノイズを追いかけて振動します。
+          責任感は「まだ間に合う子」が減るほど強まり、全員生きているときはゼロです。</p>
+        <div class="field-grid">
+          <div class="field"><label>ヒヤリとみなす余裕(tick / 0で無効)</label><input type="number" id="p_nearMissTicks" value="3" step="0.5"></div>
+          <div class="field"><label>ヒヤリが刺さる確率</label><input type="number" id="p_nearMissChance" value="0.5" step="0.05"></div>
+          <div class="field"><label>ヒヤリ後の粘り幅の上乗せ(tick)</label><input type="number" id="p_nearMissLead" value="1.2" step="0.1"></div>
+          <div class="field"><label>責任感による粘り幅の上乗せ(tick)</label><input type="number" id="p_respLead" value="3.0" step="0.5"></div>
+          <div class="field"><label>責任感で突っ込まなくなる強さ</label><input type="number" id="p_respGamble" value="0.12" step="0.02"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>子供の走り方 — ペース配分と位置取り</h2>
+        <p class="card-note">体力消費が速度に正比例(指数1.0)だと、同じ距離のコストが速度によらず一定になり、
+          抑えて走る意味が消えて全員が全力で走ります。指数を上げると初めてペース配分が判断になります。</p>
+        <div class="field-grid">
+          <div class="field"><label>体力消費の指数(1.0で正比例)</label><input type="number" id="p_drainExponent" value="2.2" step="0.1"></div>
+          <div class="field"><label>最低巡航速度(最高速に対する比)</label><input type="number" id="p_cruiseMin" value="0.5" step="0.05"></div>
+          <div class="field"><label>欲張りの上乗せ(必要ペースにどれだけ足すか)</label><input type="number" id="p_greedPaceBonus" value="0.40" step="0.05"></div>
+          <div class="field"><label>やる気0の子の速度上限(最高速に対する比)</label><input type="number" id="p_effortFloor" value="0.55" step="0.05"></div>
+          <div class="field"><label>先頭を避ける強さ</label><input type="number" id="p_leadShyness" value="0.35" step="0.05"></div>
+          <div class="field"><label>先頭とみなす差(位置)</label><input type="number" id="p_leadMargin" value="4" step="0.5"></div>
+          <div class="field"><label>恥による粘り幅の上乗せ(tick)</label><input type="number" id="p_shameLead" value="1.5" step="0.5"></div>
+          <div class="field"><label>疲労の自覚のズレ幅</label><input type="number" id="p_fatigueMisread" value="0.45" step="0.05"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>動機とだるまの読み</h2>
+        <p class="card-note">動機は試合ごとに抽選され、ラベルとしては表示されません(走り方には出ます)。
+          比率は相対値で、合計が1である必要はありません。「気にしない子」が多いほど、
+          だるまは見送って気力を貯める余裕がなくなります。</p>
+        <div class="field-grid">
+          <div class="field"><label>だるまのタイプ(子供にも見えている)</label>
+            <select id="p_darumaType">
+              <option value="normal">ふつう</option>
+              <option value="red">赤だるま</option>
+              <option value="oni">鬼だるま</option>
+              <option value="attack">攻めだるま</option>
+            </select>
+          </div>
+          <div class="field"><label>タイプの先入観の重さ(周数)</label><input type="number" id="p_typePrior" value="2" step="0.5"></div>
+          <div class="field"><label>抽選比: 自分で決めたい</label><input type="number" id="p_mixScorer" value="0.30" step="0.05"></div>
+          <div class="field"><label>抽選比: 捕まるのを気にしない</label><input type="number" id="p_mixCareless" value="0.25" step="0.05"></div>
+          <div class="field"><label>抽選比: やる気なし</label><input type="number" id="p_mixSlacker" value="0.20" step="0.05"></div>
+          <div class="field"><label>抽選比: ふつう</label><input type="number" id="p_mixSteady" value="0.25" step="0.05"></div>
+          <div class="field"><label>記憶する周数</label><input type="number" id="p_memorySpan" value="5" step="1"></div>
+          <div class="field"><label>実績を信じる強さ</label><input type="number" id="p_memoryWeight" value="0.45" step="0.05"></div>
+          <div class="field"><label>テンポ知覚のラグ(tick / 0で即座に気づく)</label><input type="number" id="p_tempoLag" value="8" step="1"></div>
+          <div class="field"><label>突っ込む: 振り向かない相手だと</label><input type="number" id="p_gambleThreat" value="0.35" step="0.05"></div>
+          <div class="field"><label>突っ込む: ゴールが近いと</label><input type="number" id="p_gambleGreed" value="0.30" step="0.05"></div>
+          <div class="field"><label>突っ込まない: やる気がないと</label><input type="number" id="p_gambleEffort" value="0.35" step="0.05"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>我慢報酬 / 振り向きコスト</h2>
+        <div class="field-grid">
+          <div class="field"><label>低: 報酬</label><input type="number" id="p_rewLowR" value="0" step="1"></div>
+          <div class="field"><label>低: コスト</label><input type="number" id="p_rewLowC" value="11" step="1"></div>
+          <div class="field"><label>中: 報酬</label><input type="number" id="p_rewMidR" value="6" step="1"></div>
+          <div class="field"><label>中: コスト</label><input type="number" id="p_rewMidC" value="17" step="1"></div>
+          <div class="field"><label>高: 報酬</label><input type="number" id="p_rewHighR" value="12" step="1"></div>
+          <div class="field"><label>高: コスト</label><input type="number" id="p_rewHighC" value="32" step="1"></div>
+          <div class="field"><label>激: 報酬</label><input type="number" id="p_rewMaxR" value="20" step="1"></div>
+          <div class="field"><label>激: コスト</label><input type="number" id="p_rewMaxC" value="60" step="1"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Results -->
+    <div>
+      <div class="card">
+        <div class="action-row">
+          <button class="primary-btn" id="run-btn">▶ シミュレーション実行</button>
+          <button class="ghost-btn" id="reset-btn">デフォルトに戻す</button>
+          <button class="ghost-btn" id="copy-results-btn">📋 結果をコピー</button>
+          <div class="n-field">試行回数(方針ごと)<input type="number" id="p_n" value="1000" step="100"></div>
+          <span class="status-note" id="status-note"></span>
+        </div>
+        <div class="table-wrap">
+          <table id="result-table">
+            <thead>
+              <tr>
+                <th>方針</th>
+                <th>だるま勝率</th>
+                <th>子供勝率</th>
+                <th>スタミナ切れ</th>
+                <th>平均到達周</th>
+                <th>平均捕獲数</th>
+                <th>平均振向率</th>
+                <th>勝利時報酬</th>
+                <th>勝利時コスト</th>
+                <th>勝利時残スタミナ</th>
+              </tr>
+            </thead>
+            <tbody id="result-body">
+              <tr><td colspan="10" style="text-align:center;color:var(--ink-soft);padding:20px;">「シミュレーション実行」を押してください</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>このバランスを採用</h2>
+        <p class="status-note" style="margin:0 0 10px;">
+          いまの入力値のうち、出荷値から変えたものだけを daruma-game.html に反映します。
+          ブラウザに保存する方式なので daruma-sim.js（node）には効きません。恒久化したいときは
+          daruma-core.js の既定値に焼き込みます。<br>
+          人数は「基本設定 → 走者数」の1箇所で決まります。
+        </p>
+        <div class="action-row" style="margin-bottom:0;">
+          <button class="primary-btn" id="adopt-btn">このバランスを採用する</button>
+          <button class="ghost-btn" id="unadopt-btn">出荷値に戻す</button>
+          <span class="status-note" id="adopt-status"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="daruma-core.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // Tuning and game logic both live in daruma-core.js. The lab's job is to
+  // override params, run policies against them and report — never to keep its
+  // own copy of the loop (that's how the lab and the game drifted apart).
+  var Core = window.DarumaCore;
+
+  // Field defaults are derived from the core's shipped values, so the lab
+  // always opens on exactly what the game runs. Hardcoding them here would be
+  // a second list to keep in sync, which is the thing we just got rid of.
+  var CD = Core.DEFAULTS;
+  var DEFAULTS = {
+    countRandom: CD.ACTIVE_CHILDREN, countFixed: CD.ACTIVE_CHILDREN,
+    staminaMax: CD.STAMINA_MAX, goalTicks: CD.GOAL_TICKS, goalPos: CD.GOAL_POS,
+    catchThresh: CD.CATCH_VEL_THRESHOLD, tempoChangeCost: CD.TEMPO_CHANGE_COST_PER_UNIT,
+    tempoMinFill: CD.TEMPO_MIN.fillPerTick, tempoMinDrain: CD.TEMPO_MIN.drainPerTick,
+    tempoMaxFill: CD.TEMPO_MAX.fillPerTick, tempoMaxDrain: CD.TEMPO_MAX.drainPerTick,
+    tempoCurve: CD.TEMPO_DRAIN_CURVE,
+    freezeLeadMin: CD.FREEZE_LEAD_MIN, freezeLeadMax: CD.FREEZE_LEAD_MAX,
+    misread: CD.STOPPING_MISREAD_SPREAD,
+    reactionMax: CD.REACTION_TICKS_MAX, reactionJitter: CD.REACTION_JITTER,
+    gambleBase: CD.GAMBLE_BASE,
+    drainExponent: CD.RUN_DRAIN_EXPONENT, cruiseMin: CD.CRUISE_MIN,
+    greedPaceBonus: CD.GREED_PACE_BONUS, effortFloor: CD.EFFORT_SPEED_FLOOR,
+    leadShyness: CD.LEAD_SHYNESS, leadMargin: CD.LEAD_MARGIN,
+    shameLead: CD.SHAME_LEAD, fatigueMisread: CD.FATIGUE_MISREAD,
+    nearMissTicks: CD.NEAR_MISS_TICKS, nearMissChance: CD.NEAR_MISS_CHANCE,
+    nearMissLead: CD.NEAR_MISS_LEAD,
+    respLead: CD.RESPONSIBILITY_LEAD, respGamble: CD.RESPONSIBILITY_GAMBLE,
+    mixScorer: CD.MOTIVE_MIX.scorer, mixCareless: CD.MOTIVE_MIX.careless,
+    mixSlacker: CD.MOTIVE_MIX.slacker, mixSteady: CD.MOTIVE_MIX.steady,
+    darumaType: CD.DARUMA_TYPE, typePrior: CD.TYPE_PRIOR_PHRASES,
+    memorySpan: CD.DARUMA_MEMORY_SPAN, memoryWeight: CD.MEMORY_WEIGHT,
+    tempoLag: CD.PERCEIVED_TEMPO_LAG,
+    gambleThreat: CD.GAMBLE_THREAT_WEIGHT,
+    gambleGreed: CD.GAMBLE_GREED_WEIGHT, gambleEffort: CD.GAMBLE_EFFORT_WEIGHT,
+    // not a core knob — it's the reading policies' own threshold, and the sim
+    // defaults it to the same 65
+    creepLine: 65,
+    ambushTicks: 6,
+    rewLowR: CD.REWARD.low.reward,   rewLowC: CD.REWARD.low.turnCost,
+    rewMidR: CD.REWARD.mid.reward,   rewMidC: CD.REWARD.mid.turnCost,
+    rewHighR: CD.REWARD.high.reward, rewHighC: CD.REWARD.high.turnCost,
+    rewMaxR: CD.REWARD.max.reward,   rewMaxC: CD.REWARD.max.turnCost,
+    n: 1000
+  };
+  // The lab tweaks the first four of the roster. One list drives the input
+  // fields, their defaults and what gets published — a trait added to the
+  // roster becomes editable here by adding a line, and nothing else.
+  var LAB_CHILDREN = 4;
+  var CHILD_FIELDS = [
+    { key: "maxSpeed",           label: "最高速度",                 step: 0.005 },
+    { key: "accel",              label: "加速",                     step: 0.005 },
+    { key: "brake",              label: "ブレーキ",                 step: 0.005 },
+    { key: "endurance",          label: "持久力(0短距離〜1長距離)", step: 0.05 },
+    { key: "boldness",           label: "大胆さ(0-1)",              step: 0.05 },
+    { key: "selfControl",        label: "自制心(0-1)",              step: 0.05 },
+    { key: "reaction",           label: "反応の速さ(0-1)",          step: 0.05 },
+    { key: "judgmentResilience", label: "距離判断(0-1)",            step: 0.05 },
+    { key: "motorControl",       label: "疲労時の踏ん張り(0-1)",    step: 0.05 },
+    { key: "bodyAwareness",      label: "疲労の自覚(0-1)",          step: 0.05 },
+    { key: "skepticism",         label: "だるまへの疑い(0-1)",      step: 0.05 }
+  ];
+  Core.ROSTER.slice(0, LAB_CHILDREN).forEach(function (c, i) {
+    var k = "c" + (i + 1) + "_";
+    CHILD_FIELDS.forEach(function (f) { DEFAULTS[k + f.key] = c[f.key]; });
+  });
+
+  function el(id) { return document.getElementById(id); }
+  // The cast size lives inside whichever tab is open — it is the same value
+  // either way, just shown where it is relevant. Asking for "10 random kids"
+  // and then hunting for a second count field in another card was the bug.
+  function activeCount() {
+    return Math.max(1, Math.round(num(labMode === "random" ? "p_countRandom" : "p_countFixed")));
+  }
+  function num(id) { return parseFloat(el(id).value); }
+
+  var labMode = "fixed";
+  var randomPopulation = null;
+
+  function randRange(min, max) { return min + Math.random() * (max - min); }
+
+  function generateRandomPopulation() {
+    // One number decides the cast size, not two. Splitting it into "candidate
+    // pool" and "runners" meant asking for 10 random kids and still getting 4,
+    // with the second setting hidden in another card.
+    var n = Math.max(1, Math.round(activeCount()));
+    var traits = ["maxSpeed", "accel", "boldness", "selfControl", "reaction",
+                  "judgmentResilience", "motorControl", "conformity",
+                  // without these a generated cast quietly runs on the 0.5
+                  // fallbacks, i.e. ten identical tanks and ten identical reads
+                  "endurance", "bodyAwareness", "skepticism"];
+    var pop = [];
+    // colours so a generated cast can be adopted straight into
+    // daruma-game.html, which has to draw them. Deliberately no names: the
+    // authored roster has names that mean something and the game labels those,
+    // while "ランダム1〜10" over every runner is just noise.
+    var palette = ["--pink", "--blue", "--green", "--purple", "--teal",
+                   "--orange", "--mustard", "--brown", "--slate", "--coral"];
+    for (var i = 0; i < n; i++) {
+      var child = {
+        id: "r" + (i + 1),
+        color: "var(" + palette[i % palette.length] + ")"
+      };
+      traits.forEach(function (t) {
+        child[t] = randRange(num("p_range_" + t + "_min"), num("p_range_" + t + "_max"));
+      });
+      var brakeRatio = randRange(num("p_range_brakeRatio_min"), num("p_range_brakeRatio_max"));
+      child.brake = child.maxSpeed * brakeRatio;
+      pop.push(child);
+    }
+    randomPopulation = pop;
+    renderPopPreview(pop);
+  }
+
+  function renderPopPreview(pop) {
+    var wrap = el("pop-preview-wrap");
+    var body = el("pop-preview-body");
+    body.innerHTML = "";
+    pop.forEach(function (c) {
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>" + c.id + "</td>" +
+        "<td>" + c.maxSpeed.toFixed(2) + "</td>" +
+        "<td>" + c.accel.toFixed(3) + "</td>" +
+        "<td>" + c.brake.toFixed(2) + "</td>" +
+        "<td>" + c.endurance.toFixed(2) + "</td>" +
+        "<td>" + c.boldness.toFixed(2) + "</td>" +
+        "<td>" + c.selfControl.toFixed(2) + "</td>" +
+        "<td>" + c.reaction.toFixed(2) + "</td>" +
+        "<td>" + c.judgmentResilience.toFixed(2) + "</td>" +
+        "<td>" + c.motorControl.toFixed(2) + "</td>" +
+        "<td>" + c.bodyAwareness.toFixed(2) + "</td>" +
+        "<td>" + c.skepticism.toFixed(2) + "</td>" +
+        "<td>" + c.conformity.toFixed(2) + "</td>";
+      body.appendChild(tr);
+    });
+    wrap.style.display = "";
+  }
+
+  function setLabMode(mode) {
+    labMode = mode;
+    el("mode-fixed-btn").classList.toggle("active", mode === "fixed");
+    el("mode-random-btn").classList.toggle("active", mode === "random");
+    el("fixed-children-card").style.display = mode === "fixed" ? "" : "none";
+    el("random-pop-card").style.display = mode === "random" ? "" : "none";
+  }
+
+  // The per-child inputs are built from the roster rather than written out in
+  // the HTML, so they can never drift from the cast they are editing.
+  function buildChildBlocks() {
+    var wrap = el("child-blocks");
+    wrap.innerHTML = "";
+    Core.ROSTER.slice(0, LAB_CHILDREN).forEach(function (c, i) {
+      var k = "c" + (i + 1) + "_";
+      var block = document.createElement("div");
+      block.className = "child-block";
+      var html = '<div class="child-name c' + (i + 1) + '">' + c.name + '</div>' +
+                 '<div class="field-grid">';
+      CHILD_FIELDS.forEach(function (f) {
+        html += '<div class="field"><label>' + f.label + '</label>' +
+                '<input type="number" id="p_' + k + f.key + '" value="' + c[f.key] +
+                '" step="' + f.step + '"></div>';
+      });
+      block.innerHTML = html + '</div>';
+      wrap.appendChild(block);
+    });
+  }
+
+  function resetDefaults() {
+    Object.keys(DEFAULTS).forEach(function (k) {
+      var input = el("p_" + k);
+      if (input) input.value = DEFAULTS[k];
+    });
+  }
+
+  function readParams() {
+    // Start from the core defaults so every knob the lab doesn't expose still
+    // has its shipped value, then layer the UI fields on top.
+    return Core.makeConfig({
+      ACTIVE_CHILDREN: activeCount(),
+      STAMINA_MAX: num("p_staminaMax"),
+      GOAL_TICKS: num("p_goalTicks"),
+      GOAL_POS: num("p_goalPos"),
+      CATCH_VEL_THRESHOLD: num("p_catchThresh"),
+      TEMPO_CHANGE_COST_PER_UNIT: num("p_tempoChangeCost"),
+      TEMPO_MIN: { fillPerTick: num("p_tempoMinFill"), drainPerTick: num("p_tempoMinDrain") },
+      TEMPO_MAX: { fillPerTick: num("p_tempoMaxFill"), drainPerTick: num("p_tempoMaxDrain") },
+      TEMPO_DRAIN_CURVE: num("p_tempoCurve"),
+      FREEZE_LEAD_MIN: num("p_freezeLeadMin"),
+      FREEZE_LEAD_MAX: num("p_freezeLeadMax"),
+      STOPPING_MISREAD_SPREAD: num("p_misread"),
+      REACTION_TICKS_MAX: num("p_reactionMax"),
+      REACTION_JITTER: num("p_reactionJitter"),
+      GAMBLE_BASE: num("p_gambleBase"),
+      RUN_DRAIN_EXPONENT: num("p_drainExponent"),
+      CRUISE_MIN: num("p_cruiseMin"),
+      GREED_PACE_BONUS: num("p_greedPaceBonus"),
+      EFFORT_SPEED_FLOOR: num("p_effortFloor"),
+      LEAD_SHYNESS: num("p_leadShyness"),
+      LEAD_MARGIN: num("p_leadMargin"),
+      SHAME_LEAD: num("p_shameLead"),
+      FATIGUE_MISREAD: num("p_fatigueMisread"),
+      NEAR_MISS_TICKS: num("p_nearMissTicks"),
+      NEAR_MISS_CHANCE: num("p_nearMissChance"),
+      NEAR_MISS_LEAD: num("p_nearMissLead"),
+      RESPONSIBILITY_LEAD: num("p_respLead"),
+      RESPONSIBILITY_GAMBLE: num("p_respGamble"),
+      DARUMA_TYPE: el("p_darumaType").value || "normal",
+      TYPE_PRIOR_PHRASES: num("p_typePrior"),
+      DARUMA_MEMORY_SPAN: num("p_memorySpan"),
+      MEMORY_WEIGHT: num("p_memoryWeight"),
+      PERCEIVED_TEMPO_LAG: num("p_tempoLag"),
+      GAMBLE_THREAT_WEIGHT: num("p_gambleThreat"),
+      GAMBLE_GREED_WEIGHT: num("p_gambleGreed"),
+      GAMBLE_EFFORT_WEIGHT: num("p_gambleEffort"),
+      MOTIVE_MIX: {
+        scorer: num("p_mixScorer"), careless: num("p_mixCareless"),
+        slacker: num("p_mixSlacker"), steady: num("p_mixSteady")
+      },
+      // keep the labels the core ships with, or this object always looks
+      // "changed" to the adopt button even when the numbers are untouched
+      REWARD: {
+        low:  { reward: num("p_rewLowR"),  turnCost: num("p_rewLowC"),  label: CD.REWARD.low.label },
+        mid:  { reward: num("p_rewMidR"),  turnCost: num("p_rewMidC"),  label: CD.REWARD.mid.label },
+        high: { reward: num("p_rewHighR"), turnCost: num("p_rewHighC"), label: CD.REWARD.high.label },
+        max:  { reward: num("p_rewMaxR"),  turnCost: num("p_rewMaxC"),  label: CD.REWARD.max.label }
+      },
+      CHILD_DEFS: labMode === "random" && randomPopulation ? randomPopulation
+        : CD.ROSTER.slice(0, LAB_CHILDREN).map(function (c, i) {
+            var k = "c" + (i + 1) + "_";
+            var def = { id: c.id, name: c.name, color: c.color };
+            CHILD_FIELDS.forEach(function (f) { def[f.key] = num("p_" + k + f.key); });
+            return def;
+          })
+    });
+  }
+
+  var clamp = Core.clamp;
+  var tempoFill = Core.tempoFill;
+  var tempoDrain = Core.tempoDrain;
+  var applyTempoChange = Core.applyTempoChange;
+  // The game draws its runners fresh every round, so the lab must too: the
+  // roster panel supplies the CANDIDATES, and ACTIVE_CHILDREN of them actually
+  // run. Feeding the whole pool onto the track instead is a different game —
+  // 10 simultaneous runners drops a good reader from 76% to 38%.
+  function newState(P) {
+    var defs = P.CHILD_DEFS;
+    var want = P.ACTIVE_CHILDREN;
+    if (defs.length > want) {
+      var pool = defs.slice();
+      for (var i = pool.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = pool[i]; pool[i] = pool[j]; pool[j] = t;
+      }
+      defs = pool.slice(0, want);
+    } else if (defs.length < want) {
+      // not enough authored candidates — top up from the core roster
+      defs = defs.concat(Core.ROSTER.slice(0, want - defs.length));
+    }
+    return Core.newRunState(P, defs);
+  }
+
+  function projectedDanger(P, st, marginTicks) {
+    var remainingProgress = 100 - st.chantProgress;
+    var ticksLeft = Math.max(0, remainingProgress / tempoFill(P, st.tempoValue));
+    return st.children.some(function (c) {
+      var rampTicks = Math.min(ticksLeft, 4);
+      var projectedVel = Math.min(c.maxSpeed, c.vel + c.accel * rampTicks);
+      var avgVel = (c.vel + projectedVel) / 2;
+      var projectedPos = c.pos + avgVel * ticksLeft;
+      return projectedPos >= P.GOAL_POS - marginTicks;
+    });
+  }
+
+  // How far in front of the leader the reading policies get nervous. Turning
+  // only resets kids that are MOVING, so a kid parked just short of the goal
+  // can never be touched — the reader's job is to stop anyone setting up camp
+  // there, not to wait until someone is about to cross.
+  function leaderProjectedPos(P, st) {
+    var remainingProgress = 100 - st.chantProgress;
+    var ticksLeft = Math.max(0, remainingProgress / tempoFill(P, st.tempoValue));
+    return st.children.reduce(function (m, c) {
+      var rampTicks = Math.min(ticksLeft, 4);
+      var projectedVel = Math.min(c.maxSpeed, c.vel + c.accel * rampTicks);
+      var avgVel = (c.vel + projectedVel) / 2;
+      return Math.max(m, c.pos + avgVel * ticksLeft);
+    }, 0);
+  }
+  // A reader must work out "is anyone still moving" the way a player does —
+  // by watching the drawn positions. Reading c.vel against CATCH_VEL_THRESHOLD
+  // is cheating: at that threshold a runner covers 0.25px per frame on the
+  // rendered track, so the exact catchable/safe cutoff is not something a human
+  // can see. Compare against where everyone was MOVE_WINDOW ticks ago instead;
+  // 0.4 pos units is roughly 2px, about the smallest drift anyone would notice.
+  var MOVE_WINDOW = 8;  // ticks (0.8s)
+  var MOVE_EPS = 0.4;   // pos units (~2px)
+
+  function recordPositions(st) {
+    if (!st._posLog) st._posLog = [];
+    st._posLog.push(st.children.map(function (c) { return c.pos; }));
+    if (st._posLog.length > MOVE_WINDOW + 1) st._posLog.shift();
+  }
+  function leaderMoving(P, st) {
+    var log = st._posLog;
+    if (!log || log.length < 2) return true; // nothing observed yet
+    var now = log[log.length - 1], then = log[0];
+    var lead = 0;
+    for (var i = 1; i < now.length; i++) if (now[i] > now[lead]) lead = i;
+    return now[lead] - then[lead] > MOVE_EPS;
+  }
+
+  // What a player can actually read off the track: how far along the leader is,
+  // and whether they're easing off. No velocities, no projections.
+  function leaderIndex(now) {
+    var lead = 0;
+    for (var i = 1; i < now.length; i++) if (now[i] > now[lead]) lead = i;
+    return lead;
+  }
+  function leaderPos(st) {
+    var log = st._posLog;
+    if (!log || !log.length) return 0;
+    var now = log[log.length - 1];
+    return now[leaderIndex(now)];
+  }
+  function leaderSlowing(st) {
+    var log = st._posLog;
+    if (!log || log.length < 5) return false;
+    var mid = Math.floor(log.length / 2);
+    var i = leaderIndex(log[log.length - 1]);
+    var early = log[mid][i] - log[0][i];
+    var late = log[log.length - 1][i] - log[mid][i];
+    return late < early * 0.6;
+  }
+
+  function makePolicies(P) {
+    var creepLine = num("p_creepLine");
+    var ambushTicks = num("p_ambushTicks");
+    // ticks left in the phrase, measured at the tempo we would ramp TO
+    var ticksAfterRamp = function (st) {
+      return (100 - st.chantProgress) / tempoFill(P, 100);
+    };
+    var readerPrep = function (st) {
+      var healthy = st.stamina > P.STAMINA_MAX * 0.5;
+      st.reward = healthy ? "high" : "low";
+      applyTempoChange(P, st, healthy ? 55 : 25);
+      st._ramped = false;
+    };
+    return {
+      "always_turn_slow (毎周振向・激遅)": {
+        onPrep: function (st) { st.reward = "low"; applyTempoChange(P, st, 10); },
+        onTick: function (st) { st.turnArmed = true; }
+      },
+      "always_turn_mid (毎周振向・ふつう)": {
+        onPrep: function (st) { st.reward = "low"; applyTempoChange(P, st, 50); },
+        onTick: function (st) { st.turnArmed = true; }
+      },
+      "always_turn_fast (毎周振向・激速)": {
+        onPrep: function (st) { st.reward = "low"; applyTempoChange(P, st, 90); },
+        onTick: function (st) { st.turnArmed = true; }
+      },
+      "never_turn (絶対振り向かない)": {
+        onPrep: function (st) { st.reward = "max"; applyTempoChange(P, st, 50); },
+        onTick: function (st) { st.turnArmed = false; }
+      },
+      "greedy_skip (ほぼ見送る)": {
+        onPrep: function (st) { st.reward = "max"; applyTempoChange(P, st, 20); },
+        onTick: function (st) { st.turnArmed = projectedDanger(P, st, 1); }
+      },
+      "alternate (低振向/激見送りの固定交互)": {
+        onPrep: function (st) {
+          var willTurn = st.cycle % 2 === 1;
+          st.reward = willTurn ? "low" : "max";
+          applyTempoChange(P, st, 45);
+        },
+        onTick: function (st) { st.turnArmed = st.cycle % 2 === 1; }
+      },
+      "front_load (最初3周だけ激見送り→以降ずっと低振向)": {
+        onPrep: function (st) {
+          var early = st.cycle <= 3;
+          st.reward = early ? "max" : "low";
+          applyTempoChange(P, st, 45);
+        },
+        onTick: function (st) { st.turnArmed = st.cycle > 3; }
+      },
+      "turtle (慎重)": {
+        onPrep: function (st) { st.reward = "low"; applyTempoChange(P, st, 15); },
+        onTick: function (st) { st.turnArmed = projectedDanger(P, st, 6); }
+      },
+      "rusher (強気)": {
+        onPrep: function (st) { st.reward = "high"; applyTempoChange(P, st, 85); },
+        onTick: function (st) { st.turnArmed = projectedDanger(P, st, 2); }
+      },
+      "smart (適応)": {
+        onPrep: function (st) {
+          var healthy = st.stamina > P.STAMINA_MAX * 0.5;
+          st.reward = healthy ? "high" : "low";
+          applyTempoChange(P, st, healthy ? 55 : 25);
+        },
+        onTick: function (st) { st.turnArmed = projectedDanger(P, st, 4); }
+      },
+      "smart_line (読み・先頭位置で判断)": {
+        onPrep: function (st) {
+          var healthy = st.stamina > P.STAMINA_MAX * 0.5;
+          st.reward = healthy ? "high" : "low";
+          applyTempoChange(P, st, healthy ? 55 : 25);
+        },
+        onTick: function (st) {
+          st.turnArmed = projectedDanger(P, st, 4) || leaderProjectedPos(P, st) >= creepLine;
+        }
+      },
+      "smart_line_moving (読み・位置＋先頭の動き)": {
+        onPrep: function (st) {
+          var healthy = st.stamina > P.STAMINA_MAX * 0.5;
+          st.reward = healthy ? "high" : "low";
+          applyTempoChange(P, st, healthy ? 55 : 25);
+        },
+        onTick: function (st) {
+          var crossing = projectedDanger(P, st, 4);
+          var creeping = leaderProjectedPos(P, st) >= creepLine;
+          st.turnArmed = crossing || (creeping && leaderMoving(P, st));
+        }
+      },
+      "smart_human (人間の読み・描画位置だけ)": {
+        onPrep: readerPrep,
+        onTick: function (st) {
+          st.turnArmed = leaderPos(st) >= creepLine && leaderMoving(P, st) && !leaderSlowing(st);
+        }
+      },
+      "feint_only (振り向かず加速だけ)": {
+        onPrep: function (st) { st.reward = "max"; applyTempoChange(P, st, 55); st._ramped = false; },
+        onTick: function (st) {
+          st.turnArmed = false;
+          if (!st._ramped && ticksAfterRamp(st) <= ambushTicks) {
+            applyTempoChange(P, st, 100);
+            st._ramped = true;
+          }
+          if (st.chantProgress < 5) st._ramped = false;
+        }
+      },
+      "smart_human_feint (読み＋見送る周に加速)": {
+        onPrep: readerPrep,
+        onTick: function (st) {
+          var wantTurn = leaderPos(st) >= creepLine && leaderMoving(P, st) && !leaderSlowing(st);
+          st.turnArmed = wantTurn;
+          if (!wantTurn && !st._ramped && ticksAfterRamp(st) <= ambushTicks) {
+            applyTempoChange(P, st, 100);
+            st._ramped = true;
+          }
+          if (st.chantProgress < 5) st._ramped = false;
+        }
+      },
+      "smart_human_ambush (読み＋振り向く周に加速)": {
+        onPrep: readerPrep,
+        onTick: function (st) {
+          var wantTurn = leaderPos(st) >= creepLine && leaderMoving(P, st) && !leaderSlowing(st);
+          st.turnArmed = wantTurn;
+          if (wantTurn && !st._ramped && ticksAfterRamp(st) <= ambushTicks) {
+            applyTempoChange(P, st, 100);
+            st._ramped = true;
+          }
+          if (st.chantProgress < 5) st._ramped = false;
+        }
+      },
+      "random (デタラメ)": {
+        onPrep: function (st) {
+          var tiers = ["low", "mid", "high", "max"];
+          st.reward = tiers[Math.floor(Math.random() * tiers.length)];
+          applyTempoChange(P, st, Math.random() * 100);
+        },
+        onTick: function (st) {
+          if (Math.random() < 0.05) applyTempoChange(P, st, Math.random() * 100);
+          st.turnArmed = Math.random() < 0.03 ? !st.turnArmed : st.turnArmed;
+        }
+      }
+    };
+  }
+
+  function simulateGame(P, policy, maxTicks) {
+    var st = newState(P);
+    policy.onPrep(st);
+    var ticks = 0;
+    function snapshot(reason) {
+      return { reason: reason, cycle: st.cycle, catches: st.catches, stamina: st.stamina,
+        turnedCycles: st.turnedCycles, whiffedTurns: st.whiffedTurns,
+        resolvedCycles: st.resolvedCycles, rewardGained: st.rewardGained,
+        turnCostPaid: st.turnCostPaid };
+    }
+    while (ticks < maxTicks) {
+      ticks += 1;
+      var res = Core.tick(P, st);
+      recordPositions(st); // what the player would now see on the track
+      if (res.reached) return snapshot("child_win");
+      if (res.timeUp) return snapshot("daruma_win");
+      if (res.chantDone) {
+        Core.resolveCycle(P, st);
+        st._posLog = null; // everyone's back at the start line
+        policy.onPrep(st);
+      } else {
+        policy.onTick(st);
+      }
+    }
+    return snapshot("timeout");
+  }
+
+  function avg(arr, f) { return arr.length ? arr.reduce(function (a, r) { return a + f(r); }, 0) / arr.length : NaN; }
+  function fmt(v) { return isNaN(v) ? "—" : v.toFixed(1); }
+
+  function runAll() {
+    if (labMode === "random" && !randomPopulation) {
+      el("status-note").textContent = "先に「ランダム集団を生成」を押してください";
+      return;
+    }
+    var P = readParams();
+    var n = Math.max(10, Math.round(num("p_n")));
+    var policies = makePolicies(P);
+    var tbody = el("result-body");
+    tbody.innerHTML = "";
+
+    Object.keys(policies).forEach(function (name) {
+      var results = [];
+      for (var i = 0; i < n; i++) results.push(simulateGame(P, policies[name], 20000));
+      var wins = results.filter(function (r) { return r.reason === "daruma_win"; });
+      var childWins = results.filter(function (r) { return r.reason === "child_win"; });
+      var staminaOuts = results.filter(function (r) { return r.reason === "stamina_out"; });
+      var winPct = 100 * wins.length / n;
+      var turnRate = 100 * avg(results, function (r) { return r.resolvedCycles ? r.turnedCycles / r.resolvedCycles : 0; });
+
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td>" + name + "</td>" +
+        "<td class=\"" + (winPct >= 50 ? "win-hi" : winPct <= 15 ? "win-lo" : "") + "\">" + winPct.toFixed(1) + "%</td>" +
+        "<td>" + (100 * childWins.length / n).toFixed(1) + "%</td>" +
+        "<td>" + (100 * staminaOuts.length / n).toFixed(1) + "%</td>" +
+        "<td>" + avg(results, function (r) { return r.cycle; }).toFixed(2) + "</td>" +
+        "<td>" + avg(results, function (r) { return r.catches; }).toFixed(2) + "</td>" +
+        "<td>" + turnRate.toFixed(1) + "%</td>" +
+        "<td>" + fmt(avg(wins, function (r) { return r.rewardGained; })) + "</td>" +
+        "<td>" + fmt(avg(wins, function (r) { return r.turnCostPaid; })) + "</td>" +
+        "<td>" + fmt(avg(wins, function (r) { return r.stamina; })) + "</td>";
+      tbody.appendChild(tr);
+    });
+
+    el("status-note").textContent = "実行完了(" + n + "戦 × " + Object.keys(policies).length + "方針)";
+  }
+
+  function buildResultsMarkdown() {
+    var table = el("result-table");
+    var headers = Array.prototype.map.call(table.querySelectorAll("thead th"), function (th) {
+      return th.textContent.trim();
+    });
+    var rows = Array.prototype.map.call(table.querySelectorAll("tbody tr"), function (tr) {
+      return Array.prototype.map.call(tr.querySelectorAll("td"), function (td) {
+        return td.textContent.trim();
+      });
+    });
+    if (!rows.length || !rows[0].length) return null;
+
+    var modeLabel = (labMode === "random" ? "ランダム集団" : "固定メンバー") + " / 走者" + activeCount() + "人";
+    var lines = [];
+    lines.push("# だるまさんがころんだ バランスラボ結果");
+    lines.push("モード: " + modeLabel + " / 試行回数: " + el("p_n").value + "回ずつ");
+    lines.push("");
+    lines.push("| " + headers.join(" | ") + " |");
+    lines.push("|" + headers.map(function () { return "---"; }).join("|") + "|");
+    rows.forEach(function (row) {
+      lines.push("| " + row.join(" | ") + " |");
+    });
+    lines.push("");
+    lines.push("## この結果を出した時の設定");
+    if (labMode === "random" && randomPopulation) {
+      lines.push("(ランダム集団 " + randomPopulation.length + "人の個別ステータスは省略。生成レンジは以下)");
+      ["maxSpeed", "accel", "brakeRatio", "boldness", "selfControl", "reaction", "judgmentResilience", "motorControl", "conformity"].forEach(function (t) {
+        lines.push("- " + t + ": " + num("p_range_" + t + "_min") + " 〜 " + num("p_range_" + t + "_max"));
+      });
+      lines.push("");
+    }
+
+    // The parameter values themselves — without these the record can't answer
+    // "what was the tempo curve when you measured this?", which is the whole
+    // point of pasting the results somewhere.
+    var P = readParams();
+    var shown = [
+      ["走者数", P.ACTIVE_CHILDREN],
+      ["スタミナ上限", P.STAMINA_MAX], ["制限時間(tick)", P.GOAL_TICKS],
+      ["ゴール地点", P.GOAL_POS], ["捕獲判定の速度閾値", P.CATCH_VEL_THRESHOLD],
+      ["テンポ: 最遅 進行/消費", P.TEMPO_MIN.fillPerTick + " / " + P.TEMPO_MIN.drainPerTick],
+      ["テンポ: 最速 進行/消費", P.TEMPO_MAX.fillPerTick + " / " + P.TEMPO_MAX.drainPerTick],
+      ["テンポ: 消費カーブ指数", P.TEMPO_DRAIN_CURVE],
+      ["テンポ加速コスト(1%あたり)", P.TEMPO_CHANGE_COST_PER_UNIT],
+      ["粘り幅(大胆〜慎重)", P.FREEZE_LEAD_MIN + " 〜 " + P.FREEZE_LEAD_MAX + " tick"],
+      ["制動距離の読み違い幅", P.STOPPING_MISREAD_SPREAD],
+      ["反応の遅さ(最も鈍い子)", P.REACTION_TICKS_MAX + " tick"],
+      ["反応のブレ", P.REACTION_JITTER],
+      ["突っ込む確率の基準", P.GAMBLE_BASE],
+      ["読み方針の基準線", num("p_creepLine")],
+      ["加速タイミング(残りtick)", num("p_ambushTicks")],
+      ["報酬/コスト 低", P.REWARD.low.reward + " / " + P.REWARD.low.turnCost],
+      ["報酬/コスト 中", P.REWARD.mid.reward + " / " + P.REWARD.mid.turnCost],
+      ["報酬/コスト 高", P.REWARD.high.reward + " / " + P.REWARD.high.turnCost],
+      ["報酬/コスト 激", P.REWARD.max.reward + " / " + P.REWARD.max.turnCost]
+    ];
+    shown.forEach(function (kv) { lines.push("- " + kv[0] + ": " + kv[1]); });
+    lines.push("");
+    lines.push("詠唱テンポは方針ごとに固定(激遅10 / ふつう50 / 激速90 / 交互・台本45 / turtle15 / rusher85 / smart55(不調時25))。");
+    return lines.join("\n");
+  }
+
+  function copyResultsToClipboard() {
+    var md = buildResultsMarkdown();
+    if (!md) {
+      el("status-note").textContent = "コピーする結果がありません。先にシミュレーションを実行してください";
+      return;
+    }
+    var btn = el("copy-results-btn");
+    function showCopied() {
+      var original = btn.textContent;
+      btn.textContent = "✅ コピーしました";
+      setTimeout(function () { btn.textContent = original; }, 1500);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(md).then(showCopied, function () {
+        el("status-note").textContent = "コピーに失敗しました(ブラウザの権限を確認してください)";
+      });
+    } else {
+      var ta = document.createElement("textarea");
+      ta.value = md;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); showCopied(); }
+      catch (e) { el("status-note").textContent = "コピーに失敗しました"; }
+      document.body.removeChild(ta);
+    }
+  }
+
+  // Hand the current parameter set to daruma-game.html. Stored in the browser
+  // rather than written back to daruma-core.js, because a page opened from
+  // file:// cannot edit the source — see adoptBalance() in the core.
+  function describeAdopted() {
+    var o = Core.adoptedOverrides();
+    var status = el("adopt-status");
+    if (!o) {
+      status.textContent = "現在: 出荷値で動作中";
+      return;
+    }
+    var n = Object.keys(o).length;
+    status.textContent = "現在: 採用済みのバランスで動作中 (" + n + "項目を上書き)";
+  }
+
+  // Only store what actually differs from the shipped values, so an adopted
+  // set doesn't silently pin every knob at whatever the fields happened to say
+  // when the button was pressed.
+  function changedFromDefaults(P) {
+    var out = {};
+    var same = function (x, y) { return JSON.stringify(x) === JSON.stringify(y); };
+    Object.keys(P).forEach(function (k) {
+      if (k === "rand") return;
+      // CHILD_DEFS is the lab's own wiring; the cast the game should use is
+      // published as ROSTER below.
+      if (k === "CHILD_DEFS" || k === "ROSTER") return;
+      if (!same(P[k], Core.DEFAULTS[k])) out[k] = P[k];
+    });
+    // Hand over the cast itself, so a generated population is playable and not
+    // just measurable. The game draws ACTIVE_CHILDREN from this pool each round
+    // exactly as it does from its own roster.
+    //
+    // Random mode publishes the whole generated population. Fixed mode only
+    // edits four kids, so it patches those over the authored roster instead of
+    // replacing it — publishing just the four would quietly shrink the game's
+    // cast from ten to four and it would play the same faces every round.
+    var cast;
+    if (labMode === "random" && randomPopulation) {
+      cast = randomPopulation;
+    } else {
+      var edited = readParams().CHILD_DEFS;
+      cast = Core.DEFAULTS.ROSTER.map(function (c, i) {
+        return i < edited.length ? Object.assign({}, c, edited[i]) : c;
+      });
+    }
+    if (!same(cast, Core.DEFAULTS.ROSTER)) out.ROSTER = cast;
+    return out;
+  }
+
+  el("run-btn").addEventListener("click", runAll);
+  el("reset-btn").addEventListener("click", function () { resetDefaults(); });
+  el("mode-fixed-btn").addEventListener("click", function () { setLabMode("fixed"); });
+  el("mode-random-btn").addEventListener("click", function () { setLabMode("random"); });
+  el("gen-pop-btn").addEventListener("click", generateRandomPopulation);
+  // Changing the cast size after generating would otherwise leave a stale
+  // population of the old size, which then gets quietly padded out.
+  el("p_countRandom").addEventListener("input", function () {
+    if (labMode === "random" && randomPopulation) generateRandomPopulation();
+  });
+  el("copy-results-btn").addEventListener("click", copyResultsToClipboard);
+  el("adopt-btn").addEventListener("click", function () {
+    var overrides = changedFromDefaults(readParams());
+    if (!Object.keys(overrides).length) {
+      Core.clearAdoptedBalance();
+      describeAdopted();
+      el("adopt-status").textContent = "出荷値と同じだったので、そのまま出荷値で動作します";
+      return;
+    }
+    if (Core.adoptBalance(overrides)) {
+      describeAdopted();
+      el("adopt-status").textContent += " — daruma-game.html を開き直すと反映されます";
+    } else {
+      el("adopt-status").textContent = "保存できませんでした(ブラウザの保存が無効かもしれません)";
+    }
+  });
+  el("unadopt-btn").addEventListener("click", function () {
+    Core.clearAdoptedBalance();
+    describeAdopted();
+  });
+
+  // Fill every field from the core's shipped values on load. The value="…"
+  // attributes in the markup are only placeholders — without this the lab
+  // opens on whatever numbers were hardcoded there, which is exactly how it
+  // drifted away from the game before.
+  buildChildBlocks(); // must run before resetDefaults — it creates the inputs
+  resetDefaults();
+  describeAdopted();
+})();
+</script>
+</body>
+</html>

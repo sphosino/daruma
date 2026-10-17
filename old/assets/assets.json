@@ -1,0 +1,94 @@
+{
+  "daruma": {
+    "normal": {
+      "left": "daruma/normal-left.png",
+      "right": "daruma/normal-right.png"
+    },
+    "red": {
+      "left": "daruma/red-left.png",
+      "right": "daruma/red-right.png"
+    },
+    "attack": {
+      "left": "daruma/attack-left.png",
+      "right": "daruma/attack-right.png"
+    },
+    "oni": {
+      "left": "daruma/oni-left.png",
+      "right": "daruma/oni-right.png"
+    }
+  },
+  "icons": {
+    "normal": "daruma/icon-normal.png",
+    "red": "daruma/icon-red.png",
+    "attack": "daruma/icon-attack.png",
+    "oni": "daruma/icon-oni.png"
+  },
+  "kids": [
+    {
+      "file": "kids/kid-01.png",
+      "w": 78,
+      "h": 120
+    },
+    {
+      "file": "kids/kid-02.png",
+      "w": 90,
+      "h": 121
+    },
+    {
+      "file": "kids/kid-03.png",
+      "w": 83,
+      "h": 103
+    },
+    {
+      "file": "kids/kid-04.png",
+      "w": 97,
+      "h": 121
+    },
+    {
+      "file": "kids/kid-05.png",
+      "w": 84,
+      "h": 123
+    },
+    {
+      "file": "kids/kid-06.png",
+      "w": 78,
+      "h": 110
+    },
+    {
+      "file": "kids/kid-07.png",
+      "w": 102,
+      "h": 112
+    },
+    {
+      "file": "kids/kid-08.png",
+      "w": 93,
+      "h": 114
+    },
+    {
+      "file": "kids/kid-09.png",
+      "w": 73,
+      "h": 113
+    }
+  ],
+  "crowd": "kids/crowd.png",
+  "runners": {
+    "count": 10,
+    "frames": 8,
+    "frame": {
+      "w": 94,
+      "h": 128
+    },
+    "files": [
+      "runners/run-01.png",
+      "runners/run-02.png",
+      "runners/run-03.png",
+      "runners/run-04.png",
+      "runners/run-05.png",
+      "runners/run-06.png",
+      "runners/run-07.png",
+      "runners/run-08.png",
+      "runners/run-09.png",
+      "runners/run-10.png"
+    ]
+  }
+}

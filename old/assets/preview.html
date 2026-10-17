@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>だるま素材一覧</title>
+<style>
+  :root {
+    --bg: #FBF3E7; --surface: #FFFDF8; --border: #E4D8C6;
+    --ink: #3A2F2C; --ink-soft: #8A7A70; --accent: #B85450;
+  }
+  body.dark {
+    --bg: #221A1C; --surface: #2E2427; --border: #45383B;
+    --ink: #F0E6DC; --ink-soft: #A89890; --accent: #D98A80;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 20px 60px;
+    font-family: system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    background: var(--bg); color: var(--ink);
+    transition: background .2s, color .2s;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--ink-soft); font-size: 13px; margin: 0 0 24px; }
+  h2 {
+    font-size: 14px; margin: 32px 0 12px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--border); letter-spacing: .04em;
+  }
+  .grid { display: flex; flex-wrap: wrap; gap: 12px; }
+  .cell {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px; text-align: center;
+  }
+  .cell img { display: block; margin: 0 auto; image-rendering: auto; }
+  .cell .name {
+    font-size: 10px; color: var(--ink-soft); margin-top: 6px;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .daruma img { width: 140px; }
+  .icon img { width: 64px; }
+  .kid img { height: 110px; width: auto; }
+  .strip {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px; overflow-x: auto;
+  }
+  .strip img { display: block; max-width: 100%; height: auto; }
+
+  .runner-cell .anim {
+    width: 94px; height: 128px;
+    background-repeat: no-repeat; background-size: 800% 100%;
+    animation: run .66s steps(8, jump-none) infinite;
+  }
+  @keyframes run { from { background-position-x: 0%; } to { background-position-x: 100%; } }
+  body.still .runner-cell .anim { animation-play-state: paused; }
+  .anim-toggle { margin-left: 10px; cursor: pointer; }
+  .toggle {
+    position: fixed; top: 16px; right: 16px; z-index: 10;
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+    border-radius: 999px; padding: 8px 16px; font-size: 12px;
+    font-weight: 700; cursor: pointer;
+  }
+  .note {
+    font-size: 12px; color: var(--ink-soft); line-height: 1.7;
+    margin: 8px 0 0; max-width: 62ch;
+  }
+  code {
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 5px;
+  }
+</style>
+</head>
+<body>
+<button class="toggle" id="toggle">背景を反転</button>
+<div class="wrap">
+  <h1>だるま素材一覧</h1>
+  <p class="sub">
+    <code>assets/src/daruma-sheet-src.png</code> から
+    <code>tools/build_assets.py</code> で切り出したもの。全部 PNG / 背景透過。
+  </p>
+
+  <h2>だるま(4タイプ × 左右)</h2>
+  <div class="grid" id="daruma"></div>
+  <p class="note">
+    8枚とも 224×208 の同じキャンバスに、左右中央・下揃えで置いてある。
+    タイプや向きを差し替えても絵が跳ねない。
+  </p>
+
+  <h2>タイプ選択用アイコン(128px)</h2>
+  <div class="grid" id="icons"></div>
+
+  <h2>走る子供(8コマ / ゲームで使っているのはこちら)</h2>
+  <div class="grid" id="runners"></div>
+  <p class="note">
+    1人8コマ。横一列に並べてあるので <code>background-size: 800% 100%</code> と
+    <code>steps(8, jump-none)</code> でそのまま送れる。
+    <label class="anim-toggle"><input type="checkbox" id="anim" checked> 動かす</label>
+  </p>
+
+  <h2>群れから抜いた子供(静止)</h2>
+  <div class="grid" id="kids"></div>
+  <p class="note">
+    上の走る子とは別の元絵。30人以上が重なった群れなので、輪郭が他人と混ざらずに
+    抜けたのはこの9人だけ。今はゲームでは使っていない。
+  </p>
+
+  <h2>群れ(1枚もの)</h2>
+  <div class="strip"><img id="crowd" alt="crowd"></div>
+  <p class="note">タイトルや背景に敷く用。個体に割らずまとめて抜いてある。</p>
+</div>
+
+<script>
+// assets.json を fetch しないのは、このページも file:// で開けるようにするため。
+// 中身は tools/build_assets.py が出すものと同じで、増えたらここも足す。
+var TYPES = ['normal', 'red', 'attack', 'oni'];
+var KID_COUNT = 9;
+var RUNNER_COUNT = 10;
+
+var rn = document.getElementById('runners');
+for (var r = 1; r <= RUNNER_COUNT; r++) {
+  var file = 'runners/run-' + String(r).padStart(2, '0') + '.png';
+  rn.insertAdjacentHTML('beforeend',
+    '<div class="cell runner-cell"><div class="anim" style="background-image:url(' + file +
+    ')"></div><div class="name">' + file.split('/').pop() + '</div></div>');
+}
+document.getElementById('anim').addEventListener('change', function (e) {
+  document.body.classList.toggle('still', !e.target.checked);
+});
+
+var d = document.getElementById('daruma');
+TYPES.forEach(function (type) {
+  ['left', 'right'].forEach(function (side) {
+    d.insertAdjacentHTML('beforeend', cell('daruma', 'daruma/' + type + '-' + side + '.png'));
+  });
+});
+var ic = document.getElementById('icons');
+TYPES.forEach(function (type) {
+  ic.insertAdjacentHTML('beforeend', cell('icon', 'daruma/icon-' + type + '.png'));
+});
+var k = document.getElementById('kids');
+for (var i = 1; i <= KID_COUNT; i++) {
+  k.insertAdjacentHTML('beforeend', cell('kid', 'kids/kid-' + String(i).padStart(2, '0') + '.png'));
+}
+document.getElementById('crowd').src = 'kids/crowd.png';
+
+function cell(kind, src) {
+  var name = src.split('/').pop();
+  return '<div class="cell ' + kind + '"><img src="' + src + '" alt="' + name +
+         '"><div class="name">' + name + '</div></div>';
+}
+
+document.getElementById('toggle').addEventListener('click', function () {
+  document.body.classList.toggle('dark');
+});
+</script>
+</body>
+</html>
