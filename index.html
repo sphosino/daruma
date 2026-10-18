@@ -303,7 +303,7 @@ try{new ResizeObserver(resize).observe(cv)}catch(e){}
 function draw(now){
   const ground=css('--ground'),ink=css('--ink'),red=css('--red'),card=css('--card'),muted=css('--muted'),accent=css('--accent');
   cx.clearRect(0,0,W,H);
-  const gy=H*0.78,left=W*0.06,right=W*0.84,X=x=>left+(right-left)*(x-2)/(P.GOAL_POS-2);
+  const gy=H*0.68,left=W*0.06,right=W*0.84,X=x=>left+(right-left)*(x-2)/(P.GOAL_POS-2);
   cx.fillStyle=ground;cx.fillRect(0,gy,W,H-gy);
   // スタートの線
   cx.strokeStyle=muted;cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(X(2),gy-6);cx.lineTo(X(2),H);cx.stroke();cx.setLineDash([]);
