@@ -66,7 +66,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .choices{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 .go{font:inherit;font-family:var(--pop);font-size:1.15rem;border:0;border-radius:14px;background:var(--accent);color:var(--card);padding:12px 26px;cursor:pointer}
 /* 調整（デバッグ） */
-.tune{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;max-height:45vh;overflow:auto}
+/* 画面の上にかぶせて広く出す。開いている間はゲームは中断 */
+.tuneWrap{position:fixed;inset:0;z-index:10;background:color-mix(in srgb,var(--ink) 35%,transparent);display:flex;justify-content:center;align-items:flex-start;padding:10px 12px}
+.tune{width:100%;max-width:720px;max-height:calc(100dvh - 20px);background:var(--card);border:2px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;overflow:auto;user-select:text}
+.tuneHead{display:flex;align-items:center;gap:8px}.tuneHead h2{font-family:var(--pop);font-weight:400;font-size:1.05rem;margin:0;flex:1}
 .tuneTop{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .tuneRows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px}
 @media (max-width:480px){.tuneRows{grid-template-columns:minmax(0,1fr)}}
@@ -84,7 +87,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <button type="button" class="pill" id="pauseBtn" hidden>⏸ 中断</button>
     <button type="button" class="pill" id="tuneBtn" aria-expanded="false">⚙ 調整</button>
   </header>
-  <section class="tune" id="tune" hidden aria-label="調整">
+  <div class="tuneWrap" id="tune" hidden><section class="tune" role="dialog" aria-label="調整">
+    <div class="tuneHead"><h2>⚙ 調整</h2><button type="button" class="pill" id="tuneClose">閉じて続ける</button></div>
     <div class="tuneTop">
       <button type="button" class="pill" id="pause2">⏸ 中断</button>
       <button type="button" class="pill" id="quitBtn">やめる</button>
@@ -94,7 +98,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <div class="tuneRows" id="tuneRows"></div>
     <p class="note">変えた数字はこのブラウザに覚えます。★は次のゲームから効きます。それ以外はすぐ効きます。</p>
     <div class="log" id="log"></div>
-  </section>
+  </section></div>
   <div class="chant" id="chant"></div>
   <div class="stage">
     <canvas id="cv"></canvas>
@@ -264,7 +268,7 @@ function end(kid){phase='over';timers=[];paused=false;renderCtl();renderChant();
     p=kid?`だるまの時計は、のこり${left}秒だった。`:`あなたはあと${Math.max(0,P.GOAL_POS-me.pos).toFixed(0)}だった。`}
   if(kid)beep(880,0.15);
   $('overH').textContent=h;$('overP').textContent=p;$('startBtn').textContent='もう一回';$('over').hidden=false;renderSetup()}
-function quit(){phase='setup';timers=[];paused=false;st=null;me=null;note('');$('pauseBtn').hidden=true;renderPause();
+function quit(){$('tune').hidden=true;tunePaused=false;phase='setup';timers=[];paused=false;st=null;me=null;note('');$('pauseBtn').hidden=true;renderPause();
   $('ctlDaruma').hidden=true;$('pad').hidden=true;
   $('overH').textContent='だるまさんがころんだ';$('overP').textContent=HOW[role];$('startBtn').textContent='はじめる';$('over').hidden=false;renderSetup();renderChant()}
 function togglePause(){if(!st||phase==='over'||phase==='setup')return;paused=!paused;renderPause();note(pausedNote);renderCtl()}
@@ -272,7 +276,7 @@ function renderPause(){const t=paused?'▶ 再開':'⏸ 中断';$('pauseBtn').te
 
 // ---------- 入力 ----------
 $('startBtn').onclick=start;
-$('pauseBtn').onclick=togglePause;$('pause2').onclick=togglePause;$('quitBtn').onclick=quit;
+$('pauseBtn').onclick=togglePause;$('pause2').onclick=()=>{tunePaused=false;togglePause()};$('quitBtn').onclick=quit;
 // だるま役：強気度は、ひと休み中はすぐ変わり、言っている間は予約（次の「だ」かひと休みで変わる）。ボタンは描き直すので押した瞬間に拾う
 $('lvRow').addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||!st||role!=='daruma'||phase==='over'||phase==='setup'||paused)return;
   const r=b.dataset.r;if(phase==='prep')st.reward=r;else st.nextReward=(r===st.reward||r===st.nextReward)?null:r;renderCtl()});
@@ -292,7 +296,15 @@ function renderTune(){
   $('tuneRows').innerHTML=TUNE_INFO.map(([k,n,lo,hi,s,u])=>`<label for="t_${k}"><span>${n}<b id="tv_${k}">${T[k]}${u}</b></span><input type="range" id="t_${k}" min="${lo}" max="${hi}" step="${s}" value="${T[k]}"></label>`).join('');
   TUNE_INFO.forEach(([k,,,,,u])=>{const el=$('t_'+k);el.oninput=()=>{T[k]=+el.value;$('tv_'+k).textContent=T[k]+u;store.set('dk-tune3',T);applyTune()}});
 }
-$('tuneBtn').onclick=()=>{const t=$('tune');t.hidden=!t.hidden;$('tuneBtn').setAttribute('aria-expanded',!t.hidden);resize()};
+// 開くと自動で中断、閉じると（自分で中断していなければ）続きから
+let tunePaused=false;
+function openTune(){$('tune').hidden=false;$('tuneBtn').setAttribute('aria-expanded','true');
+  if(st&&!paused&&phase!=='over'&&phase!=='setup'){tunePaused=true;togglePause()}}
+function closeTune(){$('tune').hidden=true;$('tuneBtn').setAttribute('aria-expanded','false');if(tunePaused&&paused)togglePause();tunePaused=false}
+$('tuneBtn').onclick=()=>$('tune').hidden?openTune():closeTune();
+$('tuneClose').onclick=closeTune;
+$('tune').addEventListener('click',e=>{if(e.target===$('tune'))closeTune()});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('tune').hidden)closeTune()});
 $('tuneReset').onclick=()=>{T={...TUNE_DEF};store.set('dk-tune3',T);applyTune();renderTune()};
 $('showMind').checked=store.get('dk-mind',false);$('showMind').onchange=()=>store.set('dk-mind',$('showMind').checked);
 
