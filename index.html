@@ -53,18 +53,37 @@ canvas{display:block;width:100%;height:100%}
 .over p{margin:0;font-size:.9rem;color:var(--muted);max-width:30em}
 .go{font:inherit;font-family:var(--pop);font-size:1.15rem;border:0;border-radius:14px;background:var(--accent);color:var(--card);padding:12px 26px;cursor:pointer}
 @media (prefers-reduced-motion:reduce){.chant span{transition:none}}
+/* 調整の画面 */
+.tuneBtn{font:inherit;font-weight:700;font-size:.85rem;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
+.tuneBtn[aria-expanded="true"]{background:var(--on);border-color:var(--accent)}
+.tune{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.tuneRows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px}
+@media (max-width:480px){.tuneRows{grid-template-columns:minmax(0,1fr)}}
+.tuneRows label{display:flex;flex-direction:column;gap:2px;font-size:.78rem;font-weight:700;color:var(--muted)}
+.tuneRows label span{display:flex;justify-content:space-between}.tuneRows label b{color:var(--ink);font-variant-numeric:tabular-nums}
+.tuneRows input{width:100%;accent-color:var(--accent)}
+.tuneFoot{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.tuneReset{font:inherit;font-size:.8rem;font-weight:700;border:2px solid var(--line);background:var(--card);color:var(--muted);border-radius:10px;padding:4px 10px;cursor:pointer}
 </style>
 </head>
 <body>
 <div class="app">
   <header>
     <h1>だるまさん 子ども役の試作 <a href="daruma.html" style="font-family:var(--ui);font-size:.8rem;color:var(--accent);margin-left:8px">だるま役で遊ぶ →</a></h1>
-    <div class="modes" role="group" aria-label="操作のしかた">
-      <button type="button" id="mA" data-m="A">A 押す</button>
-      <button type="button" id="mB" data-m="B">B 連打</button>
-      <button type="button" id="mC" data-m="C">C 引く</button>
-    </div>
+    <button type="button" class="tuneBtn" id="tuneBtn" aria-expanded="false">⚙ 調整</button>
   </header>
+  <section class="tune" id="tune" hidden aria-label="手ざわりの調整">
+    <div class="tuneRows" id="tuneRows"></div>
+    <div class="tuneFoot">
+      <div class="modes" role="group" aria-label="操作のしかた">
+        <button type="button" id="mA" data-m="A">A 押す</button>
+        <button type="button" id="mB" data-m="B">B 連打</button>
+        <button type="button" id="mC" data-m="C">C 引く</button>
+      </div>
+      <button type="button" class="tuneReset" id="tuneReset">最初の値に戻す</button>
+    </div>
+    <p class="how">変えた数字は、このブラウザに覚えておきます。対局中に変えても、すぐ効きます。</p>
+  </section>
   <p class="how" id="how"></p>
   <div class="chant" id="chant" aria-live="off"></div>
   <div class="stage" id="stage">
@@ -88,14 +107,20 @@ const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim
 
 // ---------- 決まりごと（ここを変えて手ざわりを調整する） ----------
 const L=100, TOUCH=96;                 // 道の長さ。だるまの手前 TOUCH まで来たらタッチ
-const GRACE=0.15;                      // 振り向いてからこの秒数だけは、動いていても見のがす（反応の分）
-const KNOCK=35;                        // 捕まったら、この分だけ下がる（スタートより後ろには行かない）
-const A={vmax:10,acc:30,dec:40};       // A：押すと加速、離すと減速（単位/秒）
+// 手ざわりの数字は「⚙ 調整」で変えられる（TUNE_DEF が最初の値。変えた値はこのブラウザに覚える）
+//   止まるまでの時間：アウトかどうかは「振り向いた瞬間に動いているか」。全速で走るほど止まるのに時間がかかる
+const TUNE_DEF={vmax:10,accT:0.33,stopT:0.5,grace:0.15,knock:35,breakMin:1.0,breakMax:3.5,cue:0.8};
+const TUNE_INFO=[['vmax','走る速さ（最高速）',4,20,0.5,''],['accT','全速になるまで',0.05,1,0.05,'秒'],['stopT','全速から止まるまで',0.05,1.5,0.05,'秒'],
+  ['grace','振り向いた直後の見のがし',0,0.4,0.01,'秒'],['knock','捕まったら下がる',0,100,5,''],['breakMin','ひと休み（いちばん短い）',0,5,0.1,'秒'],
+  ['breakMax','ひと休み（いちばん長い）',0,8,0.1,'秒'],['cue','「すぅ…」の合図',0,2,0.1,'秒前']];
+let T={...TUNE_DEF,...store.get('dk-tune',{})};
+let GRACE=0.15,KNOCK=35;               // 振り向いた直後の見のがし（反応の分）・捕まったら下がる量
+const A={vmax:10,acc:30,dec:20};       // A：押すと加速、離すと減速（単位/秒）。applyTune が T から作る
 const B={dur:0.22,dist:1.8};           // B：1回押すと1歩（0.22秒で1.8進む）
 const C={vmax:11,px:110,dec:90};      // C：右へ px ピクセル引くと全速。離すとすぐ止まる
 const SYL=['だ','る','ま','さ','ん','が','こ','ろ','ん','だ'];
 
-const HOW={A:'<b>押している間だけ走る</b>。離すと少しすべって止まります（点線が止まる位置）。',
+const HOW={A:'<b>押している間だけ走る</b>。離すと少しすべって止まります。全速で走っているほど、止まるのに時間がかかります。',
   B:'<b>1回押すと1歩</b>。速く連打するほど速い。足が浮いている間（1歩の途中）に見られるとアウト。',
   C:'<b>パッドを押したまま右へ引く</b>ほど速い。指を離すとすぐ止まります。'};
 const PAD={A:['押して走る','押しっぱなしで走る・離して止まる'],B:['連打で歩く','トン・トン・トン'],C:['右へ引いて走る','引くほど速い・離して止まる']};
@@ -121,7 +146,9 @@ function pickLv(){
 }
 // 振り向いたあとのひと休み。この間は子どもも動けない。次の強気度はここで見える
 //   長さはだるまが決める（CPU は BREAK_MIN〜BREAK_MAX 秒でばらばら）。言い始める CUE 秒前に「すぅ…」と合図が出る
-const BREAK_MIN=1.0,BREAK_MAX=3.5,CUE=0.8;
+let BREAK_MIN=1.0,BREAK_MAX=3.5,CUE=0.8;
+function applyTune(){A.vmax=T.vmax;A.acc=T.vmax/T.accT;A.dec=T.vmax/T.stopT;GRACE=T.grace;KNOCK=T.knock;BREAK_MIN=T.breakMin;BREAK_MAX=Math.max(T.breakMin,T.breakMax);CUE=Math.min(T.cue,BREAK_MIN+0.35)}
+applyTune();
 function newChant(now,keepLv){
   // 言い方を毎回変える：ふつう・ゆっくり・はやい・ためてからはやく・途中で止まる
   const pats=['ふつう','ゆっくり','はやい','ためて一気','途中でためる'];
@@ -265,9 +292,7 @@ function draw(){
     cx.fillStyle=k.color;cx.beginPath();cx.ellipse(x,y-s*1.5,s*0.55,s*0.75,0,0,7);cx.fill();
     cx.fillStyle=card;cx.beginPath();cx.arc(x,y-s*2.55,s*0.48,0,7);cx.fill();cx.strokeStyle=k.color;cx.lineWidth=s*0.12;cx.stroke();
     cx.globalAlpha=1;
-    if(k.isMe){cx.fillStyle=ink;cx.font=`700 ${Math.max(11,s*0.6)}px ${css('--ui')}`;cx.textAlign='center';cx.fillText('あなた',x,y-s*3.3);
-      // A：止まる位置の目安
-      if(mode==='A'&&k.v>0.5){const stop=k.x+k.v*k.v/(2*A.dec);cx.strokeStyle=k.color;cx.setLineDash([3,4]);cx.lineWidth=2;cx.beginPath();cx.moveTo(X(stop),y);cx.lineTo(X(stop),y-s*3);cx.stroke();cx.setLineDash([])}}
+    if(k.isMe){cx.fillStyle=ink;cx.font=`700 ${Math.max(11,s*0.6)}px ${css('--ui')}`;cx.textAlign='center';cx.fillText('あなた',x,y-s*3.3)}
     else{cx.fillStyle=muted;cx.font=`700 ${Math.max(10,s*0.5)}px ${css('--ui')}`;cx.textAlign='center';cx.fillText(k.name,x,y-s*3.3)}
   }
 }
@@ -295,6 +320,13 @@ $('go').addEventListener('click',start);
 
 let last=performance.now();
 function frame(now){const dt=Math.min(0.05,(now-last)/1000);last=now;if(running)update(dt);if(kids.length)draw();requestAnimationFrame(frame)}
+function renderTune(){
+  $('tuneRows').innerHTML=TUNE_INFO.map(([k,n,lo,hi,st,u])=>`<label for="t_${k}"><span>${n}<b id="tv_${k}">${T[k]}${u}</b></span><input type="range" id="t_${k}" min="${lo}" max="${hi}" step="${st}" value="${T[k]}"></label>`).join('');
+  TUNE_INFO.forEach(([k,,,,,u])=>{const el=$('t_'+k);el.oninput=()=>{T[k]=+el.value;$('tv_'+k).textContent=T[k]+u;applyTune();store.set('dk-tune',T)}});
+}
+$('tuneBtn').onclick=()=>{const t=$('tune');t.hidden=!t.hidden;$('tuneBtn').setAttribute('aria-expanded',!t.hidden)};
+$('tuneReset').onclick=()=>{T={...TUNE_DEF};store.set('dk-tune',T);applyTune();renderTune()};
+renderTune();
 resize();setMode(mode);drawChant();
 kids=[kid('あなた',css('--accent'),true,2),kid('せっかち','#4f8fd8',false,1),kid('まじめ','#3aa65a',false,0)];me=kids[0];
 requestAnimationFrame(frame);
