@@ -31,7 +31,7 @@ header{display:flex;align-items:center;gap:8px}
 h1{font-family:var(--pop);font-size:1.05rem;margin:0;font-weight:400;flex:1 1 auto;min-width:0}
 .chant{font-family:var(--pop);font-size:clamp(1.3rem,6vw,2rem);text-align:center;letter-spacing:.06em;min-height:1.4em;white-space:nowrap}
 .chant span{color:var(--line)}.chant span.said{color:var(--ink)}.chant.look{color:var(--red)}
-.stage{position:relative;flex:0 0 auto;height:clamp(170px,58vw,320px);border-radius:16px;overflow:hidden;background:var(--sky);border:2px solid var(--line)}
+.stage{position:relative;flex:0 0 auto;height:clamp(160px,52vw,300px);border-radius:16px;overflow:hidden;background:var(--sky);border:2px solid var(--line)}
 canvas{display:block;width:100%;height:100%}
 .msg{position:absolute;left:50%;top:10%;transform:translateX(-50%);width:94%;text-align:center;font-family:var(--pop);font-size:clamp(1.3rem,6.5vw,2.2rem);line-height:1.2;color:var(--red);text-shadow:0 2px 0 var(--card);pointer-events:none}
 .msg small{display:block;font-size:.55em;color:var(--ink)}
@@ -374,7 +374,7 @@ try{new ResizeObserver(resize).observe(cv)}catch(e){}
 function draw(now){
   const ground=css('--ground'),ink=css('--ink'),red=css('--red'),card=css('--card'),muted=css('--muted'),accent=css('--accent');
   cx.clearRect(0,0,W,H);
-  const gy=H*0.68,left=W*0.06,right=W*0.84,X=x=>left+(right-left)*(x-2)/(P.GOAL_POS-2);
+  const gy=H*0.56,left=W*0.06,right=W*0.84,X=x=>left+(right-left)*(x-2)/(P.GOAL_POS-2);
   cx.fillStyle=ground;cx.fillRect(0,gy,W,H-gy);
   // スタートの線
   cx.strokeStyle=muted;cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(X(2),gy-6);cx.lineTo(X(2),H);cx.stroke();cx.setLineDash([]);
