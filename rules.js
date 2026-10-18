@@ -17,7 +17,7 @@
 
   // 止まり方：元の止まりやすさの順番（maxSpeed/brake が大きいほど止まりにくい）はそのままに、
   // 全速から止まるまでを 4〜7 tick（0.4〜0.7 秒）に広げる。人は 5 tick（0.5 秒）
-  var STOP_TICKS_MIN = 4, STOP_TICKS_MAX = 7;
+  var STOP_TICKS_MIN = 8, STOP_TICKS_MAX = 14;   // 0.8〜1.4 秒（子どもは全力で走るので、全力疾走から止まるくらい。前は 0.4〜0.7 秒）
   function humanStop(d, lo, hi, accT) {
     lo = lo != null ? lo : STOP_TICKS_MIN; hi = hi != null ? hi : STOP_TICKS_MAX;
     var o = d.maxSpeed / d.brake;
@@ -27,7 +27,7 @@
     var at = (accT != null ? accT : ACC_T) * (1 + (a0 - 3.75) / 0.5 * 0.15);
     return Object.assign({}, d, { brake: d.maxSpeed / t, accT: Math.max(1, at * 10) });
   }
-  var ACC_T = 1.5;   // 全速まで 1.5 秒（2026-10-18。けんじさん「止まるより全速が短いなんてありえん」。前は 0.33 秒）
+  var ACC_T = 2.0;   // 全速まで 2 秒（2026-10-18。けんじさん「止まるより全速が短いなんてありえん」。0.33 秒 → 1.5 秒 → 2 秒）
 
   // 人の子ども。速さは元の子どもの真ん中くらい。全速まで 0.33 秒、止まるまで 0.5 秒
   var ME_SPEED = 0.30;
@@ -54,7 +54,7 @@
     if (opt.withMe) defs.splice(lane, 0, ME);
     var st = Core.newRunState(P, defs, opt.type);
     st.children.forEach(function (c) {
-      if (c.id === "me") { c.human = true; c.input = false; setMe(c, opt.accT != null ? opt.accT : ACC_T, opt.stopT != null ? opt.stopT : 0.5); }
+      if (c.id === "me") { c.human = true; c.input = false; setMe(c, opt.accT != null ? opt.accT : ACC_T, opt.stopT != null ? opt.stopT : 1.0); }
     });
     st.turnArmed = true;
     st.reward = "mid";
@@ -123,14 +123,14 @@
   function said(st) { return Math.min(10, Math.floor(st.chantProgress / 10)); }
 
   // ---------- CPU のだるま ----------
-  // 見るのは描かれた位置だけ（速さの数字は見ない）。先頭が CREEP より奥に来ていて、
-  // まだ動いていて、ゆるめていなければ振り向く。気力が多いときは強気度を高めにして見送りで稼ぐ
+  // 人のだるまにも見えることだけで決める（2026-10-18）：いちばん近い子がどこまで来ているか、走っている子がいるか
+  // （足が動いているかで見える。見てから 0.3 秒遅れて気づく）、自分の気力。「ブレーキを踏み始めたか」は 4 人を
+  // 相手に人には見分けられないので使わない（前はそれで見送って「なんでそんな動きに？」になった）。
+  // 毎回の気まぐれ（その回の「振り向く気になる線」）を入れる。st.cpuThought に考えを書く（画面で見られる）
   function cpuDaruma(rand) {
     rand = rand || Math.random;
-    var CREEP = 65, WIN = 8, EPS = 0.4;
-    var log = [];
-    var ramp = false, willRamp = false;
-    function lead(now) { var k = 0; for (var i = 1; i < now.length; i++) if (now[i] > now[k]) k = i; return k; }
+    var SEE_LAG = 3;
+    var seen = [], ramp = false, willRamp = false, line = 0.5;
     function pickReward(st) {
       var q = st.stamina / st.staminaMax;
       var w = q < 0.3 ? [1, 2, 4, 3] : q > 0.7 ? [3, 3, 3, 1] : [2, 3, 3, 2];
@@ -142,28 +142,32 @@
       // テンポは毎回少し変える。気力が少ないときはゆっくり
       var healthy = st.stamina > st.staminaMax * 0.5;
       st.tempoValue = healthy ? 40 + rand() * 30 : 20 + rand() * 20;
-      ramp = false; willRamp = rand() < 0.25;   // たまに、終わりぎわに速める
+      ramp = false; willRamp = rand() < 0.25;   // たまに、振り向く回の終わりぎわに速める
+      line = 0.35 + rand() * 0.4;               // その回の気まぐれ：この線を超えたら振り向く
     }
     return {
       // ひと休みのあと、言い始める前
-      onPrep: function (st) { st.reward = pickReward(st); log = []; newPhrase(st); },
+      onPrep: function (st) { st.reward = pickReward(st); seen = []; newPhrase(st); },
       // 見送りの「だ」で強気度を変える（予約していたもの）
       onCarry: function (st) { st.reward = pickReward(st); newPhrase(st); },
       // 言っている間、毎 tick
       onTick: function (st) {
-        log.push(st.children.map(function (c) { return c.pos; }));
-        if (log.length > WIN + 1) log.shift();
-        var now = log[log.length - 1], then = log[0], i = lead(now);
-        var moving = log.length < 2 || now[i] - then[i] > EPS;
-        var slowing = false;
-        if (log.length >= 5) {
-          var mid = Math.floor(log.length / 2);
-          slowing = (now[i] - log[mid][i]) < (log[mid][i] - then[i]) * 0.6;
-        }
-        var want = now[i] >= CREEP && moving && !slowing;
-        st.turnArmed = want;
+        seen.push({
+          lead: Math.max.apply(null, st.children.map(function (c) { return c.pos; })),
+          run: st.children.filter(function (c) { return c.vel > P.CATCH_VEL_THRESHOLD; }).length / st.children.length
+        });
+        if (seen.length > SEE_LAG + 1) seen.shift();
+        var v = seen[0];                                         // 0.3 秒前に見えたもの
+        var near = Math.max(0, Math.min(1, (v.lead - 30) / 60)); // 30 で 0、90 で 1
+        var qi = st.stamina / st.staminaMax;
+        var want = 0.55 * near + 0.25 * qi + 0.3 * v.run;
+        var afford = st.stamina >= Core.turnCostOf(P, st);
+        st.turnArmed = afford && want > line;
+        st.cpuThought = !afford ? "気力が足りない…" :
+          st.turnArmed ? (near > 0.6 ? "近い！振り向く" : v.run > 0.5 ? "走ってるな…振り向く" : "振り向く") :
+          (near < 0.3 ? "まだ遠い…見送る" : v.run < 0.25 ? "みんな止まってる…見送る" : "見送る");
         var left = (100 - st.chantProgress) / Core.tempoFill(P, 100);
-        if (want && willRamp && !ramp && left <= 6) { Core.applyTempoChange(P, st, 100); ramp = true; }
+        if (st.turnArmed && willRamp && !ramp && left <= 6) { Core.applyTempoChange(P, st, 100); ramp = true; }
       }
     };
   }

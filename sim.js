@@ -40,11 +40,11 @@ function reader(opt) {
       if (ramped || st.tempoValue > (healthy ? 55 : 25)) Core.applyTempoChange(P, st, healthy ? 55 : 25); ramped = false; },
     onTick(st) {
       log.push(st.children.map(c => c.pos)); if (log.length > WIN + 1) log.shift();
-      const now = log[log.length - 1], then = log[0], i = lead(now);
-      const moving = log.length < 2 || now[i] - then[i] > EPS;
-      let slowing = false;
-      if (log.length >= 5) { const m = Math.floor(log.length / 2); slowing = (now[i] - log[m][i]) < (log[m][i] - then[i]) * 0.6; }
-      const want = now[i] >= CREEP && moving && !slowing;
+      // 見るのは、先頭の子の位置と、走っている子がいるか（足が動いているかで見える）だけ。
+      // 「ブレーキを踏み始めたか」は人には見分けられないので使わない（2026-10-18）
+      const now = log[log.length - 1], i = lead(now);
+      const running = st.children.some(c => c.vel > P.CATCH_VEL_THRESHOLD);
+      const want = now[i] >= CREEP && running;
       wants.push(want);
       st.turnArmed = wants.length > REACT ? wants[wants.length - 1 - REACT] : st.turnArmed;
       const left = (100 - st.chantProgress) / Core.tempoFill(P, 100);
@@ -86,7 +86,10 @@ function humanKid(style) {
     last = st.chantProgress;
     if (st.stamina < Core.turnCostOf(P, st)) return true;
     const ticksLeft = (100 - st.chantProgress) / pf;
-    return ticksLeft > 5 + 2 + margin;
+    // 止まるのにかかる時間は、いまの速さから（体で覚えている）
+    const me = st.children.find(c => c.human);
+    const stopTicks = Math.max(0, (me.vel - P.CATCH_VEL_THRESHOLD) / me.brake);
+    return ticksLeft > stopTicks + 2 + margin;
   };
 }
 
