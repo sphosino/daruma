@@ -55,11 +55,17 @@ const GOAL_TICKS = P.GOAL_TICKS;
 // are NOT a neutral sample: they brake 15% worse and are 11% bolder than the
 // roster average, both of which make them easier to catch. Measure against
 // random before trusting a number as "how the game plays".
+// HUMAN_STOP=1 -> 子どもの止まり方を人に合わせる（2026-10-18）。全速から止まるまで
+// 0.4〜0.7秒（元は0.1〜0.3秒）。もとの止まりやすさの順番はそのまま。
+const HUMAN_STOP = process.env.HUMAN_STOP === "1";
+const stopTicksOf = d => { const o = d.maxSpeed / d.brake; return 4 + (o - 0.83) / (3.1 - 0.83) * 3; };
 const scaled = d => Object.assign({}, d, {
   maxSpeed: d.maxSpeed * SPEED_SCALE,
   accel: d.accel * SPEED_SCALE,
-  brake: d.brake * SPEED_SCALE
+  brake: (HUMAN_STOP ? d.maxSpeed / stopTicksOf(d) : d.brake) * SPEED_SCALE
 });
+// SKIP_CARRY=1 -> 見送ったら、最後の「だ」が次の「だ」を兼ねる（次のフレーズが1音ぶん短い）
+const SKIP_CARRY = process.env.SKIP_CARRY === "1";
 // KIDS=n puts n runners on the track at once. The game itself is always 4
 // (four lanes, pickActiveChildren(P, 4)); this exists to show how steep that
 // lever is, not because other counts are the game.
@@ -455,8 +461,10 @@ function simulateGame(policy, maxTicks = 20000) {
     if (res.reached) return snapshot("child_win");
     if (res.timeUp) return snapshot("daruma_win");
     if (res.chantDone) {
-      Core.resolveCycle(P, st);
-      st._posLog = null; // everyone's back at the start line
+      const out = Core.resolveCycle(P, st);
+      if (SKIP_CARRY && !out.turned && !out.underpowered) {
+        st.chantProgress = 10; // 見ていた位置はそのまま続く
+      } else st._posLog = null; // everyone's back at the start line
       policy.onPrep(st);
     } else {
       policy.onTick(st);
@@ -492,7 +500,7 @@ function runBatch(name, policy, n) {
 }
 
 const N = process.env.N ? parseInt(process.env.N, 10) : 1500;
-console.log(`SPEED_SCALE = ${SPEED_SCALE}   CREEP_LINE = ${CREEP_LINE}`);
+console.log(`SPEED_SCALE = ${SPEED_SCALE}   CREEP_LINE = ${CREEP_LINE}   HUMAN_STOP = ${HUMAN_STOP}   SKIP_CARRY = ${SKIP_CARRY}`);
 runBatch("always_turn_slow (毎周振り向く・激遅テンポ・報酬低)", policies.always_turn_slow, N);
 runBatch("always_turn_mid (毎周振り向く・ふつうテンポ・報酬低)", policies.always_turn_mid, N);
 runBatch("always_turn_fast (毎周振り向く・激速テンポ・報酬低)", policies.always_turn_fast, N);
