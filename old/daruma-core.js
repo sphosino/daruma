@@ -755,9 +755,21 @@
         // だるまがこっちを見ている。CPU の子はみんな止まろうとする
         c.vel = Math.max(0, c.vel - c.brake);
       } else if (c.human) {
-        // 人が走らせている子（2026-10-18）。押している間は accel で加速、離すと brake で
-        // 減速するだけ。考えるのは人なので、下の AI はまるごと飛ばす。体力も使わない。
-        c.vel = c.input ? Math.min(c.maxSpeed, c.vel + accelStep(c, c.maxSpeed)) : Math.max(0, c.vel - c.brake);
+        // 人が走らせている子（2026-10-18）。押している間は加速、離すとブレーキ。考えるのは人なので、
+        // 下の AI は飛ばす。体（体力・疲れ）は CPU の子とまったく同じ：走ると減り、速さを変えるだけでも減り、
+        // 0 になると「ぜぇ」で遅くなる。疲れているほどブレーキも効きにくい
+        var hTop = c.winded ? c.maxSpeed * P.WINDED_SPEED_MULT : c.maxSpeed;
+        var hFat = (1 - c.energy / c.energyMax) * (1 - c.motorControl) * P.MOTOR_DEGRADE_SCALE;
+        var hBrake = c.brake * clamp(1 - hFat, 0.2, 1);
+        if (c.input) c.vel = c.vel > hTop ? Math.max(hTop, c.vel - hBrake) : Math.min(hTop, c.vel + accelStep(c, hTop));
+        else c.vel = Math.max(0, c.vel - hBrake);
+        var hEffort = P.RUN_DRAIN_EXPONENT === 1 ? 1
+          : Math.pow(clamp(c.vel / Math.max(0.001, c.maxSpeed), 0, 1), P.RUN_DRAIN_EXPONENT - 1);
+        var hSteady = (c.vel < c.maxSpeed * P.REGEN_VEL_RATIO)
+          ? P.REST_REGEN_RATE * c.regenScale
+          : -(c.vel * P.RUN_DRAIN_RATE * c.drainScale * hEffort);
+        c.energy = clamp(c.energy + hSteady - Math.abs(c.vel - oldVel) * P.CHANGE_DRAIN_RATE, 0, c.energyMax);
+        c.feltEnergy = c.energy;
       } else if (c.burstTicks > 0) {
         // mid-dash: committed, ignores nervousness entirely.
         c.burstTicks -= 1;
