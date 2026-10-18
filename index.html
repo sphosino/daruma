@@ -224,7 +224,8 @@ function start(){
   log(role==='kid'?`子ども：${st.children.map(c=>c.name).join('・')}`:`${st.type.label}で始めた。子ども：${st.children.map(c=>c.name).join('・')}`);
   renderPause();toPrep(true);
 }
-const snap=()=>st.children.map(c=>c.pos);
+const snap=()=>{prevVel=st.children.map(c=>c.vel);return st.children.map(c=>c.pos)};
+let prevVel=null;
 function toPrep(first){
   phase='prep';R.applyReserved(st);
   if(role==='daruma'){st.turnArmed=true;note(first?'':'時間は止まっている。今のうちに作戦を立てよう')}
@@ -331,6 +332,9 @@ pad.addEventListener('pointerup',up);pad.addEventListener('pointercancel',up);
 addEventListener('keydown',e=>{if(e.code!=='Space'||e.repeat||role!=='kid'||!st)return;e.preventDefault();ac();pressed=true;want=1;pad.classList.add('down')});
 addEventListener('keyup',e=>{if(e.code==='Space')up()});
 // 調整
+// いまの走り方（ブレーキ・歩く・小走り・全力）。前の 0.1 秒より遅くなっていればブレーキ
+function gaitOf(c,i){const f=c.vel/c.maxSpeed,slow=prevVel&&c.vel<prevVel[i]-1e-4;
+  return f<0.03?'止まってる':slow||c.freezing?'ブレーキ':f<0.4?'歩く':f<0.75?'小走り':'全力'}
 // 子どもの表（調整を開いているときだけ、0.3 秒ごとに描き直す）
 const MOTIVE_JA={scorer:'勝ちたい',careless:'気にしない',slacker:'やる気なし',steady:'ふつう'};
 function renderKids(){
@@ -338,7 +342,7 @@ function renderKids(){
   const pc=v=>Math.round(v*100);
   const rows=st.children.map(c=>{
     const e=`<span class="bar"><i style="width:${pc(c.energy/c.energyMax)}%;background:${c.winded?css('--red'):''}"></i></span>${Math.round(c.energy)}/${Math.round(c.energyMax)}${c.winded?' ぜぇ':''}`;
-    const mind=c.human?'—':c.freezing?'止まる':c.intendsToStop===false?'賭け':'—';
+    const mind=gaitOf(c,st.children.indexOf(c))+(c.human||c.intendsToStop!==false?'':'・賭け');
     return `<tr><td>${c.human?'あなた':c.name}</td><td>${e}</td><td>${(c.maxSpeed*10).toFixed(1)}</td><td>${(c.accT/10).toFixed(1)}秒</td><td>${(c.maxSpeed/c.brake/10).toFixed(2)}秒</td>`+
       `<td>${c.human?'—':pc(c.boldness)}</td><td>${c.human?'—':pc(c.selfControl)}</td><td>${c.human?'—':pc(c.reaction)}</td><td>${c.human?'—':pc(c.skepticism)}</td><td>${c.human?'—':MOTIVE_JA[c.motiveName]||c.motiveName}</td><td>${mind}</td><td>${Math.round(c.pos)}</td></tr>`});
   $('kidTable').innerHTML=`<table><tr><th>子ども</th><th>体力</th><th>最高速</th><th>全速まで</th><th>止まるまで</th><th>強気</th><th>自制</th><th>反応</th><th>疑い深さ</th><th>動機</th><th>いま</th><th>位置</th></tr>${rows.join('')}</table>
@@ -426,7 +430,7 @@ function draw(now){
     cx.fillStyle=c.human?ink:muted;cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.fillText(label,x,y-s*3.3);
     if(hit){cx.fillStyle=red;cx.font=`900 ${Math.max(14,s*1.1)}px ${css('--pop')}`;cx.fillText('！',x,y-s*3.3-Math.max(12,s*0.7))}
     if(mind||c.human){const bw=s*1.6,bx=x-bw/2,by=y+5;cx.fillStyle=css('--line');cx.fillRect(bx,by,bw,3);cx.fillStyle=c.winded?red:accent;cx.fillRect(bx,by,bw*c.energy/c.energyMax,3)}
-    if(mind&&!c.human){const m=c.freezing?'止まる':c.intendsToStop===false?'賭け':'';if(m){cx.fillStyle=m==='賭け'?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*3.3-Math.max(11,s*0.6))}}
+    if(mind&&!c.human){const m=[gaitOf(c,i),c.intendsToStop===false?'賭け':''].filter(Boolean).join('・');if(m){cx.fillStyle=c.intendsToStop===false?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*3.3-Math.max(11,s*0.6))}}
   });
   $('gauge').style.width=`calc((100% - 24px) * ${me?Math.min(1,me.vel/me.maxSpeed):0})`;
 }

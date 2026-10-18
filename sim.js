@@ -4,8 +4,8 @@
 //   → 見送りなら止まらず「だ」から続く（強気度は予約したもの）／振り向いたらひと休み（時間は止まる）
 // old/daruma-sim.js は前の決まりのまま残してある。
 //
-//   node sim.js                     いつもの表（だるまの作戦ごと）
-//   node sim.js sweep               罰（下がる量）× 時計 の表
+//   node sim.js                     いつもの表（だるまの作戦ごと）。何も指定しなければゲームの今の値
+//   node sim.js sweep               猶予 × 時計 の表（GRACES=0.1,0.2 などで猶予を並べる）
 //   node sim.js kid                 子ども役：人っぽい子 1人＋CPU の子 3人 対 ゲームの CPU のだるま
 //   node sim.js check               シミュレーターの確かめ（下の check を見る）
 // 数字は環境変数で変えられる：N（局数）、CLOCK（秒）、KNOCK（下がる量。start ならスタートへ）、GRACE（秒）、
@@ -161,12 +161,15 @@ function table(opt) {
 
 const mode = process.argv[2] || "table";
 const knockArg = v => (v === "start" ? null : +v);
-if (mode === "table") table({ clock: +env("CLOCK", 40), knock: knockArg(env("KNOCK", "25")), grace: +env("GRACE", 0.3) });
-if (mode === "sweep") {
+// 何も指定しないときは、ゲーム（index.html）の今の値：時計 46 秒・猶予 0.2 秒・下がる 25
+const GAME = { clock: 46, grace: 0.2, knock: "25" };
+const MAIN = require.main === module;   // ほかのファイルから読みこんだときは、表を出さない
+if (MAIN && mode === "table") table({ clock: +env("CLOCK", GAME.clock), knock: knockArg(env("KNOCK", GAME.knock)), grace: +env("GRACE", GAME.grace) });
+if (MAIN && mode === "sweep") {
   // 猶予（振り向き始めてから見つかるまで）× 時計
-  const clocks = env("CLOCKS", "40,42,44,46,48").split(",").map(Number);
-  const graces = env("GRACES", "0.1,0.3,0.5").split(",").map(Number);
-  const knock = knockArg(env("KNOCK", "25"));
+  const clocks = env("CLOCKS", "42,44,46,48,50").split(",").map(Number);
+  const graces = env("GRACES", String(GAME.grace)).split(",").map(Number);
+  const knock = knockArg(env("KNOCK", GAME.knock));
   const pols = env("POLS", "人間の読み,ゲームの CPU のだるま,でたらめ,毎回振り向く,絶対振り向かない").split(",");
   for (const g of graces) {
     R.LOOK.grace = Math.round(g * 10);
@@ -183,16 +186,16 @@ if (mode === "sweep") {
     }
   }
 }
-if (mode === "kid") {
-  const clock = +env("CLOCK", 40), knock = knockArg(env("KNOCK", "25"));
-  R.LOOK.grace = Math.round(+env("GRACE", 0.3) * 10);
+if (MAIN && mode === "kid") {
+  const clock = +env("CLOCK", GAME.clock), knock = knockArg(env("KNOCK", GAME.knock));
+  R.LOOK.grace = Math.round(+env("GRACE", GAME.grace) * 10);
   console.log(`子ども役：人っぽい子 1人＋CPU の子 3人 対 ゲームの CPU のだるま。時計 ${clock}秒・捕まったら ${knock == null ? "スタートへ" : knock + " 下がる"}  各${N}局`);
   for (const style of ["careful", "normal", "bold"]) {
     const b = batch(style, POLICIES["ゲームの CPU のだるま"], { clock, knock, kid: () => humanKid(style) });
     console.log(`  人っぽい子（${{ careful: "慎重", normal: "ふつう", bold: "強気" }[style]}） 子どもの勝ち ${pct(1 - b.daruma)}  うち人っぽい子がタッチ ${pct(b.meWin)}  捕まえた ${b.catches.toFixed(1)}`);
   }
 }
-if (mode === "check") {
+if (MAIN && mode === "check") {
   // ① 前の決まりに戻すと、前のシミュレーター（old/daruma-sim.js）と同じ数字が出るか
   //    前の結果（4人をくじ・各400局）：人間の読み 83%・毎回振り向く 37%・絶対振り向かない 5%
   process.env.OLD = "1";
