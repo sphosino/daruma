@@ -195,7 +195,7 @@ function beep(f,d,type='triangle'){const a=actx;if(!a)return;const o=a.createOsc
 // ---------- 進める ----------
 function start(){
   ac();timers=[];acc=0;paused=false;
-  st=R.newGame({withMe:role==='kid',type:role==='daruma'?pickedType:'normal',accT:T.accT,stopT:T.stopT,cpuStop:[T.cpuStopMin,Math.max(T.cpuStopMin,T.cpuStopMax)]});
+  st=R.newGame({withMe:role==='kid',lane:P.ACTIVE_CHILDREN-1,type:role==='daruma'?pickedType:'normal',accT:T.accT,stopT:T.stopT,cpuStop:[T.cpuStopMin,Math.max(T.cpuStopMin,T.cpuStopMax)]});
   let ci=0;st.children.forEach((c,i)=>{c.lane=i;c.col=c.human?null:KID_COL[ci++]});
   me=st.children.find(c=>c.human)||null;cpu=role==='kid'?R.cpuDaruma():null;
   applyTune();
@@ -301,12 +301,12 @@ addEventListener('resize',resize);
 function draw(now){
   const ground=css('--ground'),ink=css('--ink'),red=css('--red'),card=css('--card'),muted=css('--muted'),accent=css('--accent');
   cx.clearRect(0,0,W,H);
-  const gy=H*0.62,left=W*0.06,right=W*0.84,X=x=>left+(right-left)*(x-2)/(P.GOAL_POS-2);
+  const gy=H*0.78,left=W*0.06,right=W*0.84,X=x=>left+(right-left)*(x-2)/(P.GOAL_POS-2);
   cx.fillStyle=ground;cx.fillRect(0,gy,W,H-gy);
   // スタートの線
   cx.strokeStyle=muted;cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(X(2),gy-6);cx.lineTo(X(2),H);cx.stroke();cx.setLineDash([]);
   // だるま
-  const dx=W*0.91,dr=Math.min(H*0.13,W*0.075),dy=gy-dr*1.1;
+  const dx=W*0.91,dr=Math.min(H*0.17,W*0.07),dy=gy-dr*1.1;
   if(st){ // 強気度の光（色・大きさ・脈の速さ）。予約は見えない
     const lc=TIER_COL[st.reward],li=TIERS.indexOf(st.reward),beat=0.5+0.5*Math.sin(now/1000*Math.PI*2*PULSE[st.reward]),ar=dr*(1.35+0.15*li+0.12*beat);
     const g=cx.createRadialGradient(dx,dy,dr*0.6,dx,dy,ar);g.addColorStop(0,lc+'cc');g.addColorStop(1,lc+'00');
@@ -330,18 +330,18 @@ function draw(now){
   const moving=phase==='chant'||phase==='grace',u=moving?Math.min(1,(gt-prevAt)/P.TICK_MS):1,n=st.children.length,mind=$('showMind').checked;
   st.children.forEach((c,i)=>{
     const x0=prev?prev[i]:c.pos,pos=x0+(c.pos-x0)*u;
-    const gap=(H-gy-14)/(n-0.3),s=Math.min(gap*0.42,W*0.05)*(0.85+0.08*i),y=gy+8+gap*(i+0.55),x=X(pos),col=c.human?accent:c.col;
+    // 前の子ども役と同じ：足は地面の帯の上。奥（i=0）ほど上で小さく、手前ほど下で大きい
+    const s=Math.min(H*0.075,W*0.05)*(0.8+0.15*i*2/(n-1)),y=gy+6+i*(H-gy-12)/((n-1)*1.1),x=X(pos),col=c.human?accent:c.col;
     cx.globalAlpha=caughtAt[c.id]!=null&&gt-caughtAt[c.id]<700?0.35:1;
     const mv=moving&&c.vel>P.CATCH_VEL_THRESHOLD,leg=mv?Math.sin(pos*2.4)*0.6:0;
     cx.strokeStyle=col;cx.lineWidth=s*0.28;cx.lineCap='round';
     for(const sg of[1,-1]){cx.beginPath();cx.moveTo(x,y-s*0.9);cx.lineTo(x+Math.sin(leg*sg)*s*0.7,y);cx.stroke()}
     cx.fillStyle=col;cx.beginPath();cx.ellipse(x,y-s*1.5,s*0.55,s*0.75,0,0,7);cx.fill();
     cx.fillStyle=card;cx.beginPath();cx.arc(x,y-s*2.55,s*0.48,0,7);cx.fill();cx.strokeStyle=col;cx.lineWidth=s*0.12;cx.stroke();
-    // 名前は右どなり（上に書くと奥の子と重なる）
-    cx.globalAlpha=1;cx.textAlign='left';
+    cx.globalAlpha=1;cx.textAlign='center';
     const label=(c.human?'あなた':c.name.replace(/^.*の/,''))+(c.winded?' ぜぇ…':'');
-    cx.fillStyle=c.human?ink:muted;cx.font=`${c.human?900:700} ${Math.max(10,s*(c.human?0.62:0.52))}px ${css('--ui')}`;cx.fillText(label,x+s*0.8,y-s*1.6);
-    if(mind&&!c.human){const m=c.freezing?'止まる':c.intendsToStop===false?'賭け':'';if(m){cx.fillStyle=m==='賭け'?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x+s*0.8,y-s*0.6)}}
+    cx.fillStyle=c.human?ink:muted;cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.fillText(label,x,y-s*3.3);
+    if(mind&&!c.human){const m=c.freezing?'止まる':c.intendsToStop===false?'賭け':'';if(m){cx.fillStyle=m==='賭け'?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*3.3-Math.max(11,s*0.6))}}
   });
   $('gauge').style.width=(me?me.vel/me.maxSpeed*100:0)+'%';
 }
