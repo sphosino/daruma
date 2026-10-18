@@ -31,7 +31,7 @@ header{display:flex;align-items:center;gap:8px}
 h1{font-family:var(--pop);font-size:1.05rem;margin:0;font-weight:400;flex:1 1 auto;min-width:0}
 .chant{font-family:var(--pop);font-size:clamp(1.3rem,6vw,2rem);text-align:center;letter-spacing:.06em;min-height:1.4em;white-space:nowrap}
 .chant span{color:var(--line)}.chant span.said{color:var(--ink)}.chant.look{color:var(--red)}
-.stage{position:relative;flex:1 1 auto;min-height:150px;border-radius:16px;overflow:hidden;background:var(--sky);border:2px solid var(--line)}
+.stage{position:relative;flex:0 0 auto;height:clamp(170px,58vw,320px);border-radius:16px;overflow:hidden;background:var(--sky);border:2px solid var(--line)}
 canvas{display:block;width:100%;height:100%}
 .msg{position:absolute;left:50%;top:14%;transform:translateX(-50%);font-family:var(--pop);font-size:clamp(1.3rem,6.5vw,2.2rem);color:var(--red);text-shadow:0 2px 0 var(--card);pointer-events:none;white-space:nowrap}
 .paused{position:absolute;left:0;right:0;top:4px;text-align:center;font-size:.8rem;font-weight:700;color:var(--muted);pointer-events:none}
@@ -41,7 +41,7 @@ canvas{display:block;width:100%;height:100%}
 .pill[aria-expanded="true"],.pill.on{background:var(--on);border-color:var(--accent)}
 .pill:focus-visible,.btn:focus-visible,.pad:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 /* 子ども役：大きなパッド */
-.pad{flex:0 0 30%;min-height:130px;border-radius:20px;border:3px solid var(--accent);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+.pad{flex:1 1 auto;min-height:130px;max-height:340px;border-radius:20px;border:3px solid var(--accent);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
   touch-action:none;cursor:pointer;font-family:var(--pop);font-size:1.3rem;color:var(--accent);position:relative;overflow:hidden}
 .pad small{font-family:var(--ui);font-weight:700;font-size:.8rem;color:var(--muted)}
 .pad.down{background:var(--on)}
@@ -308,14 +308,15 @@ function draw(now){
   // スタートの線
   cx.strokeStyle=muted;cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(X(2),gy-6);cx.lineTo(X(2),H);cx.stroke();cx.setLineDash([]);
   // だるま
-  const dx=W*0.91,dr=Math.min(H*0.17,W*0.07),dy=gy-dr*1.1;
+  // 足もとは子どもの列のまん中あたり（子どもから見て正面）
+  const yT=gy+(H-gy)*0.42,dx=W*0.91,dr=Math.min(H*0.17,W*0.07),dy=yT-dr*1.1;
   if(st){ // 強気度の光（色・大きさ・脈の速さ）。予約は見えない
     const lc=TIER_COL[st.reward],li=TIERS.indexOf(st.reward),beat=0.5+0.5*Math.sin(now/1000*Math.PI*2*PULSE[st.reward]),ar=dr*(1.35+0.15*li+0.12*beat);
     const g=cx.createRadialGradient(dx,dy,dr*0.6,dx,dy,ar);g.addColorStop(0,lc+'cc');g.addColorStop(1,lc+'00');
     cx.fillStyle=g;cx.beginPath();cx.arc(dx,dy,ar,0,7);cx.fill();
     cx.textAlign='center';cx.font=`900 ${Math.max(11,dr*0.42)}px ${css('--ui')}`;cx.fillStyle=lc;cx.fillText('強気度 '+P.REWARD[st.reward].label,dx-dr*0.3,dy-dr*1.55);
     // 気力のゲージ（線より少ないと振り向けない）
-    const cost=Core.turnCostOf(P,st),bw=dr*2,bx=dx-dr,by=gy+8,bh=7;
+    const cost=Core.turnCostOf(P,st),bw=dr*2,bx=dx-dr,by=yT+6,bh=7;
     cx.fillStyle=css('--line');cx.fillRect(bx,by,bw,bh);
     cx.fillStyle=st.stamina>=cost?lc:muted;cx.fillRect(bx,by,bw*Math.min(1,st.stamina/st.staminaMax),bh);
     cx.strokeStyle=ink;cx.lineWidth=1.5;const cxp=bx+bw*Math.min(1,cost/st.staminaMax);cx.beginPath();cx.moveTo(cxp,by-3);cx.lineTo(cxp,by+bh+3);cx.stroke();
