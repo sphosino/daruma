@@ -149,7 +149,7 @@ function pickLv(){
 let BREAK_MIN=1.0,BREAK_MAX=3.5,CUE=0.8;
 function applyTune(){A.vmax=T.vmax;A.acc=T.vmax/T.accT;A.dec=T.vmax/T.stopT;GRACE=T.grace;KNOCK=T.knock;BREAK_MIN=T.breakMin;BREAK_MAX=Math.max(T.breakMin,T.breakMax);CUE=Math.min(T.cue,BREAK_MIN+0.35)}
 applyTune();
-function newChant(now,keepLv){
+function newChant(now,keepLv,carry){
   // 言い方を毎回変える：ふつう・ゆっくり・はやい・ためてからはやく・途中で止まる
   const pats=['ふつう','ゆっくり','はやい','ためて一気','途中でためる'];
   const p=pats[Math.floor(Math.random()*pats.length)];
@@ -159,7 +159,8 @@ function newChant(now,keepLv){
     if(p==='途中でためる'&&k===5)g=0.9+Math.random()*0.6;
     return g});
   if(!keepLv)pickLv();
-  D.state='chant';D.i=0;D.gaps=gaps;D.next=now+0.5;D.pattern=p;
+  // carry：見送ったときは、最後の「だ」が次の「だ」を兼ねる（間をあけずに「…ころん だ るまさんが…」と続く）
+  D.state='chant';D.i=carry?1:0;D.gaps=gaps;D.next=now+(carry?gaps[1]:0.5);D.pattern=p;
   kids.forEach(k=>{if(!k.isMe)k.plan=cpuPlan(k,p)});
   drawChant();
 }
@@ -169,7 +170,9 @@ function sayNext(now){
   if(D.i>=SYL.length){
     // 振り向くか見送るか。強気度が高いほど見送りやすい。気力が足りなければ振り向けない（子どもにも見えている）
     const cost=LV.cost[D.lv],canTurn=D.qi>=cost;
-    if(!canTurn||Math.random()>LV.turnP[D.lv]){D.qi=Math.min(QI_MAX,D.qi+LV.gain[D.lv]);D.state='back';D.backEnd=now+0.5+Math.random()*0.4;return}
+    if(!canTurn||Math.random()>LV.turnP[D.lv]){D.qi=Math.min(QI_MAX,D.qi+LV.gain[D.lv]);
+      // 見送り：止まらずにそのまま次へ。強気度はこの「だ」のときだけ選び直せる（光の色が変わる）
+      pickLv();showMsg('見送り！');newChant(now,true,true);return}
     D.qi-=cost;D.state='turn';D.turnAt=now;D.watchEnd=now+1.2+Math.random()*1.0;showMsg('見てる！');}
   else D.next=now+D.gaps[D.i];
 }
@@ -215,7 +218,6 @@ function update(dt){
   else if(D.state==='turn'&&t>=D.watchEnd){D.state='break';D.cued=false;D.breakEnd=t+0.35+BREAK_MIN+Math.random()*(BREAK_MAX-BREAK_MIN);pickLv();hideMsg();drawChant()}
   else if(D.state==='break'&&!D.cued&&t>=D.breakEnd-CUE){D.cued=true;beep(260,0.5,'sine');drawChant()}
   else if(D.state==='break'&&t>=D.breakEnd)newChant(t,true);
-  else if(D.state==='back'&&t>=D.backEnd)newChant(t);
   D.face+=((D.state==='turn'?1:0)-D.face)*Math.min(1,dt*18);
   for(const k of kids){
     if(k.caught){k.caught-=dt;if(k.caught<=0){k.caught=0;k.x=Math.max(0,k.x-KNOCK);k.v=0;k.step=null;k.queued=0}continue}
