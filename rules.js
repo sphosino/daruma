@@ -18,12 +18,16 @@
   // 止まり方：元の止まりやすさの順番（maxSpeed/brake が大きいほど止まりにくい）はそのままに、
   // 全速から止まるまでを 4〜7 tick（0.4〜0.7 秒）に広げる。人は 5 tick（0.5 秒）
   var STOP_TICKS_MIN = 4, STOP_TICKS_MAX = 7;
-  function humanStop(d, lo, hi) {
+  function humanStop(d, lo, hi, accT) {
     lo = lo != null ? lo : STOP_TICKS_MIN; hi = hi != null ? hi : STOP_TICKS_MAX;
     var o = d.maxSpeed / d.brake;
     var t = Math.max(0.5, lo + (o - 0.83) / (3.1 - 0.83) * (hi - lo));
-    return Object.assign({}, d, { brake: d.maxSpeed / t });
+    // 走り出しも人に合わせる：全速まで accT 秒くらい。元の乗りやすさの順番で ±15% ばらつく
+    var a0 = d.maxSpeed / d.accel;                      // 元の、全速までの tick（3.5〜4.0）
+    var at = (accT != null ? accT : ACC_T) * (1 + (a0 - 3.75) / 0.5 * 0.15);
+    return Object.assign({}, d, { brake: d.maxSpeed / t, accT: Math.max(1, at * 10) });
   }
+  var ACC_T = 1.5;   // 全速まで 1.5 秒（2026-10-18。けんじさん「止まるより全速が短いなんてありえん」。前は 0.33 秒）
 
   // 人の子ども。速さは元の子どもの真ん中くらい。全速まで 0.33 秒、止まるまで 0.5 秒
   var ME_SPEED = 0.30;
@@ -36,7 +40,7 @@
 
   // 人の子どもの加速・減速（全速になるまで accT 秒、全速から止まるまで stopT 秒）
   function setMe(c, accT, stopT) {
-    c.accel = c.maxSpeed / Math.max(0.5, accT * 10);
+    c.accT = Math.max(1, accT * 10);
     c.brake = c.maxSpeed / Math.max(0.5, stopT * 10);
   }
 
@@ -45,12 +49,12 @@
     opt = opt || {};
     var n = opt.kids || P.ACTIVE_CHILDREN;
     var cs = opt.cpuStop || [STOP_TICKS_MIN / 10, STOP_TICKS_MAX / 10];
-    var defs = Core.pickActiveChildren(P, opt.withMe ? n - 1 : n).map(function (d) { return humanStop(d, cs[0] * 10, cs[1] * 10); });
+    var defs = Core.pickActiveChildren(P, opt.withMe ? n - 1 : n).map(function (d) { return humanStop(d, cs[0] * 10, cs[1] * 10, opt.cpuAccT); });
     var lane = opt.lane != null ? opt.lane : Math.floor(n / 2);
     if (opt.withMe) defs.splice(lane, 0, ME);
     var st = Core.newRunState(P, defs, opt.type);
     st.children.forEach(function (c) {
-      if (c.id === "me") { c.human = true; c.input = false; setMe(c, opt.accT != null ? opt.accT : 0.33, opt.stopT != null ? opt.stopT : 0.5); }
+      if (c.id === "me") { c.human = true; c.input = false; setMe(c, opt.accT != null ? opt.accT : ACC_T, opt.stopT != null ? opt.stopT : 0.5); }
     });
     st.turnArmed = true;
     st.reward = "mid";

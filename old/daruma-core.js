@@ -544,7 +544,7 @@
     var tank = P.CHILD_ENERGY_MAX * (0.60 + 0.80 * endurance);
     return {
       id: def.id, name: def.name, color: def.color,
-      maxSpeed: def.maxSpeed, accel: def.accel, brake: def.brake,
+      maxSpeed: def.maxSpeed, accel: def.accel, brake: def.brake, accT: def.accT || 0,
       boldness: def.boldness, selfControl: def.selfControl,
       judgmentResilience: def.judgmentResilience != null ? def.judgmentResilience : 0.5,
       motorControl: def.motorControl != null ? def.motorControl : 0.5,
@@ -658,6 +658,18 @@
   // What turning at this 強気度 actually costs THIS daruma. Everything that
   // asks "can I afford to turn" has to go through here, or a type's discount
   // applies to the bill but not to the decision to pay it.
+  // 1 tick でどれだけ速くなるか（2026-10-18）。accT（全速まで何 tick）があれば人の走り出しと同じ伸び方：
+  //   速さ = 全速 ×（1 −（1 − 時間/accT）^1.5）。最初の一歩はすぐ出て、全速に近づくほどゆっくり伸びる
+  //   （0.1秒で10%、0.5秒で46%、1秒で81%、1.5秒で100%）。いまの速さから「曲線のどこにいるか」を逆算して進める
+  //   なければ前と同じで、いつも accel ずつ
+  function accelStep(c, top) {
+    if (!c.accT) return c.accel;
+    var m = c.maxSpeed, r = Math.min(1, c.vel / m);
+    var t = 1 - Math.pow(1 - r, 1 / 1.5);
+    var t2 = Math.min(1, t + 1 / c.accT);
+    return Math.max(0, Math.min(top, m * (1 - Math.pow(1 - t2, 1.5))) - c.vel);
+  }
+
   function turnCostOf(P, st, tier) {
     return P.REWARD[tier || st.reward].turnCost * st.type.turnCostScale;
   }
@@ -745,7 +757,7 @@
       } else if (c.human) {
         // 人が走らせている子（2026-10-18）。押している間は accel で加速、離すと brake で
         // 減速するだけ。考えるのは人なので、下の AI はまるごと飛ばす。体力も使わない。
-        c.vel = c.input ? Math.min(c.maxSpeed, c.vel + c.accel) : Math.max(0, c.vel - c.brake);
+        c.vel = c.input ? Math.min(c.maxSpeed, c.vel + accelStep(c, c.maxSpeed)) : Math.max(0, c.vel - c.brake);
       } else if (c.burstTicks > 0) {
         // mid-dash: committed, ignores nervousness entirely.
         c.burstTicks -= 1;
@@ -914,7 +926,7 @@
             var target = effMaxSpeed * clamp(want, P.CRUISE_MIN, effortCeil);
             c.vel = (c.vel > target)
               ? Math.max(target, c.vel - effBrake * 0.5)
-              : Math.min(target, c.vel + c.accel);
+              : Math.min(target, c.vel + accelStep(c, effMaxSpeed));
           }
 
           // energy: sustained speed drains/regens, PLUS the act of changing
