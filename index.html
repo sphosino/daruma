@@ -298,6 +298,8 @@ $('showMind').checked=store.get('dk-mind',false);$('showMind').onchange=()=>stor
 const cv=$('cv'),cx=cv.getContext('2d');let W=0,H=0;
 function resize(){const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);W=r.width;H=r.height;cv.width=W*d;cv.height=H*d;cx.setTransform(d,0,0,d,0,0)}
 addEventListener('resize',resize);
+// 下の操作が出たり、調整を開いたりすると道の枠の大きさが変わる。そのたびに測り直す（測り直さないと絵がつぶれる）
+try{new ResizeObserver(resize).observe(cv)}catch(e){}
 function draw(now){
   const ground=css('--ground'),ink=css('--ink'),red=css('--red'),card=css('--card'),muted=css('--muted'),accent=css('--accent');
   cx.clearRect(0,0,W,H);
