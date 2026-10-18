@@ -65,7 +65,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   </div>
   <div class="hud"><span>のこり <b id="left">40.0</b>秒</span><span><b id="cycle">1</b>回目</span><span>気力 <b id="qi">—</b></span></div>
   <div class="card" id="ctl">
-    <div><div class="lbl"><span>強気度（言う前に決める）</span><span id="lvNote"></span></div>
+    <div><div class="lbl"><span>強気度（言う前か、見送った直後に決める）</span><span id="lvNote"></span></div>
       <div class="row" id="lvRow"></div></div>
     <div><div class="lbl"><span>テンポ</span><span id="tempoTxt"></span></div>
       <input type="range" id="tempo" min="0" max="100" step="1" value="45" aria-label="テンポ"></div>
@@ -79,19 +79,20 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 const Core=window.DarumaCore,P=Core.makeConfig({}); // 調整ラボの値は使わない（いつも同じ決まりで）
 const $=id=>document.getElementById(id);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const LV_WIN=1000; // 見送ったあと、強気度を選び直せる時間（ミリ秒）。言う速さで忙しさが変わらないよう時間で決める
 const TIERS=['low','mid','high','max'],TIER_COL={low:'#4f8fd8',mid:'#e5b830',high:'#ef8a2c',max:'#e0402c'},PULSE={low:0.6,mid:1,high:1.6,max:2.6};
 const KID_COL=['#4f8fd8','#3aa65a','#b45cc8','#e0457b'];
 const TYPE_NOTE={normal:'クセなし。まずはこれで。',red:'気力の器が大きいぶん、見送っても実入りが細い。',oni:'振り向きが安い。そのかわりテンポを上げるのが高い。子どもに怖がられている。',attack:'テンポが安い。そのかわり振り向きが高い。子どもに舐められている。'};
-let st=null,phase='setup',loop=null,pickedType='normal',prev=null,prevAt=0,tickAt=0,faceUntil=0;
+let st=null,phase='setup',loop=null,lvUntil=0,lvT=0,pickedType='normal',prev=null,prevAt=0,tickAt=0,faceUntil=0;
 const caughtAt={};
 
 // ---------- 画面の部品 ----------
 function renderTypes(){$('types').innerHTML=Object.keys(P.DARUMA_TYPES).map(k=>`<button class="btn${k===pickedType?' on':''}" data-t="${k}" type="button">${P.DARUMA_TYPES[k].label}</button>`).join('');
   $('typeNote').textContent=TYPE_NOTE[pickedType]||'';$('types').querySelectorAll('button').forEach(b=>b.onclick=()=>{pickedType=b.dataset.t;renderTypes()})}
 function renderCtl(){
-  if(!st)return;const prep=phase==='prep';
-  $('lvRow').innerHTML=TIERS.map(t=>`<button class="btn lv${st.reward===t?' on':''}" data-r="${t}" style="--c:${TIER_COL[t]}" type="button"${prep?'':' disabled'}>${P.REWARD[t].label}<small>見送り+${Math.round(P.REWARD[t].reward*st.type.skipRewardScale)}<br>振向−${Math.round(Core.turnCostOf(P,st,t))}</small></button>`).join('');
-  $('lvRow').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(phase!=='prep')return;st.reward=b.dataset.r;renderCtl()});
+  if(!st)return;const prep=phase==='prep',lvOpen=prep||(phase==='chant'&&performance.now()<lvUntil);
+  $('lvRow').innerHTML=TIERS.map(t=>`<button class="btn lv${st.reward===t?' on':''}" data-r="${t}" style="--c:${TIER_COL[t]}" type="button"${lvOpen?'':' disabled'}>${P.REWARD[t].label}<small>見送り+${Math.round(P.REWARD[t].reward*st.type.skipRewardScale)}<br>振向−${Math.round(Core.turnCostOf(P,st,t))}</small></button>`).join('');
+  $('lvRow').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(!(phase==='prep'||(phase==='chant'&&performance.now()<lvUntil)))return;st.reward=b.dataset.r;renderCtl()});
   const cost=Math.round(Core.turnCostOf(P,st)),afford=st.stamina>=cost;
   $('arm').classList.toggle('on',st.turnArmed);
   $('arm').innerHTML=st.turnArmed?`👀 言い終わったら振り向く<small>気力 -${cost}${afford?'':'（足りない）'}</small>`:`🙈 振り向かずに見送る<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`;
@@ -99,7 +100,7 @@ function renderCtl(){
   $('tempo').value=Math.round(st.tempoValue);$('tempoTxt').textContent=Core.tempoLabel(st.tempoValue)+(phase==='chant'?'（上げると気力を使う）':'');
   $('qi').textContent=`${Math.round(st.stamina)} / ${Math.round(st.staminaMax)}`;
   $('left').textContent=Math.max(0,(P.GOAL_TICKS-st.elapsedTicks)*P.TICK_MS/1000).toFixed(1);$('cycle').textContent=st.cycle;
-  $('lvNote').textContent=prep?'':'言っている間は変えられない';
+  $('lvNote').textContent=prep?'':lvOpen?'今だけ変えられる！':'言っている間は変えられない';
 }
 function renderChant(){const el=$('chant');const look=performance.now()<faceUntil;el.classList.toggle('look',look);
   if(phase==='prep'&&st&&st.cycle>1){el.innerHTML='<span class="said">ひと休み</span>';return}
@@ -132,7 +133,13 @@ function resolve(){
     out.caught.forEach(c=>caughtAt[c.id]=performance.now());
     log(`${cyc}回目：振り向いた（気力-${cost}）`+(out.caught.length?` → ${out.caught.map(c=>c.name).join('・')} をスタートへ`:' → 誰も動いてなかった'))}
   else if(out.underpowered){showMsg('力が足りない…',1000);log(`${cyc}回目：振り向こうとしたが、気力が足りなかった`)}
-  else log(`${cyc}回目：見送った（気力+${out.gained}）`);
+  else{
+    // 見送り：止まらずに続ける。最後の「だ」が次の「だ」を兼ねる。振り向く／見送るの選びは前のまま。
+    //   強気度はここから LV_WIN の間だけ選び直せる
+    log(`${cyc}回目：見送った（気力+${Math.round(out.gained)}）`);showMsg('見送り！',800);
+    st.chantProgress=10;st.turnArmed=false;lvUntil=performance.now()+LV_WIN;
+    clearTimeout(lvT);lvT=setTimeout(renderCtl,LV_WIN+20);
+    prev=snap();prevAt=tickAt=performance.now();toChant();renderChant();return}
   prev=snap();prevAt=tickAt=performance.now();
   setTimeout(toPrep,out.turned?1200:300);phase='wait';renderCtl();
 }
