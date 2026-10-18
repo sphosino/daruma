@@ -735,7 +735,11 @@
       if (c.burstCooldown > 0) c.burstCooldown -= 1;
       var oldVel = c.vel;
 
-      if (c.burstTicks > 0) {
+      if (c.human) {
+        // 人が走らせている子（2026-10-18）。押している間は accel で加速、離すと brake で
+        // 減速するだけ。考えるのは人なので、下の AI はまるごと飛ばす。体力も使わない。
+        c.vel = c.input ? Math.min(c.maxSpeed, c.vel + c.accel) : Math.max(0, c.vel - c.brake);
+      } else if (c.burstTicks > 0) {
         // mid-dash: committed, ignores nervousness entirely.
         c.burstTicks -= 1;
         c.vel = c.maxSpeed * P.BURST_SPEED_MULT;

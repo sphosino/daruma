@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>だるまさんがころんだ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Mochiy+Pop+One&display=swap">
+<style>
+/* だるま役も子ども役も同じ画面。上に言葉、まん中に道、下に役ごとの操作。決まりは rules.js（old/daruma-core.js の上に今の決まりを足したもの） */
+:root{
+  --bg:#fff7ec; --card:#fffdf9; --ink:#4a2f22; --muted:#8f6b58; --line:#f1dcc6; --accent:#c2601a; --on:#ffe2bd;
+  --red:#d8452f; --ground:#e9d2b0; --sky:#fff1dc;
+  --ui:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif; --pop:"Mochiy Pop One","Zen Maru Gothic",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-weight:500;padding:10px 16px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.app{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+h1{font-family:var(--pop);font-weight:400;font-size:1.05rem;margin:0}
+.chant{font-family:var(--pop);font-size:clamp(1.3rem,6vw,2rem);text-align:center;min-height:1.4em;white-space:nowrap}
+.chant span{color:var(--line)}.chant span.said{color:var(--ink)}.chant.look{color:var(--red)}
+.stage{position:relative;height:38vh;min-height:170px;border-radius:16px;overflow:hidden;background:var(--sky);border:2px solid var(--line)}
+canvas{display:block;width:100%;height:100%}
+.msg{position:absolute;left:50%;top:12%;transform:translateX(-50%);font-family:var(--pop);font-size:clamp(1.1rem,5.5vw,1.8rem);color:var(--red);text-shadow:0 2px 0 var(--card);white-space:nowrap;pointer-events:none}
+.paused{position:absolute;inset:auto 0 8px 0;text-align:center;font-size:.8rem;color:var(--muted);pointer-events:none}
+.hud{display:flex;justify-content:space-between;gap:8px;font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.hud b{color:var(--ink)}
+.card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.lbl{font-size:.8rem;font-weight:700;color:var(--muted);display:flex;justify-content:space-between}
+.row{display:flex;gap:6px}.row>*{flex:1 1 0;min-width:0}
+.btn{font:inherit;font-weight:700;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:9px 6px;cursor:pointer;line-height:1.3}
+.btn small{display:block;font-size:.68rem;font-weight:500;color:var(--muted)}
+.btn.on{background:var(--on);border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--card);font-family:var(--pop);font-weight:400;font-size:1.1rem}
+.btn[disabled]{opacity:.45;cursor:default}
+.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.lv{--c:var(--line);position:relative}.lv.on{border-color:var(--c);box-shadow:0 0 0 2px var(--c) inset}
+.lv.next{border-style:dashed;border-color:var(--c)}.lv.next::after{content:'予約';position:absolute;top:3px;right:6px;font-size:.65rem;color:var(--c)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.arm.on{background:var(--on);border-color:var(--red)}
+.log{font-size:.78rem;color:var(--muted);max-height:6em;overflow:auto}
+.pad{min-height:150px;border-radius:20px;border:3px solid var(--accent);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;touch-action:none;cursor:pointer}
+.pad b{font-family:var(--pop);font-weight:400;font-size:1.3rem}.pad small{font-size:.8rem;color:var(--muted)}
+.pad.down{background:var(--on)}
+.over{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:color-mix(in srgb,var(--bg) 88%,transparent);text-align:center;padding:12px;overflow:auto}
+.over h2{font-family:var(--pop);font-weight:400;margin:0;font-size:1.5rem}
+.over p{margin:0;font-size:.88rem;color:var(--muted);max-width:32em}
+.types{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.types .btn{flex:0 1 auto;padding:6px 12px}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>だるまさんがころんだ</h1>
+  <div class="chant" id="chant"></div>
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <div class="msg" id="msg" hidden></div>
+    <div class="paused" id="paused" hidden></div>
+    <div class="over" id="over">
+      <h2>だるまさんがころんだ</h2>
+      <div class="types" id="roles"></div>
+      <p id="howTo"></p>
+      <div class="types" id="types"></div>
+      <button class="btn primary" id="startBtn" type="button">はじめる</button>
+    </div>
+  </div>
+  <div class="hud"><span>だるまの時計 のこり <b id="left">40.0</b>秒</span><span><b id="cycle">1</b>回目</span><span id="qiBox">気力 <b id="qi">—</b></span></div>
+
+  <!-- だるま役の操作 -->
+  <div class="card" id="ctlDaruma" hidden>
+    <div><div class="lbl"><span>強気度（言っている間は予約）</span><span id="lvNote"></span></div>
+      <div class="row" id="lvRow"></div></div>
+    <div><div class="lbl"><span>テンポ</span><span id="tempoTxt"></span></div>
+      <input type="range" id="tempo" min="0" max="100" step="1" value="45" aria-label="テンポ"></div>
+    <div class="row"><button class="btn arm on" id="arm" type="button"></button><button class="btn primary" id="go" type="button">言い始める</button></div>
+  </div>
+  <!-- 子ども役の操作 -->
+  <div class="pad" id="pad" hidden><b>押して走る</b><small>押しっぱなしで走る・離して止まる（スペースキーでも）</small></div>
+
+  <div class="card"><div class="log" id="log"></div></div>
+</div>
+<script src="old/daruma-core.js"></script>
+<script src="rules.js"></script>
+<script>
+'use strict';
+const R=window.DarumaRules,Core=R.Core,P=R.P,TIERS=R.TIERS;
+const $=id=>document.getElementById(id);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const TIER_COL={low:'#4f8fd8',mid:'#e5b830',high:'#ef8a2c',max:'#e0402c'},PULSE={low:0.6,mid:1,high:1.6,max:2.6};
+const KID_COL=['#4f8fd8','#3aa65a','#b45cc8','#e0457b'];
+const TYPE_NOTE={normal:'クセなし。まずはこれで。',red:'気力の器が大きいぶん、見送っても実入りが細い。',oni:'振り向きが安い。そのかわりテンポを上げるのが高い。子どもに怖がられている。',attack:'テンポが安い。そのかわり振り向きが高い。子どもに舐められている。'};
+const HOW={
+  kid:'あなたは子ども。だるまが言っている間だけ進めます。言い終わって振り向いたときに動いていたらスタートへ戻ります。だれか1人でもだるまにタッチしたら子どもの勝ち。だるまの時計（言っている時間だけ進む40秒）が切れたらだるまの勝ち。全速からは止まるまで0.5秒かかります。だるまのうしろの光が強いほど、振り向かずに見送りやすい。',
+  daruma:'あなたはだるま。CPU の子ども4人が、タッチしようと走ってきます。言い終わったときに動いていた子をスタートに戻して、40秒（言っている時間だけ数える）耐えたら勝ち。見送ると止まらずに「だ」からそのまま続きます。'};
+const GRACE_TICKS=1;       // 振り向いてから見るまでの間（0.1秒）。止まりかけの子を見逃す
+const WATCH_MS=1200,CUE_MS=800,BREAK_MIN=1000,BREAK_MAX=3500;
+
+const q=new URLSearchParams(location.search);
+let role=q.get('role')||store.get('dk-role','kid');if(role!=='daruma')role='kid';
+let pickedType='normal';
+let st=null,me=null,cpu=null,phase='setup',loop=null,timer=0,prev=null,prevAt=0,faceUntil=0,breakEnd=0;
+const caughtAt={};
+
+// ---------- 画面の部品 ----------
+function renderSetup(){
+  $('roles').innerHTML=[['kid','子どもで遊ぶ'],['daruma','だるまで遊ぶ']].map(([k,l])=>`<button class="btn${k===role?' on':''}" data-r="${k}" type="button">${l}</button>`).join('');
+  $('roles').querySelectorAll('button').forEach(b=>b.onclick=()=>{role=b.dataset.r;store.set('dk-role',role);renderSetup()});
+  $('howTo').textContent=HOW[role];
+  $('types').hidden=role!=='daruma';
+  $('types').innerHTML=Object.keys(P.DARUMA_TYPES).map(k=>`<button class="btn${k===pickedType?' on':''}" data-t="${k}" type="button" title="${TYPE_NOTE[k]||''}">${P.DARUMA_TYPES[k].label}</button>`).join('');
+  $('types').querySelectorAll('button').forEach(b=>b.onclick=()=>{pickedType=b.dataset.t;renderSetup()});
+}
+function renderCtl(){
+  if(!st)return;
+  $('left').textContent=Math.max(0,(P.GOAL_TICKS-st.elapsedTicks)*P.TICK_MS/1000).toFixed(1);$('cycle').textContent=st.cycle;
+  $('qiBox').hidden=role!=='daruma';
+  if(role!=='daruma')return;
+  const prep=phase==='prep';
+  $('lvRow').innerHTML=TIERS.map(t=>`<button class="btn lv${st.reward===t?' on':''}${st.nextReward===t?' next':''}" data-r="${t}" style="--c:${TIER_COL[t]}" type="button">${P.REWARD[t].label}<small>見送り+${Math.round(P.REWARD[t].reward*st.type.skipRewardScale)}<br>振向−${Math.round(Core.turnCostOf(P,st,t))}</small></button>`).join('');
+  const cost=Math.round(Core.turnCostOf(P,st)),afford=st.stamina>=cost;
+  $('arm').classList.toggle('on',st.turnArmed);
+  $('arm').innerHTML=st.turnArmed?`👀 言い終わったら振り向く<small>気力 -${cost}${afford?'':'（足りない）'}</small>`:`🙈 振り向かずに見送る<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`;
+  $('go').disabled=!prep;
+  $('tempo').value=Math.round(st.tempoValue);$('tempoTxt').textContent=Core.tempoLabel(st.tempoValue)+(phase==='chant'?'（上げると気力を使う）':'');
+  $('qi').textContent=`${Math.round(st.stamina)} / ${Math.round(st.staminaMax)}`;
+  $('lvNote').textContent=prep?'':st.nextReward?'次の「だ」で変わる':'押すと予約。次の「だ」で変わる';
+}
+function renderChant(){const el=$('chant');el.classList.toggle('look',performance.now()<faceUntil);
+  if(phase==='prep'||phase==='cue'){el.innerHTML=`<span class="said">${phase==='cue'?'すぅ…':'ひと休み'}</span>`;return}
+  const n=st?R.said(st):0;el.innerHTML=Core.CHANT_CHARS.map((s,k)=>`<span class="${k<n?'said':''}">${s}</span>`).join('')}
+let msgT=0;function showMsg(s,ms){const m=$('msg');m.textContent=s;m.hidden=false;clearTimeout(msgT);msgT=setTimeout(()=>m.hidden=true,ms||1100)}
+function log(s){$('log').insertAdjacentHTML('afterbegin',`<div>${s}</div>`)}
+function setPaused(s){$('paused').textContent=s||'';$('paused').hidden=!s}
+
+// ---------- 音 ----------
+let actx=null;
+function ac(){try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume()}catch(e){}return actx}
+function beep(f,d,type='triangle'){const a=actx;if(!a)return;const o=a.createOscillator(),g=a.createGain(),n=a.currentTime;o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0.12,n);g.gain.exponentialRampToValueAtTime(0.0001,n+d);o.connect(g).connect(a.destination);o.start(n);o.stop(n+d+0.02)}
+
+// ---------- 進める ----------
+function start(){
+  ac();clearInterval(loop);clearTimeout(timer);
+  st=R.newGame({withMe:role==='kid',type:role==='daruma'?pickedType:'normal'});
+  st.children.forEach((c,i)=>{c.lane=i;c.col=c.human?css('--ink'):KID_COL[i]});
+  me=st.children.find(c=>c.human)||null;cpu=role==='kid'?R.cpuDaruma():null;
+  $('ctlDaruma').hidden=role!=='daruma';$('pad').hidden=role!=='kid';
+  $('over').hidden=true;$('log').innerHTML='';prev=snap();prevAt=performance.now();
+  log(role==='kid'?`子ども：${st.children.map(c=>c.name).join('・')}`:`${st.type.label}で始めた。子ども：${st.children.map(c=>c.name).join('・')}`);
+  toPrep(true);
+}
+const snap=()=>st.children.map(c=>c.pos);
+function toPrep(first){
+  phase='prep';clearInterval(loop);loop=null;R.applyReserved(st);
+  if(role==='daruma'){st.turnArmed=true;setPaused(first?'':'時間は止まっている。今のうちに作戦を立てよう')}
+  else{cpu.onPrep(st);breakEnd=performance.now()+(first?1500:BREAK_MIN+Math.random()*(BREAK_MAX-BREAK_MIN));
+    timer=setTimeout(toCue,Math.max(0,breakEnd-performance.now()-CUE_MS));setPaused('ひと休み。動けない')}
+  renderCtl();renderChant();
+}
+function toCue(){phase='cue';beep(260,0.5,'sine');renderCtl();renderChant();timer=setTimeout(toChant,CUE_MS)}
+function toChant(){phase='chant';setPaused('');renderCtl();renderChant();clearInterval(loop);loop=setInterval(tick,P.TICK_MS)}
+let lastSaid=0;
+function tick(){
+  if(me)me.input=pressed;
+  prev=snap();prevAt=performance.now();
+  const before=R.said(st);
+  const res=Core.tick(P,st);
+  const n=R.said(st);if(n>before&&n<10)beep(520+n*18,0.06);
+  if(res.reached){end(res.reached);return}
+  if(res.timeUp){end(null);return}
+  if(res.chantDone){
+    beep(330,0.18);
+    const cost=Core.turnCostOf(P,st);
+    if(st.turnArmed&&st.stamina>=cost){phase='grace';clearInterval(loop);loop=null;faceUntil=performance.now()+WATCH_MS;renderChant();
+      // 振り向いた。GRACE_TICKS だけ動きを進めてから見る（止まりかけの子は見逃す）
+      let g=GRACE_TICKS;const step=()=>{if(me)me.input=pressed;prev=snap();prevAt=performance.now();
+        const cp=st.chantProgress,el=st.elapsedTicks;Core.tick(P,st);st.chantProgress=cp;st.elapsedTicks=el;
+        if(--g>0)timer=setTimeout(step,P.TICK_MS);else timer=setTimeout(resolve,P.TICK_MS)};
+      if(g>0)timer=setTimeout(step,0);else resolve();
+      return}
+    resolve();return}
+  if(cpu)cpu.onTick(st);
+  renderCtl();renderChant();
+}
+function resolve(){
+  const cost=Math.round(Core.turnCostOf(P,st)),cyc=st.cycle;
+  const out=R.resolve(st);
+  if(out.carry){
+    // 見送り：止まらずに続ける。最後の「だ」が次の「だ」
+    log(`${cyc}回目：見送った`+(role==='daruma'?`（気力+${Math.round(out.gained)}）`:''));showMsg('見送り！',800);
+    if(cpu)cpu.onCarry(st);else st.turnArmed=false;
+    renderCtl();renderChant();if(phase!=='chant')toChant();return}
+  clearInterval(loop);loop=null;phase='watch';
+  if(out.turned){faceUntil=performance.now()+WATCH_MS;
+    const names=out.caught.map(c=>c.name);
+    out.caught.forEach(c=>caughtAt[c.id]=performance.now());
+    const meCaught=me&&out.caught.includes(me);
+    showMsg(meCaught?'見つかった！スタートへ':out.caught.length?'見た！ '+names.join('・'):'見た！ …みんな止まってた',WATCH_MS);
+    log(`${cyc}回目：振り向いた`+(role==='daruma'?`（気力-${cost}）`:'')+(out.caught.length?` → ${names.join('・')} をスタートへ`:' → 誰も動いてなかった'))}
+  else{showMsg('力が足りない…',1000);log(`${cyc}回目：振り向こうとしたが、気力が足りなかった`)}
+  prev=snap();prevAt=performance.now();renderCtl();renderChant();
+  timer=setTimeout(()=>toPrep(false),out.turned?WATCH_MS:1000);
+}
+function end(kid){clearInterval(loop);loop=null;clearTimeout(timer);phase='over';renderCtl();renderChant();setPaused('');
+  const o=$('over'),left=Math.max(0,(P.GOAL_TICKS-st.elapsedTicks)*P.TICK_MS/1000).toFixed(1);let h,p;
+  if(role==='daruma'){h=kid?`${kid.name}にタッチされた`:'だるまの勝ち！';p=kid?`${st.cycle}回目、のこり${left}秒だった。捕まえたのは${st.catches}回。`:`40秒耐えきった。${st.cycle}回言って、捕まえたのは${st.catches}回。`}
+  else{h=!kid?'時間切れ…だるまの勝ち':kid===me?'タッチ！あなたの勝ち':`${kid.name}がタッチ！子どもの勝ち`;
+    p=kid?`だるまの時計は、のこり${left}秒だった。`:`あと少し。${st.cycle}回言われた。`}
+  o.querySelector('h2').textContent=h;$('howTo').textContent=p;$('startBtn').textContent='もう一回';o.hidden=false;renderSetup();$('howTo').textContent=p}
+
+$('startBtn').onclick=start;
+// だるま役：強気度は、ひと休み中はすぐ変わり、言っている間は予約（次の「だ」かひと休みで変わる）。ボタンは描き直すので押した瞬間に拾う
+$('lvRow').addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||!st||role!=='daruma'||phase==='over'||phase==='setup')return;
+  const r=b.dataset.r;if(phase==='prep')st.reward=r;else st.nextReward=(r===st.reward||r===st.nextReward)?null:r;renderCtl()});
+$('go').onclick=()=>{if(phase==='prep'&&role==='daruma'){ac();toCue()}};
+$('arm').onclick=()=>{if(!st||phase==='over')return;st.turnArmed=!st.turnArmed;renderCtl()};
+$('tempo').oninput=()=>{if(!st)return;const want=+$('tempo').value;
+  if(phase==='chant'){const got=Core.applyTempoChange(P,st,want);if(got!==want)$('tempo').value=got}else st.tempoValue=want;renderCtl()};
+// 子ども役：押している間だけ走る
+let pressed=false;const pad=$('pad');
+pad.addEventListener('pointerdown',e=>{e.preventDefault();ac();pressed=true;pad.classList.add('down');try{pad.setPointerCapture(e.pointerId)}catch(_){}});
+const up=()=>{pressed=false;pad.classList.remove('down')};
+pad.addEventListener('pointerup',up);pad.addEventListener('pointercancel',up);
+addEventListener('keydown',e=>{if(e.code!=='Space'||e.repeat||role!=='kid')return;e.preventDefault();ac();pressed=true;pad.classList.add('down')});
+addEventListener('keyup',e=>{if(e.code==='Space')up()});
+
+// ---------- 描く（0.1秒ごとの位置を、間はなめらかにつなぐ） ----------
+const cv=$('cv'),cx=cv.getContext('2d');let W=0,H=0;
+function resize(){const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);W=r.width;H=r.height;cv.width=W*d;cv.height=H*d;cx.setTransform(d,0,0,d,0,0)}
+addEventListener('resize',resize);
+function frame(now){
+  cx.clearRect(0,0,W,H);const gy=H*0.42,left=W*0.06,right=W*0.84,X=x=>left+(right-left)*x/100;
+  cx.fillStyle=css('--ground');cx.fillRect(0,gy,W,H-gy);
+  cx.strokeStyle=css('--muted');cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(X(2),gy);cx.lineTo(X(2),H);cx.stroke();cx.setLineDash([]);
+  const dx=W*0.91,dr=Math.min(H*0.16,W*0.07),dy=gy-dr*1.1;
+  if(st){ // 強気度の光（予約は見えない）
+    const lc=TIER_COL[st.reward],beat=0.5+0.5*Math.sin(now/1000*Math.PI*2*PULSE[st.reward]),ar=dr*(1.35+0.15*TIERS.indexOf(st.reward)+0.12*beat);
+    const g=cx.createRadialGradient(dx,dy,dr*0.6,dx,dy,ar);g.addColorStop(0,lc+'cc');g.addColorStop(1,lc+'00');cx.fillStyle=g;cx.beginPath();cx.arc(dx,dy,ar,0,7);cx.fill();
+    // 気力のゲージ（黒い線が、今の強気度で振り向くのに要る気力）
+    const bw=dr*2,bx=dx-dr,by=gy+8,cost=Core.turnCostOf(P,st);cx.fillStyle=css('--line');cx.fillRect(bx,by,bw,7);
+    cx.fillStyle=st.stamina>=cost?lc:css('--muted');cx.fillRect(bx,by,bw*Math.min(1,st.stamina/st.staminaMax),7);
+    cx.strokeStyle=css('--ink');cx.lineWidth=1.5;const cxp=bx+bw*Math.min(1,cost/st.staminaMax);cx.beginPath();cx.moveTo(cxp,by-3);cx.lineTo(cxp,by+10);cx.stroke();
+  }
+  const look=now<faceUntil;cx.fillStyle=css('--red');cx.beginPath();cx.ellipse(dx,dy,dr*0.95,dr*1.1,0,0,7);cx.fill();
+  if(look){cx.fillStyle=css('--card');cx.beginPath();cx.ellipse(dx-dr*0.12,dy-dr*0.2,dr*0.55,dr*0.5,0,0,7);cx.fill();cx.fillStyle=css('--ink');for(const s of[-1,1]){cx.beginPath();cx.arc(dx-dr*0.12+s*dr*0.22,dy-dr*0.25,dr*0.1,0,7);cx.fill()}}
+  if(st){const u=(phase==='chant'||phase==='grace')?Math.min(1,(now-prevAt)/P.TICK_MS):1,n=st.children.length;
+    st.children.forEach((c,i)=>{// 地面の帯の上に並ぶ。奥（i=0）ほど上で小さい
+      const x0=prev?prev[i]:c.pos,pos=x0+(c.pos-x0)*u,lane=(H-gy-14)/n,s=Math.min(lane*0.36,W*0.04)*(0.85+0.1*i),y=gy+lane*(i+0.95),x=X(pos);
+      const ca=caughtAt[c.id]&&now-caughtAt[c.id]<700;cx.globalAlpha=ca?0.3:1;
+      const mv=c.vel>P.CATCH_VEL_THRESHOLD&&(phase==='chant'||phase==='grace'),leg=mv?Math.sin(pos*2.4)*0.6:0;
+      cx.strokeStyle=c.col;cx.lineWidth=s*0.28;cx.lineCap='round';for(const g of[1,-1]){cx.beginPath();cx.moveTo(x,y-s*0.9);cx.lineTo(x+Math.sin(leg*g)*s*0.7,y);cx.stroke()}
+      cx.fillStyle=c.col;cx.beginPath();cx.ellipse(x,y-s*1.5,s*0.55,s*0.75,0,0,7);cx.fill();cx.fillStyle=css('--card');cx.beginPath();cx.arc(x,y-s*2.55,s*0.48,0,7);cx.fill();cx.strokeStyle=c.col;cx.lineWidth=s*0.12;cx.stroke();
+      if(c.winded){cx.fillStyle=css('--muted');cx.font=`700 ${Math.max(9,s*0.55)}px ${css('--ui')}`;cx.textAlign='left';cx.fillText('ぜぇ…',x+s*0.9,y-s*2.6)}
+      cx.globalAlpha=1;cx.fillStyle=c.human?css('--ink'):css('--muted');cx.font=`${c.human?900:700} ${Math.max(9,s*(c.human?0.75:0.62))}px ${css('--ui')}`;cx.textAlign='left';cx.fillText(c.name,x+s*0.9,y-s*1.4)})}
+  requestAnimationFrame(frame)}
+resize();renderSetup();renderChant();requestAnimationFrame(frame);
+</script>
+</body>
+</html>
