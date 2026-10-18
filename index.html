@@ -70,6 +70,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 /* 画面の上にかぶせて広く出す。開いている間はゲームは中断 */
 .tuneWrap{position:fixed;inset:0;z-index:10;background:color-mix(in srgb,var(--ink) 35%,transparent);display:flex;justify-content:center;align-items:flex-start;padding:10px 12px}
 .tune{width:100%;max-width:720px;max-height:calc(100dvh - 20px);background:var(--card);border:2px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;overflow:auto;user-select:text}
+.tune>*{flex-shrink:0}
 .tuneHead{display:flex;align-items:center;gap:8px}.tuneHead h2{font-family:var(--pop);font-weight:400;font-size:1.05rem;margin:0;flex:1}
 .tuneTop{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .tuneRows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px}
@@ -78,6 +79,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .tuneRows label span{display:flex;justify-content:space-between}.tuneRows label b{color:var(--ink);font-variant-numeric:tabular-nums}
 .note{font-size:.78rem;color:var(--muted);margin:0}
 .check{font-size:.8rem;font-weight:700;color:var(--muted);display:flex;gap:6px;align-items:center}
+.kidTable{font-size:.74rem;overflow-x:auto}.kidTable table{border-collapse:collapse;width:100%;white-space:nowrap}
+.kidTable th,.kidTable td{padding:3px 6px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+.kidTable th:first-child,.kidTable td:first-child{text-align:left}.kidTable th{color:var(--muted);font-weight:700}
+.bar{display:inline-block;width:44px;height:6px;background:var(--line);border-radius:3px;vertical-align:middle;margin-right:4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
 .log{font-size:.76rem;color:var(--muted);max-height:7em;overflow:auto;border-top:1px dashed var(--line);padding-top:6px}
 </style>
 </head>
@@ -93,9 +98,10 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <div class="tuneTop">
       <button type="button" class="pill" id="pause2">⏸ 中断</button>
       <button type="button" class="pill" id="quitBtn">やめる</button>
-      <label class="check"><input type="checkbox" id="showMind"> CPU の子の考えを見る</label>
+      <label class="check"><input type="checkbox" id="showMind"> 道の上に、子どもの体力と考えを出す</label>
       <button type="button" class="pill" id="tuneReset">最初の値に戻す</button>
     </div>
+    <div class="kidTable" id="kidTable"></div>
     <div class="tuneRows" id="tuneRows"></div>
     <p class="note">変えた数字はこのブラウザに覚えます。★は次のゲームから効きます。それ以外はすぐ効きます。</p>
     <div class="log" id="log"></div>
@@ -143,8 +149,9 @@ const HOW={
 
 // ---------- 調整の数字（⚙ 調整で変えられる。変えた値はこのブラウザに覚える） ----------
 // 時計・猶予・下がる量は、シミュレーター（sim.js）で決めた値（2026-10-18）。全速まで 1.5 秒にしたので、子ども役は 46 秒、だるま役は 44 秒
-const TUNE_DEF={accT:1.5,stopT:0.5,cpuStopMin:0.4,cpuStopMax:0.7,grace:0.2,clockKid:46,clockDaruma:44,knock:25,breakMin:1.0,breakMax:3.5,cue:0.8,watch:1.2};
+const TUNE_DEF={accT:1.5,stopT:0.5,cpuAccT:1.5,cpuStopMin:0.4,cpuStopMax:0.7,grace:0.2,clockKid:46,clockDaruma:44,knock:25,breakMin:1.0,breakMax:3.5,cue:0.8,watch:1.2};
 const TUNE_INFO=[['accT','あなた：全速になるまで',0.3,3,0.1,'秒'],['stopT','あなた：全速から止まるまで',0.1,1.5,0.05,'秒'],
+  ['cpuAccT','★CPU の子：全速になるまで（±15%）',0.3,3,0.1,'秒'],
   ['cpuStopMin','★CPU の子：止まるまで（最短）',0.1,1.5,0.05,'秒'],['cpuStopMax','★CPU の子：止まるまで（最長）',0.1,1.5,0.05,'秒'],
   ['grace','振り向き始めてから見つかるまでの猶予',0,0.5,0.1,'秒'],['clockKid','だるまの時計（子ども役のとき）',20,90,1,'秒'],['clockDaruma','だるまの時計（だるま役のとき）',20,90,1,'秒'],
   ['knock','捕まったら下がる（96でスタートへ）',0,96,1,''],
@@ -204,7 +211,7 @@ function beep(f,d,type='triangle'){const a=actx;if(!a)return;const o=a.createOsc
 // ---------- 進める ----------
 function start(){
   ac();timers=[];acc=0;paused=false;
-  st=R.newGame({withMe:role==='kid',lane:P.ACTIVE_CHILDREN-1,type:role==='daruma'?pickedType:'normal',accT:T.accT,stopT:T.stopT,cpuStop:[T.cpuStopMin,Math.max(T.cpuStopMin,T.cpuStopMax)]});
+  st=R.newGame({withMe:role==='kid',lane:P.ACTIVE_CHILDREN-1,type:role==='daruma'?pickedType:'normal',accT:T.accT,stopT:T.stopT,cpuStop:[T.cpuStopMin,Math.max(T.cpuStopMin,T.cpuStopMax)],cpuAccT:T.cpuAccT});
   let ci=0;st.children.forEach((c,i)=>{c.lane=i;c.col=c.human?null:KID_COL[ci++]});
   me=st.children.find(c=>c.human)||null;cpu=role==='kid'?R.cpuDaruma():null;
   applyTune();
@@ -315,13 +322,27 @@ pad.addEventListener('pointerup',up);pad.addEventListener('pointercancel',up);
 addEventListener('keydown',e=>{if(e.code!=='Space'||e.repeat||role!=='kid'||!st)return;e.preventDefault();ac();pressed=true;pad.classList.add('down')});
 addEventListener('keyup',e=>{if(e.code==='Space')up()});
 // 調整
+// 子どもの表（調整を開いているときだけ、0.3 秒ごとに描き直す）
+const MOTIVE_JA={scorer:'勝ちたい',careless:'気にしない',slacker:'やる気なし',steady:'ふつう'};
+function renderKids(){
+  if(!st){$('kidTable').innerHTML='<p class="note">ゲームを始めると、子どもひとりずつの体力・速さ・性格が出ます。</p>';return}
+  const pc=v=>Math.round(v*100);
+  const rows=st.children.map(c=>{
+    const e=c.human?'—':`<span class="bar"><i style="width:${pc(c.energy/c.energyMax)}%;background:${c.winded?css('--red'):''}"></i></span>${Math.round(c.energy)}/${Math.round(c.energyMax)}${c.winded?' ぜぇ':''}`;
+    const mind=c.human?'—':c.freezing?'止まる':c.intendsToStop===false?'賭け':'—';
+    return `<tr><td>${c.human?'あなた':c.name}</td><td>${e}</td><td>${(c.maxSpeed*10).toFixed(1)}</td><td>${(c.accT/10).toFixed(1)}秒</td><td>${(c.maxSpeed/c.brake/10).toFixed(2)}秒</td>`+
+      `<td>${c.human?'—':pc(c.boldness)}</td><td>${c.human?'—':pc(c.selfControl)}</td><td>${c.human?'—':pc(c.reaction)}</td><td>${c.human?'—':pc(c.skepticism)}</td><td>${c.human?'—':MOTIVE_JA[c.motiveName]||c.motiveName}</td><td>${mind}</td><td>${Math.round(c.pos)}</td></tr>`});
+  $('kidTable').innerHTML=`<table><tr><th>子ども</th><th>体力</th><th>最高速</th><th>全速まで</th><th>止まるまで</th><th>強気</th><th>自制</th><th>反応</th><th>疑い深さ</th><th>動機</th><th>いま</th><th>位置</th></tr>${rows.join('')}</table>
+  <p class="note">体力は走ると減り、ゆっくり・止まっていると戻ります。速さを変える（加速・ブレーキ）だけでも減ります。0になると「ぜぇ」で遅くなります。あなたには体力はありません。強気〜疑い深さは 0〜100。</p>`;
+}
+setInterval(()=>{if(!$('tune').hidden)renderKids()},300);
 function renderTune(){
   $('tuneRows').innerHTML=TUNE_INFO.map(([k,n,lo,hi,s,u])=>`<label for="t_${k}"><span>${n}<b id="tv_${k}">${T[k]}${u}</b></span><input type="range" id="t_${k}" min="${lo}" max="${hi}" step="${s}" value="${T[k]}"></label>`).join('');
   TUNE_INFO.forEach(([k,,,,,u])=>{const el=$('t_'+k);el.oninput=()=>{T[k]=+el.value;$('tv_'+k).textContent=T[k]+u;store.set('dk-tune3',T);applyTune()}});
 }
 // 開くと自動で中断、閉じると（自分で中断していなければ）続きから
 let tunePaused=false;
-function openTune(){$('tune').hidden=false;$('tuneBtn').setAttribute('aria-expanded','true');
+function openTune(){$('tune').hidden=false;renderKids();$('tuneBtn').setAttribute('aria-expanded','true');
   if(st&&!paused&&phase!=='over'&&phase!=='setup'){tunePaused=true;togglePause()}}
 function closeTune(){$('tune').hidden=true;$('tuneBtn').setAttribute('aria-expanded','false');if(tunePaused&&paused)togglePause();tunePaused=false}
 $('tuneBtn').onclick=()=>$('tune').hidden?openTune():closeTune();
@@ -393,6 +414,7 @@ function draw(now){
     const label=(c.human?'あなた':c.name.replace(/^.*の/,''))+(c.winded?' ぜぇ…':'');
     cx.fillStyle=c.human?ink:muted;cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.fillText(label,x,y-s*3.3);
     if(hit){cx.fillStyle=red;cx.font=`900 ${Math.max(14,s*1.1)}px ${css('--pop')}`;cx.fillText('！',x,y-s*3.3-Math.max(12,s*0.7))}
+    if(mind&&!c.human){const bw=s*1.6,bx=x-bw/2,by=y+5;cx.fillStyle=css('--line');cx.fillRect(bx,by,bw,3);cx.fillStyle=c.winded?red:accent;cx.fillRect(bx,by,bw*c.energy/c.energyMax,3)}
     if(mind&&!c.human){const m=c.freezing?'止まる':c.intendsToStop===false?'賭け':'';if(m){cx.fillStyle=m==='賭け'?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*3.3-Math.max(11,s*0.6))}}
   });
   $('gauge').style.width=(me?me.vel/me.maxSpeed*100:0)+'%';
