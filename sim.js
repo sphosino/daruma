@@ -8,7 +8,7 @@
 //   node sim.js sweep               猶予 × 時計 の表（GRACES=0.1,0.2 などで猶予を並べる）
 //   node sim.js kid                 子ども役：人っぽい子 1人＋CPU の子 3人 対 ゲームの CPU のだるま
 //   node sim.js check               シミュレーターの確かめ（下の check を見る）
-// 数字は環境変数で変えられる：N（局数）、CLOCK（秒）、KNOCK（下がる量。start ならスタートへ）、GRACE（秒）、
+// 数字は環境変数で変えられる：N（局数）、KIDS（子どもの人数、ふだん 4）、CLOCK（秒）、KNOCK（下がる量。start ならスタートへ）、GRACE（秒）、
 //   OLD=1（前の決まり：見送りで「だ」をつながない・止まり方は元のまま・見逃しなし）
 
 const R = require("./rules.js");
@@ -99,7 +99,8 @@ function play(policy, opt) {
   P.GOAL_TICKS = Math.round((opt.clock || 40) * 10);
   P.CATCH_KNOCK = opt.knock == null ? null : opt.knock;
   if (opt.grace != null) R.LOOK.grace = Math.round(opt.grace * 10);
-  const st = R.newGame({ withMe: !!opt.kid, lane: 3, cpuStop: OLD ? [0, 0] : undefined });
+  const kids = opt.kids || +env("KIDS", 4);
+  const st = R.newGame({ withMe: !!opt.kid, kids, lane: kids - 1, cpuStop: OLD ? [0, 0] : undefined });
   if (OLD) { // 止まり方を元の値に戻す
     const defs = Object.fromEntries(Core.ROSTER.map(d => [d.id, d]));
     st.children.forEach(c => { if (defs[c.id]) c.brake = defs[c.id].brake; });
