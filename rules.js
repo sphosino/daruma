@@ -18,9 +18,10 @@
   // 止まり方：元の止まりやすさの順番（maxSpeed/brake が大きいほど止まりにくい）はそのままに、
   // 全速から止まるまでを 4〜7 tick（0.4〜0.7 秒）に広げる。人は 5 tick（0.5 秒）
   var STOP_TICKS_MIN = 4, STOP_TICKS_MAX = 7;
-  function humanStop(d) {
+  function humanStop(d, lo, hi) {
+    lo = lo != null ? lo : STOP_TICKS_MIN; hi = hi != null ? hi : STOP_TICKS_MAX;
     var o = d.maxSpeed / d.brake;
-    var t = STOP_TICKS_MIN + (o - 0.83) / (3.1 - 0.83) * (STOP_TICKS_MAX - STOP_TICKS_MIN);
+    var t = Math.max(0.5, lo + (o - 0.83) / (3.1 - 0.83) * (hi - lo));
     return Object.assign({}, d, { brake: d.maxSpeed / t });
   }
 
@@ -33,15 +34,24 @@
     bodyAwareness: 0.5, skepticism: 0.5, conformity: 0, reaction: 0.5
   };
 
-  // 子どもを n 人。withMe なら1人は人（列は lane 番目）
+  // 人の子どもの加速・減速（全速になるまで accT 秒、全速から止まるまで stopT 秒）
+  function setMe(c, accT, stopT) {
+    c.accel = c.maxSpeed / Math.max(0.5, accT * 10);
+    c.brake = c.maxSpeed / Math.max(0.5, stopT * 10);
+  }
+
+  // 子どもを n 人。withMe なら1人は人（列は lane 番目）。cpuStop=[最短,最長] 秒で CPU の止まり方を変えられる
   function newGame(opt) {
     opt = opt || {};
     var n = opt.kids || P.ACTIVE_CHILDREN;
-    var defs = Core.pickActiveChildren(P, opt.withMe ? n - 1 : n).map(humanStop);
+    var cs = opt.cpuStop || [STOP_TICKS_MIN / 10, STOP_TICKS_MAX / 10];
+    var defs = Core.pickActiveChildren(P, opt.withMe ? n - 1 : n).map(function (d) { return humanStop(d, cs[0] * 10, cs[1] * 10); });
     var lane = opt.lane != null ? opt.lane : Math.floor(n / 2);
     if (opt.withMe) defs.splice(lane, 0, ME);
     var st = Core.newRunState(P, defs, opt.type);
-    st.children.forEach(function (c) { if (c.id === "me") { c.human = true; c.input = false; } });
+    st.children.forEach(function (c) {
+      if (c.id === "me") { c.human = true; c.input = false; setMe(c, opt.accT != null ? opt.accT : 0.33, opt.stopT != null ? opt.stopT : 0.5); }
+    });
     st.turnArmed = true;
     st.reward = "mid";
     st.nextReward = null;
@@ -111,7 +121,7 @@
 
   return {
     Core: Core, P: P, TIERS: TIERS, ME: ME,
-    humanStop: humanStop, newGame: newGame, resolve: resolve, applyReserved: applyReserved,
+    humanStop: humanStop, setMe: setMe, newGame: newGame, resolve: resolve, applyReserved: applyReserved,
     said: said, cpuDaruma: cpuDaruma
   };
 });
