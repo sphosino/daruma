@@ -335,7 +335,9 @@ const TUT={
   kid:[
     {type:'stop',on:'now',t:'あなた',x:'あなたはオレンジの子。だるまが「だるまさんがころんだ」と言っている間だけ進めます。',hl:'#stage',dm:'never'},
     {type:'stop',on:'now',t:'走る',x:'パッドを押すと走ります。押した場所が速さで、右ほど速い（右はしが全力）。押したまま左右に動かせて、離すと止まります。',hl:'#pad'},
-    {type:'do',on:'tick',if:()=>me.vel>=me.maxSpeed*0.8,t:'やってみよう',x:'右のはしを押して、全力で走ってみよう。',hl:'#pad'},
+    // 本当に全力（全速の 99%）になったら。右はしより手前を押していると全力にならないので、そのときはひとこと
+    {type:'do',on:'tick',if:()=>want>=0.9&&me.vel>=me.maxSpeed*want*0.99,t:'やってみよう',x:'右のはしを押して、全力で走ってみよう。',hl:'#pad',
+      nudge:()=>pressed&&want<0.9&&me.vel>=me.maxSpeed*want*0.95,nudgeMsg:'もっと右のはしを押そう'},
     {type:'stop',on:'now',t:'全力',x:'全力になりました。止まっているところから全力になるまで、2秒かかります。'},
     {type:'do',on:'chantEnd',if:STOPPED,fail:['まだ動いてた','もう少し早く離そう'],t:'止まる',x:'こんどは止まる練習。全力からは止まるまで1秒かかります。「ころんだ」と言い終わる前に指を離して、言い終わったときに止まっていよう。',
       nudge:()=>pressed&&R.said(st)>=7},
@@ -384,7 +386,7 @@ function tutEv(name,e){
 }
 function tutTick(){
   const b=tutCur();if(!b||tut.hold)return;
-  if(b.nudge&&b.nudge()&&nudged!==st.cycle*1000+st.resolvedCycles){nudged=st.cycle*1000+st.resolvedCycles;showMsg('そろそろ離そう',900)}
+  if(b.nudge&&b.nudge()&&nudged!==st.cycle*1000+st.resolvedCycles){nudged=st.cycle*1000+st.resolvedCycles;showMsg(b.nudgeMsg||'そろそろ離そう',900)}
   tutEv('tick');
 }
 // 子ども役の練習中、CPU のだるまの振り向き方を手順に合わせる
