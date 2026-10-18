@@ -761,8 +761,11 @@
         var hTop = c.winded ? c.maxSpeed * P.WINDED_SPEED_MULT : c.maxSpeed;
         var hFat = (1 - c.energy / c.energyMax) * (1 - c.motorControl) * P.MOTOR_DEGRADE_SCALE;
         var hBrake = c.brake * clamp(1 - hFat, 0.2, 1);
-        if (c.input) c.vel = c.vel > hTop ? Math.max(hTop, c.vel - hBrake) : Math.min(hTop, c.vel + accelStep(c, hTop));
-        else c.vel = Math.max(0, c.vel - hBrake);
+        // input は目標の速さ（全速の何割か。true なら全速、false なら離している）。目標より速ければブレーキ
+        var hWant = c.input === true ? 1 : (+c.input || 0);
+        var hTgt = hTop * Math.max(0, Math.min(1, hWant));
+        if (hWant > 0 && c.vel <= hTgt) c.vel = Math.min(hTgt, c.vel + accelStep(c, hTgt));
+        else c.vel = Math.max(hWant > 0 ? hTgt : 0, c.vel - hBrake);
         var hEffort = P.RUN_DRAIN_EXPONENT === 1 ? 1
           : Math.pow(clamp(c.vel / Math.max(0.001, c.maxSpeed), 0, 1), P.RUN_DRAIN_EXPONENT - 1);
         var hSteady = (c.vel < c.maxSpeed * P.REGEN_VEL_RATIO)

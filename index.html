@@ -46,7 +46,11 @@ canvas{display:block;width:100%;height:100%}
   touch-action:none;cursor:pointer;font-family:var(--pop);font-size:1.3rem;color:var(--accent);position:relative;overflow:hidden}
 .pad small{font-family:var(--ui);font-weight:700;font-size:.8rem;color:var(--muted)}
 .pad.down{background:var(--on)}
-.gauge{position:absolute;left:0;bottom:0;height:8px;background:var(--accent);width:0}
+.gauge{position:absolute;left:12px;bottom:0;height:12px;border-radius:6px 6px 0 0;background:var(--accent);width:0}
+/* 速さのバー：押した場所（横）が目標の速さ。▼が目標、下の帯がいまの速さ */
+.scale{position:absolute;left:12px;right:12px;bottom:16px;display:flex;justify-content:space-between;font-family:var(--ui);font-size:.72rem;font-weight:700;color:var(--muted);pointer-events:none}
+.target{position:absolute;bottom:0;top:0;width:3px;margin-left:-1.5px;background:var(--accent);opacity:.55;pointer-events:none}
+.target::after{content:'';position:absolute;top:6px;left:50%;transform:translateX(-50%);border:8px solid transparent;border-top-color:var(--accent)}
 /* だるま役：操作のカード */
 .card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px}
 .lbl{font-size:.8rem;font-weight:700;color:var(--muted);display:flex;justify-content:space-between}
@@ -130,7 +134,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <div class="row"><button class="btn arm on" id="arm" type="button"></button><button class="btn primary" id="go" type="button">言い始める</button></div>
   </div>
   <!-- 子ども役の操作 -->
-  <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押して走る">押して走る<small>押しっぱなしで走る・離して止まる（スペースキーでも）</small><div class="gauge" id="gauge"></div></div>
+  <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る">押した場所の速さで走る<small>右ほど速い・押したまま左右に動かせる・離すと止まる</small><div class="scale"><span>歩く</span><span>小走り</span><span>全力</span></div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
 </div>
 <script src="old/daruma-core.js"></script>
 <script src="rules.js"></script>
@@ -231,7 +235,7 @@ function toPrep(first){
 function toCue(){phase='cue';beep(260,0.5,'sine');renderCtl();renderChant();later(T.cue*1000,toChant)}
 function toChant(){phase='chant';acc=0;note('');renderCtl();renderChant()}
 function step(){ // 0.1秒ぶん世界を進める
-  if(me)me.input=pressed;
+  if(me)me.input=pressed?want:0;
   prev=snap();prevAt=gt;
   return Core.tick(P,st);
 }
@@ -250,7 +254,7 @@ function tick(){
   renderCtl();renderChant();
 }
 function lookTick(){
-  if(me)me.input=pressed;
+  if(me)me.input=pressed?want:0;
   prev=snap();prevAt=gt;
   const r=R.lookTick(st);
   if(r.reached){end(r.reached);return}
@@ -315,11 +319,16 @@ $('arm').onclick=()=>{if(!st||phase==='over'||paused)return;st.turnArmed=!st.tur
 $('tempo').oninput=()=>{if(!st||paused){renderCtl();return}const want=+$('tempo').value;
   if(phase==='chant'){const got=Core.applyTempoChange(P,st,want);if(got!==want)$('tempo').value=got}else st.tempoValue=want;renderCtl()};
 // 子ども役：押している間だけ走る
-let pressed=false;const pad=$('pad');
-pad.addEventListener('pointerdown',e=>{e.preventDefault();ac();pressed=true;pad.classList.add('down');try{pad.setPointerCapture(e.pointerId)}catch(_){}});
-const up=()=>{pressed=false;pad.classList.remove('down')};
+// 押した場所（横）が目標の速さ：左はしで歩く（1割）、右はしで全力。押したまま左右に動かせる
+let pressed=false,want=0;const pad=$('pad');
+function setWant(e){const r=pad.getBoundingClientRect(),f=((e.clientX??r.left)-r.left-12)/Math.max(1,r.width-24);
+  want=Math.max(0.1,Math.min(1,f));const t=$('target');t.hidden=false;t.style.left=(12+want*(r.width-24))+'px'}
+pad.addEventListener('pointerdown',e=>{e.preventDefault();ac();pressed=true;setWant(e);pad.classList.add('down');try{pad.setPointerCapture(e.pointerId)}catch(_){}});
+pad.addEventListener('pointermove',e=>{if(pressed)setWant(e)});
+const up=()=>{pressed=false;pad.classList.remove('down');$('target').hidden=true};
 pad.addEventListener('pointerup',up);pad.addEventListener('pointercancel',up);
-addEventListener('keydown',e=>{if(e.code!=='Space'||e.repeat||role!=='kid'||!st)return;e.preventDefault();ac();pressed=true;pad.classList.add('down')});
+// パソコン：スペースキーで全力
+addEventListener('keydown',e=>{if(e.code!=='Space'||e.repeat||role!=='kid'||!st)return;e.preventDefault();ac();pressed=true;want=1;pad.classList.add('down')});
 addEventListener('keyup',e=>{if(e.code==='Space')up()});
 // 調整
 // 子どもの表（調整を開いているときだけ、0.3 秒ごとに描き直す）
@@ -419,7 +428,7 @@ function draw(now){
     if(mind||c.human){const bw=s*1.6,bx=x-bw/2,by=y+5;cx.fillStyle=css('--line');cx.fillRect(bx,by,bw,3);cx.fillStyle=c.winded?red:accent;cx.fillRect(bx,by,bw*c.energy/c.energyMax,3)}
     if(mind&&!c.human){const m=c.freezing?'止まる':c.intendsToStop===false?'賭け':'';if(m){cx.fillStyle=m==='賭け'?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*3.3-Math.max(11,s*0.6))}}
   });
-  $('gauge').style.width=(me?me.vel/me.maxSpeed*100:0)+'%';
+  $('gauge').style.width=`calc((100% - 24px) * ${me?Math.min(1,me.vel/me.maxSpeed):0})`;
 }
 
 // ---------- まわす ----------
