@@ -37,6 +37,7 @@ canvas{display:block;width:100%;height:100%}
 .btn[disabled]{opacity:.45;cursor:default}
 .btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .lv{--c:var(--line)}.lv.on{border-color:var(--c);box-shadow:0 0 0 2px var(--c) inset}
+.lv.next{border-style:dashed;border-color:var(--c)}.lv{position:relative}.lv.next::after{content:'予約';position:absolute;top:3px;right:6px;font-size:.65rem;color:var(--c)}
 input[type=range]{width:100%;accent-color:var(--accent)}
 .arm.on{background:var(--on);border-color:var(--red)}
 .log{font-size:.78rem;color:var(--muted);max-height:6em;overflow:auto}
@@ -65,7 +66,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   </div>
   <div class="hud"><span>のこり <b id="left">40.0</b>秒</span><span><b id="cycle">1</b>回目</span><span>気力 <b id="qi">—</b></span></div>
   <div class="card" id="ctl">
-    <div><div class="lbl"><span>強気度（言う前か、見送った直後に決める）</span><span id="lvNote"></span></div>
+    <div><div class="lbl"><span>強気度（言っている間は予約）</span><span id="lvNote"></span></div>
       <div class="row" id="lvRow"></div></div>
     <div><div class="lbl"><span>テンポ</span><span id="tempoTxt"></span></div>
       <input type="range" id="tempo" min="0" max="100" step="1" value="45" aria-label="テンポ"></div>
@@ -79,20 +80,18 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 const Core=window.DarumaCore,P=Core.makeConfig({}); // 調整ラボの値は使わない（いつも同じ決まりで）
 const $=id=>document.getElementById(id);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const LV_WIN=1000; // 見送ったあと、強気度を選び直せる時間（ミリ秒）。言う速さで忙しさが変わらないよう時間で決める
 const TIERS=['low','mid','high','max'],TIER_COL={low:'#4f8fd8',mid:'#e5b830',high:'#ef8a2c',max:'#e0402c'},PULSE={low:0.6,mid:1,high:1.6,max:2.6};
 const KID_COL=['#4f8fd8','#3aa65a','#b45cc8','#e0457b'];
 const TYPE_NOTE={normal:'クセなし。まずはこれで。',red:'気力の器が大きいぶん、見送っても実入りが細い。',oni:'振り向きが安い。そのかわりテンポを上げるのが高い。子どもに怖がられている。',attack:'テンポが安い。そのかわり振り向きが高い。子どもに舐められている。'};
-let st=null,phase='setup',loop=null,lvUntil=0,lvT=0,pickedType='normal',prev=null,prevAt=0,tickAt=0,faceUntil=0;
+let st=null,phase='setup',loop=null,nextLv=null,pickedType='normal',prev=null,prevAt=0,tickAt=0,faceUntil=0;
 const caughtAt={};
 
 // ---------- 画面の部品 ----------
 function renderTypes(){$('types').innerHTML=Object.keys(P.DARUMA_TYPES).map(k=>`<button class="btn${k===pickedType?' on':''}" data-t="${k}" type="button">${P.DARUMA_TYPES[k].label}</button>`).join('');
   $('typeNote').textContent=TYPE_NOTE[pickedType]||'';$('types').querySelectorAll('button').forEach(b=>b.onclick=()=>{pickedType=b.dataset.t;renderTypes()})}
 function renderCtl(){
-  if(!st)return;const prep=phase==='prep',lvOpen=prep||(phase==='chant'&&performance.now()<lvUntil);
-  $('lvRow').innerHTML=TIERS.map(t=>`<button class="btn lv${st.reward===t?' on':''}" data-r="${t}" style="--c:${TIER_COL[t]}" type="button"${lvOpen?'':' disabled'}>${P.REWARD[t].label}<small>見送り+${Math.round(P.REWARD[t].reward*st.type.skipRewardScale)}<br>振向−${Math.round(Core.turnCostOf(P,st,t))}</small></button>`).join('');
-  $('lvRow').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(!(phase==='prep'||(phase==='chant'&&performance.now()<lvUntil)))return;st.reward=b.dataset.r;renderCtl()});
+  if(!st)return;const prep=phase==='prep';
+  $('lvRow').innerHTML=TIERS.map(t=>`<button class="btn lv${st.reward===t?' on':''}${nextLv===t?' next':''}" data-r="${t}" style="--c:${TIER_COL[t]}" type="button">${P.REWARD[t].label}<small>見送り+${Math.round(P.REWARD[t].reward*st.type.skipRewardScale)}<br>振向−${Math.round(Core.turnCostOf(P,st,t))}</small></button>`).join('');
   const cost=Math.round(Core.turnCostOf(P,st)),afford=st.stamina>=cost;
   $('arm').classList.toggle('on',st.turnArmed);
   $('arm').innerHTML=st.turnArmed?`👀 言い終わったら振り向く<small>気力 -${cost}${afford?'':'（足りない）'}</small>`:`🙈 振り向かずに見送る<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`;
@@ -100,7 +99,7 @@ function renderCtl(){
   $('tempo').value=Math.round(st.tempoValue);$('tempoTxt').textContent=Core.tempoLabel(st.tempoValue)+(phase==='chant'?'（上げると気力を使う）':'');
   $('qi').textContent=`${Math.round(st.stamina)} / ${Math.round(st.staminaMax)}`;
   $('left').textContent=Math.max(0,(P.GOAL_TICKS-st.elapsedTicks)*P.TICK_MS/1000).toFixed(1);$('cycle').textContent=st.cycle;
-  $('lvNote').textContent=prep?'':lvOpen?'今だけ変えられる！':'言っている間は変えられない';
+  $('lvNote').textContent=prep?'':nextLv?'次の「だ」で変わる':'押すと予約。次の「だ」で変わる';
 }
 function renderChant(){const el=$('chant');const look=performance.now()<faceUntil;el.classList.toggle('look',look);
   if(phase==='prep'&&st&&st.cycle>1){el.innerHTML='<span class="said">ひと休み</span>';return}
@@ -111,12 +110,13 @@ function log(s){$('log').insertAdjacentHTML('afterbegin',`<div>${s}</div>`)}
 // ---------- 進める ----------
 function start(){
   st=Core.newRunState(P,Core.pickActiveChildren(P,P.ACTIVE_CHILDREN),pickedType);
-  st.children.forEach((c,i)=>{c.lane=i;c.col=KID_COL[i]});st.turnArmed=true;st.reward='mid';
+  st.children.forEach((c,i)=>{c.lane=i;c.col=KID_COL[i]});st.turnArmed=true;st.reward='mid';nextLv=null;
   $('over').hidden=true;$('log').innerHTML='';prev=snap();prevAt=tickAt=performance.now();toPrep();
   log(`${st.type.label}で始めた。子ども：${st.children.map(c=>c.name).join('・')}`);
 }
 const snap=()=>st.children.map(c=>c.pos);
-function toPrep(){phase='prep';clearInterval(loop);loop=null;st.turnArmed=true;renderCtl();renderChant()}
+function applyNextLv(){if(nextLv){st.reward=nextLv;nextLv=null}}
+function toPrep(){phase='prep';applyNextLv();clearInterval(loop);loop=null;st.turnArmed=true;renderCtl();renderChant()}
 function toChant(){phase='chant';renderCtl();loop=setInterval(tick,P.TICK_MS)}
 function tick(){
   prev=snap();prevAt=performance.now();
@@ -135,10 +135,9 @@ function resolve(){
   else if(out.underpowered){showMsg('力が足りない…',1000);log(`${cyc}回目：振り向こうとしたが、気力が足りなかった`)}
   else{
     // 見送り：止まらずに続ける。最後の「だ」が次の「だ」を兼ねる。振り向く／見送るの選びは前のまま。
-    //   強気度はここから LV_WIN の間だけ選び直せる
+    //   予約した強気度があれば、この「だ」で変わる
     log(`${cyc}回目：見送った（気力+${Math.round(out.gained)}）`);showMsg('見送り！',800);
-    st.chantProgress=10;st.turnArmed=false;lvUntil=performance.now()+LV_WIN;
-    clearTimeout(lvT);lvT=setTimeout(renderCtl,LV_WIN+20);
+    st.chantProgress=10;st.turnArmed=false;applyNextLv();
     prev=snap();prevAt=tickAt=performance.now();toChant();renderChant();return}
   prev=snap();prevAt=tickAt=performance.now();
   setTimeout(toPrep,out.turned?1200:300);phase='wait';renderCtl();
@@ -149,6 +148,10 @@ function end(win,kid){clearInterval(loop);loop=null;phase='over';renderCtl();
   $('startBtn').textContent='もう一回';o.hidden=false;renderTypes()}
 
 $('startBtn').onclick=start;
+// 強気度：ひと休み中はすぐ変わる。言っている間は予約になり、次の「だ」（見送り）かひと休みで変わる。
+//   ボタンは毎回描き直すので、押した瞬間（pointerdown）に拾う
+$('lvRow').addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||!st||phase==='over'||phase==='setup')return;
+  const r=b.dataset.r;if(phase==='prep')st.reward=r;else nextLv=(r===st.reward||r===nextLv)?null:r;renderCtl()});
 $('go').onclick=()=>{if(phase==='prep')toChant()};
 $('arm').onclick=()=>{if(!st||(phase!=='prep'&&phase!=='chant'))return;st.turnArmed=!st.turnArmed;renderCtl()};
 $('tempo').oninput=()=>{if(!st)return;const want=+$('tempo').value;

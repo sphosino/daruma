@@ -146,7 +146,6 @@ function pickLv(){
 }
 // 振り向いたあとのひと休み。この間は子どもも動けない。次の強気度はここで見える
 //   長さはだるまが決める（CPU は BREAK_MIN〜BREAK_MAX 秒でばらばら）。言い始める CUE 秒前に「すぅ…」と合図が出る
-const LV_WIN=1.0; // 見送ったあと、強気度を選び直せる秒数
 let BREAK_MIN=1.0,BREAK_MAX=3.5,CUE=0.8;
 function applyTune(){A.vmax=T.vmax;A.acc=T.vmax/T.accT;A.dec=T.vmax/T.stopT;GRACE=T.grace;KNOCK=T.knock;BREAK_MIN=T.breakMin;BREAK_MAX=Math.max(T.breakMin,T.breakMax);CUE=Math.min(T.cue,BREAK_MIN+0.35)}
 applyTune();
@@ -173,8 +172,8 @@ function sayNext(now){
     const cost=LV.cost[D.lv],canTurn=D.qi>=cost;
     if(!canTurn||Math.random()>LV.turnP[D.lv]){D.qi=Math.min(QI_MAX,D.qi+LV.gain[D.lv]);
       // 見送り：止まらずにそのまま次へ。強気度はこの「だ」のときだけ選び直せる（光の色が変わる）
-      // 選び直せるのは「だ」から LV_WIN 秒の間（言う速さで忙しさが変わらないよう秒数で決める）。CPU はその間のどこかで決める
-      showMsg('見送り！');newChant(now,true,true);D.lvAt=now+Math.random()*LV_WIN;return}
+      // 強気度は、言っている間に予約したものにこの「だ」で変わる（CPU はここで選び直す）
+      pickLv();showMsg('見送り！');newChant(now,true,true);return}
     D.qi-=cost;D.state='turn';D.turnAt=now;D.watchEnd=now+1.2+Math.random()*1.0;showMsg('見てる！');}
   else D.next=now+D.gaps[D.i];
 }
@@ -216,7 +215,6 @@ function moving(k){return mode==='B'||!k.isMe?!!k.step:k.v>0.4}
 function update(dt){
   t+=dt;
   // だるま
-  if(D.lvAt&&t>=D.lvAt){D.lvAt=0;pickLv();kids.forEach(k=>{if(!k.isMe)k.plan=cpuPlan(k,D.pattern)})} // CPU の子は光を見て決め直す
   if(D.state==='chant'&&t>=D.next)sayNext(t);
   else if(D.state==='turn'&&t>=D.watchEnd){D.state='break';D.cued=false;D.breakEnd=t+0.35+BREAK_MIN+Math.random()*(BREAK_MAX-BREAK_MIN);pickLv();hideMsg();drawChant()}
   else if(D.state==='break'&&!D.cued&&t>=D.breakEnd-CUE){D.cued=true;beep(260,0.5,'sine');drawChant()}
@@ -317,7 +315,7 @@ function setMode(m){mode=m;store.set('dk-mode',m);document.querySelectorAll('.mo
   $('how').innerHTML=HOW[m];$('padLabel').textContent=PAD[m][0];$('padSub').textContent=PAD[m][1];showBest();
   if(me){me.v=0;me.step=null;me.queued=0}}
 document.querySelectorAll('.modes button').forEach(b=>b.addEventListener('click',()=>{setMode(b.dataset.m);b.blur()}));
-function start(){D.lvAt=0;
+function start(){
   ac();kids=[kid('あなた',css('--accent'),true,2),kid('せっかち','#4f8fd8',false,1),kid('まじめ','#3aa65a',false,0)];me=kids[0];
   t=0;outs=0;finished=false;$('outs').textContent='0';$('over').hidden=true;running=true;D.face=0;D.qi=60;newChant(0);
 }
