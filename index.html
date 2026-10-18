@@ -420,11 +420,24 @@ function draw(now){
     // すべった跡：振り向いたところから、見つかったところまで（押し戻されている間も残す）
     if(hit&&st.look){const xa=X(st.look.from[i]),xb=X(push&&push.dur?push.from[i]:c.pos);cx.strokeStyle=red;cx.lineWidth=Math.max(2,s*0.15);cx.setLineDash([s*0.3,s*0.25]);cx.beginPath();cx.moveTo(xa,y+3);cx.lineTo(xb,y+3);cx.stroke();cx.setLineDash([])}
     cx.globalAlpha=1;
-    const mv=moving&&c.vel>P.CATCH_VEL_THRESHOLD,leg=mv?Math.sin(pos*2.4)*0.6:0;
+    // 走り方が見て分かるように（2026-10-18）：全力は前かがみで大またに、土ぼこり。小走りはまっすぐ小さく。
+    //   歩くはゆっくり。ブレーキは体をそらして踏んばり、足もとにすべった跡。だるまからも同じに見える
+    const f=c.vel/c.maxSpeed,mv=(moving||phase==='push')&&c.vel>0.01,g=mv?gaitOf(c,i):'止まってる';
+    const lean=g==='全力'?0.28:g==='小走り'?0.1:g==='ブレーキ'?-0.22:0;
+    const amp=g==='全力'?0.95:g==='小走り'?0.6:g==='歩く'?0.35:g==='ブレーキ'?0.15:0;
+    const leg=mv?Math.sin(pos*(g==='全力'?1.6:2.4))*amp:0;
+    if(g==='全力'){ // 土ぼこり（後ろに流れる）
+      for(let k=0;k<3;k++){const t=((gt/260+k/3+i*0.17)%1),px=x-s*(0.5+t*1.6),py=y-s*(0.1+t*0.5);
+        cx.globalAlpha=(1-t)*0.45;cx.fillStyle=muted;cx.beginPath();cx.arc(px,py,s*(0.15+t*0.25),0,7);cx.fill()}cx.globalAlpha=1}
+    if(g==='ブレーキ'){cx.strokeStyle=muted;cx.lineWidth=Math.max(1.5,s*0.1);cx.beginPath();cx.moveTo(x-s*1.2,y+1);cx.lineTo(x+s*0.3,y+1);cx.stroke()}
+    cx.save();cx.translate(x,y);cx.rotate(lean);cx.translate(-x,-y);
     cx.strokeStyle=col;cx.lineWidth=s*0.28;cx.lineCap='round';
-    for(const sg of[1,-1]){cx.beginPath();cx.moveTo(x,y-s*0.9);cx.lineTo(x+Math.sin(leg*sg)*s*0.7,y);cx.stroke()}
+    for(const sg of[1,-1]){cx.beginPath();cx.moveTo(x,y-s*0.9);cx.lineTo(x+Math.sin(leg*sg)*s*0.8,y-Math.max(0,Math.cos(leg*sg))*0+(g==='全力'?-Math.max(0,Math.sin(leg*sg))*s*0.25:0));cx.stroke()}
     cx.fillStyle=col;cx.beginPath();cx.ellipse(x,y-s*1.5,s*0.55,s*0.75,0,0,7);cx.fill();
+    // 腕（全力ほど大きく振る）
+    if(mv&&amp>0.2){cx.strokeStyle=col;cx.lineWidth=s*0.2;for(const sg of[1,-1]){cx.beginPath();cx.moveTo(x,y-s*1.75);cx.lineTo(x-Math.sin(leg*sg)*s*0.7*amp,y-s*1.25);cx.stroke()}}
     cx.fillStyle=card;cx.beginPath();cx.arc(x,y-s*2.55,s*0.48,0,7);cx.fill();cx.strokeStyle=col;cx.lineWidth=s*0.12;cx.stroke();
+    cx.restore();
     cx.globalAlpha=1;cx.textAlign='center';
     const label=(c.human?'あなた':c.name.replace(/^.*の/,''))+(c.winded?' ぜぇ…':'');
     cx.fillStyle=c.human?ink:muted;cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.fillText(label,x,y-s*3.3);
