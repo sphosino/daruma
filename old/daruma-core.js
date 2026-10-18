@@ -736,7 +736,13 @@
       if (c.burstCooldown > 0) c.burstCooldown -= 1;
       var oldVel = c.vel;
 
-      if (c.human) {
+      if (c.caughtNow) {
+        // 見つかった子は、その場で固まる（押し戻されるのは見終わってから）
+        c.vel = 0;
+      } else if (st.looking && !c.human) {
+        // だるまがこっちを見ている。CPU の子はみんな止まろうとする
+        c.vel = Math.max(0, c.vel - c.brake);
+      } else if (c.human) {
         // 人が走らせている子（2026-10-18）。押している間は accel で加速、離すと brake で
         // 減速するだけ。考えるのは人なので、下の AI はまるごと飛ばす。体力も使わない。
         c.vel = c.input ? Math.min(c.maxSpeed, c.vel + c.accel) : Math.max(0, c.vel - c.brake);

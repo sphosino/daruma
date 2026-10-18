@@ -33,7 +33,8 @@ h1{font-family:var(--pop);font-size:1.05rem;margin:0;font-weight:400;flex:1 1 au
 .chant span{color:var(--line)}.chant span.said{color:var(--ink)}.chant.look{color:var(--red)}
 .stage{position:relative;flex:0 0 auto;height:clamp(170px,58vw,320px);border-radius:16px;overflow:hidden;background:var(--sky);border:2px solid var(--line)}
 canvas{display:block;width:100%;height:100%}
-.msg{position:absolute;left:50%;top:14%;transform:translateX(-50%);font-family:var(--pop);font-size:clamp(1.3rem,6.5vw,2.2rem);color:var(--red);text-shadow:0 2px 0 var(--card);pointer-events:none;white-space:nowrap}
+.msg{position:absolute;left:50%;top:10%;transform:translateX(-50%);width:94%;text-align:center;font-family:var(--pop);font-size:clamp(1.3rem,6.5vw,2.2rem);line-height:1.2;color:var(--red);text-shadow:0 2px 0 var(--card);pointer-events:none}
+.msg small{display:block;font-size:.55em;color:var(--ink)}
 .paused{position:absolute;left:0;right:0;top:4px;text-align:center;font-size:.8rem;font-weight:700;color:var(--muted);pointer-events:none}
 .hud{display:flex;justify-content:space-between;gap:8px;font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
 .hud b{color:var(--ink)}
@@ -141,25 +142,25 @@ const HOW={
   daruma:'あなたはだるま。CPU の子ども4人がタッチしようと走ってきます。言い終わったときに動いていた子を下がらせて、時計が切れるまで耐えたら勝ち。見送ると止まらずに「だ」からそのまま続きます。'};
 
 // ---------- 調整の数字（⚙ 調整で変えられる。変えた値はこのブラウザに覚える） ----------
-// 時計と下がる量は、シミュレーター（sim.js）で決めた値（2026-10-18）。子ども役は 40 秒、だるま役は 42 秒
-const TUNE_DEF={accT:0.33,stopT:0.5,cpuStopMin:0.4,cpuStopMax:0.7,grace:0.1,clockKid:40,clockDaruma:42,knock:25,breakMin:1.0,breakMax:3.5,cue:0.8,watch:1.2};
+// 時計・猶予・下がる量は、シミュレーター（sim.js）で決めた値（2026-10-18）。子ども役は 40 秒、だるま役は 41 秒
+const TUNE_DEF={accT:0.33,stopT:0.5,cpuStopMin:0.4,cpuStopMax:0.7,grace:0.2,clockKid:40,clockDaruma:41,knock:25,breakMin:1.0,breakMax:3.5,cue:0.8,watch:1.2};
 const TUNE_INFO=[['accT','あなた：全速になるまで',0.1,1,0.01,'秒'],['stopT','あなた：全速から止まるまで',0.1,1.5,0.05,'秒'],
   ['cpuStopMin','★CPU の子：止まるまで（最短）',0.1,1.5,0.05,'秒'],['cpuStopMax','★CPU の子：止まるまで（最長）',0.1,1.5,0.05,'秒'],
-  ['grace','振り向いてから見るまで',0,0.5,0.1,'秒'],['clockKid','だるまの時計（子ども役のとき）',20,90,1,'秒'],['clockDaruma','だるまの時計（だるま役のとき）',20,90,1,'秒'],
+  ['grace','振り向き始めてから見つかるまでの猶予',0,0.5,0.1,'秒'],['clockKid','だるまの時計（子ども役のとき）',20,90,1,'秒'],['clockDaruma','だるまの時計（だるま役のとき）',20,90,1,'秒'],
   ['knock','捕まったら下がる（96でスタートへ）',0,96,1,''],
   ['breakMin','ひと休み（いちばん短い）',0,5,0.1,'秒'],['breakMax','ひと休み（いちばん長い）',0,8,0.1,'秒'],
   ['cue','「すぅ…」の合図',0,2,0.1,'秒前'],['watch','振り向いて見ている時間',0.3,3,0.1,'秒']];
 // 前の最初の値（下がる量40）のまま覚えていたら、新しい最初の値にする
-const saved=store.get('dk-tune3',{});if(saved.knock===40)delete saved.knock;
+const saved=store.get('dk-tune3',{});if(saved.knock===40)delete saved.knock;if(saved.grace===0.1)delete saved.grace;if(saved.clockDaruma===42)delete saved.clockDaruma;
 let T={...TUNE_DEF,...saved};
-function applyTune(){P.GOAL_TICKS=Math.round((role==='daruma'?T.clockDaruma:T.clockKid)*1000/P.TICK_MS);P.CATCH_KNOCK=T.knock>=96?null:T.knock;if(me)R.setMe(me,T.accT,T.stopT);renderCtl()}
+function applyTune(){R.LOOK.grace=Math.round(T.grace*10);R.LOOK.ticks=Math.max(R.LOOK.grace+1,Math.round(T.watch*10));P.GOAL_TICKS=Math.round((role==='daruma'?T.clockDaruma:T.clockKid)*1000/P.TICK_MS);P.CATCH_KNOCK=T.knock>=96?null:T.knock;if(me)R.setMe(me,T.accT,T.stopT);renderCtl()}
 
 const q=new URLSearchParams(location.search);
 let role=q.get('role')||store.get('dk-role','kid');if(role!=='daruma')role='kid';
 let pickedType='normal';
 let st=null,me=null,cpu=null,phase='setup',paused=false;
 // 時間はゲームの中の時計（gt, ミリ秒）で進める。中断している間は止まる
-let gt=0,acc=0,lastNow=performance.now(),timers=[],prev=null,prevAt=0,faceUntil=0,graceLeft=0;
+let gt=0,acc=0,lastNow=performance.now(),timers=[],prev=null,prevAt=0,faceAt=-1e9,push=null;
 const caughtAt={};
 function later(ms,fn){timers.push({at:gt+ms,fn})}
 
@@ -186,10 +187,10 @@ function renderCtl(){
   $('qi').textContent=`${Math.round(st.stamina)} / ${Math.round(st.staminaMax)}`;
   $('lvNote').textContent=prep?'':st.nextReward?'次の「だ」で変わる':'押すと予約';
 }
-function renderChant(){const el=$('chant');el.classList.toggle('look',gt<faceUntil);
+function renderChant(){const el=$('chant');el.classList.toggle('look',phase==='look'||phase==='push');
   if(phase==='prep'||phase==='cue'){el.innerHTML=`<span class="said">${phase==='cue'?'すぅ…':'ひと休み'}</span>`;return}
-  const n=st?R.said(st):0;el.innerHTML=Core.CHANT_CHARS.map((s,k)=>`<span class="${k<n?'said':''}">${s}</span>`).join('')}
-let msgT=0;function showMsg(s,ms){const m=$('msg');m.textContent=s;m.hidden=false;clearTimeout(msgT);msgT=setTimeout(()=>m.hidden=true,ms||1100)}
+  const n=phase==='push'?10:st?R.said(st):0;el.innerHTML=Core.CHANT_CHARS.map((s,k)=>`<span class="${k<n?'said':''}">${s}</span>`).join('')}
+let msgT=0;function showMsg(s,ms,sub){const m=$('msg');m.textContent=s;if(sub){const e=document.createElement('small');e.textContent=sub;m.appendChild(e)}m.hidden=false;clearTimeout(msgT);msgT=setTimeout(()=>m.hidden=true,ms||1100)}
 function log(s){$('log').insertAdjacentHTML('afterbegin',`<div>${s}</div>`)}
 function setPaused(s){$('paused').textContent=s||'';$('paused').hidden=!s}
 let pausedNote='';
@@ -234,16 +235,36 @@ function tick(){
   if(res.timeUp){end(null);return}
   if(res.chantDone){
     beep(330,0.18);
-    if(st.turnArmed&&st.stamina>=Core.turnCostOf(P,st)){
-      // 振り向いた。見るまで grace 秒だけ動きを進める（止まりかけの子は見逃す）
-      faceUntil=gt+T.watch*1000+T.grace*1000;graceLeft=Math.round(T.grace*1000/P.TICK_MS);renderChant();
-      if(graceLeft>0){phase='grace';acc=0;return}
-    }
+    if(R.wantsTurn(st)){
+      // 振り向いて、じっと見る。この間も体は動く（すべっている子は、すべっているのが見える）
+      R.startLook(st);phase='look';faceAt=gt;acc=0;renderChant();return}
     resolve();return}
   if(cpu)cpu.onTick(st);
   renderCtl();renderChant();
 }
-function graceTick(){const cp=st.chantProgress,el=st.elapsedTicks;step();st.chantProgress=cp;st.elapsedTicks=el;if(--graceLeft<=0)resolve()}
+function lookTick(){
+  if(me)me.input=pressed;
+  prev=snap();prevAt=gt;
+  const r=R.lookTick(st);
+  if(r.reached){end(r.reached);return}
+  for(const c of r.newly){
+    // 見つかった：その場で固まって「！」。自分なら、どれだけ間に合わなかったかを出す
+    caughtAt[c.id]=gt;beep(150,0.25,'sawtooth');
+    if(c===me)showMsg('見つかった！',2200,c.caughtPressing?'まだ押していた':`あと${Math.max(0.1,c.caughtLate*0.1).toFixed(1)}秒早く離せば止まれた`);
+  }
+  if(r.done)endLook();
+}
+function endLook(){
+  const cyc=st.cycle,cost=Math.round(Core.turnCostOf(P,st));
+  const out=R.endLook(st);
+  const names=out.caughtList.map(c=>c.name),meCaught=me&&out.caughtList.includes(me);
+  if(!out.caughtList.length)showMsg('セーフ…みんな止まってた',1000);
+  else if(!meCaught)showMsg((me?'セーフ！ ':'見つけた！ ')+names.join('・')+(me?'が見つかった':''),1200);
+  log(`${cyc}回目：振り向いた`+(role==='daruma'?`（気力-${cost}）`:'')+(names.length?` → ${names.join('・')} が見つかって下がった`:' → 誰も動いてなかった'));
+  // ギューっと押し戻す（最初は速く、だんだんゆっくり）
+  phase='push';push={from:out.before,to:snap(),t0:gt,dur:out.caughtList.length?700:0};prev=snap();prevAt=gt;renderCtl();renderChant();
+  later(push.dur+400,()=>{push=null;toPrep(false)});
+}
 function resolve(){
   const cost=Math.round(Core.turnCostOf(P,st)),cyc=st.cycle;
   const out=R.resolve(st);
@@ -339,19 +360,30 @@ function draw(now){
     cx.fillStyle=ink;cx.font=`700 ${Math.max(10,dr*0.32)}px ${css('--ui')}`;cx.fillText(st.stamina>=cost?'気力':'気力が足りない',dx,by+bh+14);
   }
   cx.fillStyle=red;cx.beginPath();cx.ellipse(dx,dy,dr*0.95,dr*1.1,0,0,7);cx.fill();
-  if(gt<faceUntil){ // 顔（振り向いている）
-    cx.fillStyle=card;cx.beginPath();cx.ellipse(dx-dr*0.12,dy-dr*0.2,dr*0.55,dr*0.5,0,0,7);cx.fill();
-    cx.fillStyle=ink;cx.strokeStyle=ink;cx.lineWidth=1.5;for(const s of[-1,1]){cx.beginPath();cx.arc(dx-dr*0.12+s*dr*0.22,dy-dr*0.25,dr*0.11,0,7);cx.fill()}
-    cx.beginPath();cx.arc(dx-dr*0.12,dy-dr*0.02,dr*0.12,0,Math.PI);cx.stroke();
+  const faceOn=phase==='look'||phase==='push';
+  if(faceOn){ // 顔（振り向いている）。振り向く動き：顔が横から回ってくる（0.2 秒）
+    const f=Math.min(1,(gt-faceAt)/200),fx=dx+dr*0.6*(1-f)-dr*0.12*f,sx=0.25+0.75*f;
+    cx.save();cx.translate(fx,0);cx.scale(sx,1);cx.translate(-fx,0);
+    cx.fillStyle=card;cx.beginPath();cx.ellipse(fx,dy-dr*0.2,dr*0.55,dr*0.5,0,0,7);cx.fill();
+    // 見ている間は、目が子どもを見回す
+    const look=phase==='look'?Math.sin((gt-faceAt)/180)*dr*0.06:0;
+    cx.fillStyle=ink;cx.strokeStyle=ink;cx.lineWidth=1.5;for(const s of[-1,1]){cx.beginPath();cx.arc(fx+s*dr*0.22-dr*0.04+look,dy-dr*0.25,dr*0.11,0,7);cx.fill()}
+    cx.beginPath();cx.arc(fx,dy-dr*0.02,dr*0.12,0,Math.PI);cx.stroke();cx.restore();
   }
   if(!st)return;
   // 子ども（奥から順に。奥ほど上で小さく、手前ほど下で大きい）
-  const moving=phase==='chant'||phase==='grace',u=moving?Math.min(1,(gt-prevAt)/P.TICK_MS):1,n=st.children.length,mind=$('showMind').checked;
+  const moving=phase==='chant'||phase==='look',u=moving?Math.min(1,(gt-prevAt)/P.TICK_MS):1,n=st.children.length,mind=$('showMind').checked;
   st.children.forEach((c,i)=>{
-    const x0=prev?prev[i]:c.pos,pos=x0+(c.pos-x0)*u;
+    let pos=(prev?prev[i]:c.pos)+(c.pos-(prev?prev[i]:c.pos))*u;
+    const hit=caughtAt[c.id]!=null&&(phase==='look'||phase==='push')&&caughtAt[c.id]>=faceAt;
+    if(push&&push.dur){const k=Math.min(1,(gt-push.t0)/push.dur),e=1-Math.pow(1-k,3);pos=push.from[i]+(push.to[i]-push.from[i])*e}
     // 前の子ども役と同じ：足は地面の帯の上。奥（i=0）ほど上で小さく、手前ほど下で大きい
-    const s=Math.min(H*0.075,W*0.05)*(0.8+0.15*i*2/(n-1)),y=gy+6+i*(H-gy-12)/((n-1)*1.1),x=X(pos),col=c.human?accent:c.col;
-    cx.globalAlpha=caughtAt[c.id]!=null&&gt-caughtAt[c.id]<700?0.35:1;
+    const s=Math.min(H*0.075,W*0.05)*(0.8+0.15*i*2/(n-1)),y=gy+6+i*(H-gy-12)/((n-1)*1.1),col=c.human?accent:c.col;
+    // 見つかった直後はビクッと震える
+    const x=X(pos)+(hit&&gt-caughtAt[c.id]<350?Math.sin((gt-caughtAt[c.id])/18)*s*0.15:0);
+    // すべった跡：振り向いたところから、見つかったところまで（押し戻されている間も残す）
+    if(hit&&st.look){const xa=X(st.look.from[i]),xb=X(push&&push.dur?push.from[i]:c.pos);cx.strokeStyle=red;cx.lineWidth=Math.max(2,s*0.15);cx.setLineDash([s*0.3,s*0.25]);cx.beginPath();cx.moveTo(xa,y+3);cx.lineTo(xb,y+3);cx.stroke();cx.setLineDash([])}
+    cx.globalAlpha=1;
     const mv=moving&&c.vel>P.CATCH_VEL_THRESHOLD,leg=mv?Math.sin(pos*2.4)*0.6:0;
     cx.strokeStyle=col;cx.lineWidth=s*0.28;cx.lineCap='round';
     for(const sg of[1,-1]){cx.beginPath();cx.moveTo(x,y-s*0.9);cx.lineTo(x+Math.sin(leg*sg)*s*0.7,y);cx.stroke()}
@@ -360,6 +392,7 @@ function draw(now){
     cx.globalAlpha=1;cx.textAlign='center';
     const label=(c.human?'あなた':c.name.replace(/^.*の/,''))+(c.winded?' ぜぇ…':'');
     cx.fillStyle=c.human?ink:muted;cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.fillText(label,x,y-s*3.3);
+    if(hit){cx.fillStyle=red;cx.font=`900 ${Math.max(14,s*1.1)}px ${css('--pop')}`;cx.fillText('！',x,y-s*3.3-Math.max(12,s*0.7))}
     if(mind&&!c.human){const m=c.freezing?'止まる':c.intendsToStop===false?'賭け':'';if(m){cx.fillStyle=m==='賭け'?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*3.3-Math.max(11,s*0.6))}}
   });
   $('gauge').style.width=(me?me.vel/me.maxSpeed*100:0)+'%';
@@ -371,7 +404,7 @@ function frame(now){
   if(!paused&&st&&phase!=='over'&&phase!=='setup'){
     gt+=dt;
     for(let k=0;k<timers.length;k++){if(gt>=timers[k].at){const f=timers[k].fn;timers.splice(k--,1);f()}}
-    if(phase==='chant'||phase==='grace'){acc+=dt;while(acc>=P.TICK_MS&&(phase==='chant'||phase==='grace')){acc-=P.TICK_MS;if(phase==='chant')tick();else graceTick()}}
+    if(phase==='chant'||phase==='look'){acc+=dt;while(acc>=P.TICK_MS&&(phase==='chant'||phase==='look')){acc-=P.TICK_MS;if(phase==='chant')tick();else lookTick()}}
   }
   draw(now);requestAnimationFrame(frame);
 }

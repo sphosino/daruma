@@ -71,6 +71,48 @@
     }
     return out;
   }
+  // ---------- 振り向いて見る（2026-10-18） ----------
+  // 言い終わって振り向くと、LOOK の間だるまが見ている。この間も子どもの体は動く（時計と言葉は止まる）。
+  // 振り向き始めてから GRACE（振り向く動き＋すべって止まりきる猶予）がたっても動いている子が見つかる。
+  // 見つかった子はその場で固まり、見終わってから押し戻される。何が起きたか見て分かるようにするため
+  var LOOK = { grace: 2, ticks: 12 };   // 0.2 秒（振り向く動きのぶん）・1.2 秒（tick は 0.1 秒）。猶予 0.3 秒だと子どもがほとんど捕まらず、時間切れだけのゲームになった
+  function wantsTurn(st) { return st.turnArmed && st.stamina >= Core.turnCostOf(P, st); }
+  function startLook(st) {
+    st.looking = true;
+    st.look = { t: 0, from: st.children.map(function (c) { return c.pos; }), caught: [] };
+  }
+  // 見ている間を 0.1 秒進める。新しく見つかった子を返す。late は「あと何 tick 早く止まりはじめれば間に合ったか」
+  function lookTick(st) {
+    var cp = st.chantProgress, el = st.elapsedTicks, sta = st.stamina;
+    var res = Core.tick(P, st);
+    st.chantProgress = cp; st.elapsedTicks = el; st.stamina = sta;
+    st.look.t += 1;
+    var newly = [];
+    if (st.look.t > LOOK.grace) {
+      st.children.forEach(function (c) {
+        if (c.caughtNow || c.vel <= P.CATCH_VEL_THRESHOLD) return;
+        c.caughtNow = true;
+        c.caughtLate = (c.vel - P.CATCH_VEL_THRESHOLD) / c.brake;   // 止まりきるのに足りなかった tick
+        c.caughtPressing = !!(c.human && c.input);
+        st.look.caught.push(c); newly.push(c);
+      });
+    }
+    return { newly: newly, reached: res.reached, done: st.look.t >= LOOK.ticks };
+  }
+  // 見終わった。見つかった子を押し戻して（resolveCycle は「動いている子」を捕まえるので、そう見せかける）、結果を返す
+  function endLook(st) {
+    var caught = st.look.caught;
+    st.children.forEach(function (c) { c.vel = c.caughtNow ? 1 : 0; });
+    var before = st.children.map(function (c) { return c.pos; });
+    var out = resolve(st);
+    st.children.forEach(function (c) { c.vel = 0; c.caughtNow = false; });
+    st.looking = false;
+    out.before = before;
+    out.from = st.look.from;
+    out.caughtList = caught;
+    return out;
+  }
+
   function applyReserved(st) { if (st.nextReward) { st.reward = st.nextReward; st.nextReward = null; } }
 
   // 言っているところ：何音目まで言ったか（0〜10）
@@ -124,7 +166,8 @@
 
   return {
     Core: Core, P: P, TIERS: TIERS, ME: ME,
-    humanStop: humanStop, setMe: setMe, newGame: newGame, resolve: resolve, applyReserved: applyReserved,
+    humanStop: humanStop, setMe: setMe, newGame: newGame,
+    LOOK: LOOK, wantsTurn: wantsTurn, startLook: startLook, lookTick: lookTick, endLook: endLook, resolve: resolve, applyReserved: applyReserved,
     said: said, cpuDaruma: cpuDaruma
   };
 });

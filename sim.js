@@ -95,7 +95,7 @@ function play(policy, opt) {
   opt = opt || {};
   P.GOAL_TICKS = Math.round((opt.clock || 40) * 10);
   P.CATCH_KNOCK = opt.knock == null ? null : opt.knock;
-  const grace = OLD ? 0 : Math.round((opt.grace != null ? opt.grace : 0.1) * 10);
+  if (opt.grace != null) R.LOOK.grace = Math.round(opt.grace * 10);
   const st = R.newGame({ withMe: !!opt.kid, lane: 3, cpuStop: OLD ? [0, 0] : undefined });
   if (OLD) { // 止まり方を元の値に戻す
     const defs = Object.fromEntries(Core.ROSTER.map(d => [d.id, d]));
@@ -110,17 +110,20 @@ function play(policy, opt) {
     if (res.reached) return { win: "kid", by: res.reached, st };
     if (res.timeUp) return { win: "daruma", st };
     if (res.chantDone) {
-      if (st.turnArmed && st.stamina >= Core.turnCostOf(P, st)) {
-        for (let g = 0; g < grace; g++) {
-          if (me) me.input = opt.kid(st);
-          const cp = st.chantProgress, el = st.elapsedTicks;
-          const r2 = Core.tick(P, st); st.chantProgress = cp; st.elapsedTicks = el;
-          if (r2.reached) return { win: "kid", by: r2.reached, st };
-        }
-      }
       let out;
       if (OLD) { out = Core.resolveCycle(P, st); out.carry = false; }
-      else out = R.resolve(st);
+      else if (R.wantsTurn(st)) {
+        // 振り向いて見る。人っぽい子は、振り向いたのを見て 0.2 秒で指を離す
+        R.startLook(st);
+        let react = 2;
+        for (;;) {
+          if (me) me.input = me.input && react-- > 0;
+          const r2 = R.lookTick(st);
+          if (r2.reached) return { win: "kid", by: r2.reached, st };
+          if (r2.done) break;
+        }
+        out = R.endLook(st);
+      } else out = R.resolve(st);
       if (out.carry) policy.onCarry(st);
       else { R.applyReserved(st); policy.onPrep(st); }
     } else policy.onTick(st);
@@ -146,7 +149,7 @@ const pct = x => (100 * x).toFixed(0).padStart(3) + "%";
 const ci = (p, n) => 1.96 * Math.sqrt(p * (1 - p) / n);
 
 function table(opt) {
-  console.log(`時計 ${opt.clock || 40}秒・捕まったら ${opt.knock == null ? "スタートへ" : opt.knock + " 下がる"}・見逃し ${OLD ? 0 : (opt.grace != null ? opt.grace : 0.1)}秒${OLD ? "（前の決まり）" : ""}  各${N}局`);
+  console.log(`時計 ${opt.clock || 40}秒・捕まったら ${opt.knock == null ? "スタートへ" : opt.knock + " 下がる"}・猶予 ${OLD ? 0 : (opt.grace != null ? opt.grace : R.LOOK.grace / 10)}秒${OLD ? "（前の決まり）" : ""}  各${N}局`);
   for (const [name, mk] of Object.entries(POLICIES)) {
     const b = batch(name, mk, opt);
     console.log(`  ${name.padEnd(14, "　")} だるまの勝ち ${pct(b.daruma)}（±${(100 * ci(b.daruma, b.n)).toFixed(0)}）  言った回数 ${b.cyc.toFixed(1)}  捕まえた ${b.catches.toFixed(1)}  振り向いた ${pct(b.turnRate)}  空振り ${pct(b.whiffRate)}`);
@@ -155,22 +158,31 @@ function table(opt) {
 
 const mode = process.argv[2] || "table";
 const knockArg = v => (v === "start" ? null : +v);
-if (mode === "table") table({ clock: +env("CLOCK", 40), knock: knockArg(env("KNOCK", "start")), grace: +env("GRACE", 0.1) });
+if (mode === "table") table({ clock: +env("CLOCK", 40), knock: knockArg(env("KNOCK", "25")), grace: +env("GRACE", 0.3) });
 if (mode === "sweep") {
-  const clocks = env("CLOCKS", "40,45,50,55,60").split(",").map(Number);
-  const knocks = env("KNOCKS", "start,60,40,25").split(",");
-  const pols = env("POLS", "人間の読み,読み＋振り向く回に加速,ゲームの CPU のだるま,毎回振り向く,絶対振り向かない").split(",");
-  for (const k of knocks) {
-    console.log(`\n捕まったら ${k === "start" ? "スタートへ" : k + " 下がる"}（だるまの勝ち・各${N}局）`);
+  // 猶予（振り向き始めてから見つかるまで）× 時計
+  const clocks = env("CLOCKS", "40,42,44,46,48").split(",").map(Number);
+  const graces = env("GRACES", "0.1,0.3,0.5").split(",").map(Number);
+  const knock = knockArg(env("KNOCK", "25"));
+  const pols = env("POLS", "人間の読み,ゲームの CPU のだるま,でたらめ,毎回振り向く,絶対振り向かない").split(",");
+  for (const g of graces) {
+    R.LOOK.grace = Math.round(g * 10);
+    console.log(`
+猶予 ${g}秒・捕まったら ${knock == null ? "スタートへ" : knock + " 下がる"}（だるまの勝ち・各${N}局）`);
     console.log("  " + "作戦".padEnd(14, "　") + clocks.map(c => (c + "秒").padStart(6)).join(""));
     for (const p of pols) {
-      const row = clocks.map(c => pct(batch(p, POLICIES[p], { clock: c, knock: knockArg(k) }).daruma).padStart(6)).join("");
+      const row = clocks.map(c => pct(batch(p, POLICIES[p], { clock: c, knock }).daruma).padStart(6)).join("");
       console.log("  " + p.padEnd(14, "　") + row);
+    }
+    if (env("KIDROW", "1") === "1") {
+      const row = clocks.map(c => pct(1 - batch("k", POLICIES["ゲームの CPU のだるま"], { clock: c, knock, kid: () => humanKid("normal") }).daruma).padStart(6)).join("");
+      console.log("  " + "（子ども役）ふつうの子の勝ち".padEnd(14, "　") + row);
     }
   }
 }
 if (mode === "kid") {
-  const clock = +env("CLOCK", 40), knock = knockArg(env("KNOCK", "start"));
+  const clock = +env("CLOCK", 40), knock = knockArg(env("KNOCK", "25"));
+  R.LOOK.grace = Math.round(+env("GRACE", 0.3) * 10);
   console.log(`子ども役：人っぽい子 1人＋CPU の子 3人 対 ゲームの CPU のだるま。時計 ${clock}秒・捕まったら ${knock == null ? "スタートへ" : knock + " 下がる"}  各${N}局`);
   for (const style of ["careful", "normal", "bold"]) {
     const b = batch(style, POLICIES["ゲームの CPU のだるま"], { clock, knock, kid: () => humanKid(style) });
