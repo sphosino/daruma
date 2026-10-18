@@ -3,336 +3,259 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>だるまさん 子ども役の試作</title>
+<title>だるまさんがころんだ</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Mochiy+Pop+One&display=swap">
 <style>
-/* 1画面のゲーム：上に操作の切りかえ、まん中に道（横から見た図）と「だるまさんがころんだ」の文字、下に大きな操作パッド。また遊ぼの見た目 */
+/* だるま役も子ども役も同じ画面。上に言葉、まん中に道、下に役ごとの操作。決まりは rules.js（old/daruma-core.js の上に今の決まりを足したもの） */
 :root{
-  --bg:#fff7ec; --dot:#fde9cf; --card:#fffdf9; --ink:#4a2f22; --muted:#8f6b58; --line:#f1dcc6;
-  --accent:#c2601a; --on:#ffe2bd; --red:#d8452f; --ground:#e9d2b0; --sky:#fff1dc; --ok:#23944a;
-  --ui:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
-  --pop:"Mochiy Pop One","Zen Maru Gothic",sans-serif;
+  --bg:#fff7ec; --card:#fffdf9; --ink:#4a2f22; --muted:#8f6b58; --line:#f1dcc6; --accent:#c2601a; --on:#ffe2bd;
+  --red:#d8452f; --ground:#e9d2b0; --sky:#fff1dc;
+  --ui:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif; --pop:"Mochiy Pop One","Zen Maru Gothic",sans-serif;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#231a15; --dot:#2d221b; --card:#2f241d; --ink:#f6e6d6; --muted:#c3a58f; --line:#4a382c;
-  --accent:#f0954a; --on:#5a3a1f; --red:#ff6a52; --ground:#4a3a2c; --sky:#2a201a; --ok:#5fd38a; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#231a15; --dot:#2d221b; --card:#2f241d; --ink:#f6e6d6; --muted:#c3a58f; --line:#4a382c;
-  --accent:#f0954a; --on:#5a3a1f; --red:#ff6a52; --ground:#4a3a2c; --sky:#2a201a; --ok:#5fd38a; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{height:100%}
 [hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-weight:500;
-  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.app{height:100%;max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
-header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-h1{font-family:var(--pop);font-size:1.05rem;margin:0;font-weight:400;flex:1 1 auto;min-width:0}
-.modes{display:flex;gap:6px}
-.modes button{font:inherit;font-weight:700;font-size:.85rem;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
-.modes button[aria-pressed="true"]{background:var(--on);border-color:var(--accent)}
-.modes button:focus-visible,.pad:focus-visible,.go:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.how{font-size:.82rem;color:var(--muted);margin:0;min-height:2.6em}
-.how b{color:var(--ink)}
-.chant{font-family:var(--pop);font-size:clamp(1.3rem,6vw,2rem);text-align:center;letter-spacing:.06em;min-height:1.4em;white-space:nowrap}
-.chant span{color:var(--line);transition:color .05s}
-.chant span.said{color:var(--ink)}
-.chant.look{color:var(--red)}
-.stage{position:relative;flex:1 1 auto;min-height:150px;border-radius:16px;overflow:hidden;background:var(--sky);border:2px solid var(--line)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-weight:500;padding:10px 16px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.app{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+h1{font-family:var(--pop);font-weight:400;font-size:1.05rem;margin:0}
+.chant{font-family:var(--pop);font-size:clamp(1.3rem,6vw,2rem);text-align:center;min-height:1.4em;white-space:nowrap}
+.chant span{color:var(--line)}.chant span.said{color:var(--ink)}.chant.look{color:var(--red)}
+.stage{position:relative;height:38vh;min-height:170px;border-radius:16px;overflow:hidden;background:var(--sky);border:2px solid var(--line)}
 canvas{display:block;width:100%;height:100%}
-.msg{position:absolute;left:50%;top:18%;transform:translateX(-50%);font-family:var(--pop);font-size:clamp(1.4rem,7vw,2.4rem);color:var(--red);text-shadow:0 2px 0 var(--card);pointer-events:none;white-space:nowrap}
+.msg{position:absolute;left:50%;top:12%;transform:translateX(-50%);font-family:var(--pop);font-size:clamp(1.1rem,5.5vw,1.8rem);color:var(--red);text-shadow:0 2px 0 var(--card);white-space:nowrap;pointer-events:none}
+.paused{position:absolute;inset:auto 0 8px 0;text-align:center;font-size:.8rem;color:var(--muted);pointer-events:none}
 .hud{display:flex;justify-content:space-between;gap:8px;font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
 .hud b{color:var(--ink)}
-.pad{flex:0 0 32%;min-height:140px;border-radius:20px;border:3px solid var(--accent);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-  touch-action:none;cursor:pointer;font-family:var(--pop);font-size:1.3rem;color:var(--accent);position:relative;overflow:hidden}
-.pad small{font-family:var(--ui);font-weight:700;font-size:.8rem;color:var(--muted)}
+.card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.lbl{font-size:.8rem;font-weight:700;color:var(--muted);display:flex;justify-content:space-between}
+.row{display:flex;gap:6px}.row>*{flex:1 1 0;min-width:0}
+.btn{font:inherit;font-weight:700;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:9px 6px;cursor:pointer;line-height:1.3}
+.btn small{display:block;font-size:.68rem;font-weight:500;color:var(--muted)}
+.btn.on{background:var(--on);border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--card);font-family:var(--pop);font-weight:400;font-size:1.1rem}
+.btn[disabled]{opacity:.45;cursor:default}
+.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.lv{--c:var(--line);position:relative}.lv.on{border-color:var(--c);box-shadow:0 0 0 2px var(--c) inset}
+.lv.next{border-style:dashed;border-color:var(--c)}.lv.next::after{content:'予約';position:absolute;top:3px;right:6px;font-size:.65rem;color:var(--c)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.arm.on{background:var(--on);border-color:var(--red)}
+.log{font-size:.78rem;color:var(--muted);max-height:6em;overflow:auto}
+.pad{min-height:150px;border-radius:20px;border:3px solid var(--accent);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;touch-action:none;cursor:pointer}
+.pad b{font-family:var(--pop);font-weight:400;font-size:1.3rem}.pad small{font-size:.8rem;color:var(--muted)}
 .pad.down{background:var(--on)}
-.gauge{position:absolute;left:0;bottom:0;height:8px;background:var(--accent);width:0}
-.over{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:color-mix(in srgb,var(--bg) 82%,transparent);text-align:center;padding:12px}
-.over h2{font-family:var(--pop);font-weight:400;margin:0;font-size:1.6rem}
-.over p{margin:0;font-size:.9rem;color:var(--muted);max-width:30em}
-.go{font:inherit;font-family:var(--pop);font-size:1.15rem;border:0;border-radius:14px;background:var(--accent);color:var(--card);padding:12px 26px;cursor:pointer}
-@media (prefers-reduced-motion:reduce){.chant span{transition:none}}
-/* 調整の画面 */
-.tuneBtn{font:inherit;font-weight:700;font-size:.85rem;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
-.tuneBtn[aria-expanded="true"]{background:var(--on);border-color:var(--accent)}
-.tune{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
-.tuneRows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px}
-@media (max-width:480px){.tuneRows{grid-template-columns:minmax(0,1fr)}}
-.tuneRows label{display:flex;flex-direction:column;gap:2px;font-size:.78rem;font-weight:700;color:var(--muted)}
-.tuneRows label span{display:flex;justify-content:space-between}.tuneRows label b{color:var(--ink);font-variant-numeric:tabular-nums}
-.tuneRows input{width:100%;accent-color:var(--accent)}
-.tuneFoot{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.tuneReset{font:inherit;font-size:.8rem;font-weight:700;border:2px solid var(--line);background:var(--card);color:var(--muted);border-radius:10px;padding:4px 10px;cursor:pointer}
+.over{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:color-mix(in srgb,var(--bg) 88%,transparent);text-align:center;padding:12px;overflow:auto}
+.over h2{font-family:var(--pop);font-weight:400;margin:0;font-size:1.5rem}
+.over p{margin:0;font-size:.88rem;color:var(--muted);max-width:32em}
+.types{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.types .btn{flex:0 1 auto;padding:6px 12px}
 </style>
 </head>
 <body>
 <div class="app">
-  <header>
-    <h1>だるまさん 子ども役の試作 <a href="daruma.html" style="font-family:var(--ui);font-size:.8rem;color:var(--accent);margin-left:8px">だるま役で遊ぶ →</a></h1>
-    <button type="button" class="tuneBtn" id="tuneBtn" aria-expanded="false">⚙ 調整</button>
-  </header>
-  <section class="tune" id="tune" hidden aria-label="手ざわりの調整">
-    <div class="tuneRows" id="tuneRows"></div>
-    <div class="tuneFoot">
-      <div class="modes" role="group" aria-label="操作のしかた">
-        <button type="button" id="mA" data-m="A">A 押す</button>
-        <button type="button" id="mB" data-m="B">B 連打</button>
-        <button type="button" id="mC" data-m="C">C 引く</button>
-      </div>
-      <button type="button" class="tuneReset" id="tuneReset">最初の値に戻す</button>
-    </div>
-    <p class="how">変えた数字は、このブラウザに覚えておきます。対局中に変えても、すぐ効きます。</p>
-  </section>
-  <p class="how" id="how"></p>
-  <div class="chant" id="chant" aria-live="off"></div>
-  <div class="stage" id="stage">
+  <h1>だるまさんがころんだ</h1>
+  <div class="chant" id="chant"></div>
+  <div class="stage">
     <canvas id="cv"></canvas>
     <div class="msg" id="msg" hidden></div>
+    <div class="paused" id="paused" hidden></div>
     <div class="over" id="over">
       <h2>だるまさんがころんだ</h2>
-      <p>あなたはオレンジの子。だるまが振り向いたとき動いていたら、少し後ろに下げられます。だるまにタッチしたら勝ち。だるまのうしろの光が<b>強気度</b>（青→黄→橙→赤）。強気なほど振り向かずに見送りやすいけれど、ときどきは振り向きます。気力のゲージが線より少ないと、振り向けません。</p>
-      <button class="go" type="button" id="go">はじめる</button>
+      <div class="types" id="roles"></div>
+      <p id="howTo"></p>
+      <div class="types" id="types"></div>
+      <button class="btn primary" id="startBtn" type="button">はじめる</button>
     </div>
   </div>
-  <div class="hud"><span>時間 <b id="time">0.0</b>秒</span><span>アウト <b id="outs">0</b>回</span><span>いちばん速い <b id="best">—</b></span></div>
-  <div class="pad" id="pad" tabindex="0" role="button" aria-label="操作パッド"><span id="padLabel">押して走る</span><small id="padSub"></small><div class="gauge" id="gauge"></div></div>
-</div>
+  <div class="hud"><span>だるまの時計 のこり <b id="left">40.0</b>秒</span><span><b id="cycle">1</b>回目</span><span id="qiBox">気力 <b id="qi">—</b></span></div>
 
+  <!-- だるま役の操作 -->
+  <div class="card" id="ctlDaruma" hidden>
+    <div><div class="lbl"><span>強気度（言っている間は予約）</span><span id="lvNote"></span></div>
+      <div class="row" id="lvRow"></div></div>
+    <div><div class="lbl"><span>テンポ</span><span id="tempoTxt"></span></div>
+      <input type="range" id="tempo" min="0" max="100" step="1" value="45" aria-label="テンポ"></div>
+    <div class="row"><button class="btn arm on" id="arm" type="button"></button><button class="btn primary" id="go" type="button">言い始める</button></div>
+  </div>
+  <!-- 子ども役の操作 -->
+  <div class="pad" id="pad" hidden><b>押して走る</b><small>押しっぱなしで走る・離して止まる（スペースキーでも）</small></div>
+
+  <div class="card"><div class="log" id="log"></div></div>
+</div>
+<script src="old/daruma-core.js"></script>
+<script src="rules.js"></script>
 <script>
 'use strict';
+const R=window.DarumaRules,Core=R.Core,P=R.P,TIERS=R.TIERS;
 const $=id=>document.getElementById(id);
-const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const TIER_COL={low:'#4f8fd8',mid:'#e5b830',high:'#ef8a2c',max:'#e0402c'},PULSE={low:0.6,mid:1,high:1.6,max:2.6};
+const KID_COL=['#4f8fd8','#3aa65a','#b45cc8','#e0457b'];
+const TYPE_NOTE={normal:'クセなし。まずはこれで。',red:'気力の器が大きいぶん、見送っても実入りが細い。',oni:'振り向きが安い。そのかわりテンポを上げるのが高い。子どもに怖がられている。',attack:'テンポが安い。そのかわり振り向きが高い。子どもに舐められている。'};
+const HOW={
+  kid:'あなたは子ども。だるまが言っている間だけ進めます。言い終わって振り向いたときに動いていたらスタートへ戻ります。だれか1人でもだるまにタッチしたら子どもの勝ち。だるまの時計（言っている時間だけ進む40秒）が切れたらだるまの勝ち。全速からは止まるまで0.5秒かかります。だるまのうしろの光が強いほど、振り向かずに見送りやすい。',
+  daruma:'あなたはだるま。CPU の子ども4人が、タッチしようと走ってきます。言い終わったときに動いていた子をスタートに戻して、40秒（言っている時間だけ数える）耐えたら勝ち。見送ると止まらずに「だ」からそのまま続きます。'};
+const GRACE_TICKS=1;       // 振り向いてから見るまでの間（0.1秒）。止まりかけの子を見逃す
+const WATCH_MS=1200,CUE_MS=800,BREAK_MIN=1000,BREAK_MAX=3500;
 
-// ---------- 決まりごと（ここを変えて手ざわりを調整する） ----------
-const L=100, TOUCH=96;                 // 道の長さ。だるまの手前 TOUCH まで来たらタッチ
-// 手ざわりの数字は「⚙ 調整」で変えられる（TUNE_DEF が最初の値。変えた値はこのブラウザに覚える）
-//   止まるまでの時間：アウトかどうかは「振り向いた瞬間に動いているか」。全速で走るほど止まるのに時間がかかる
-const TUNE_DEF={vmax:10,accT:0.33,stopT:0.5,grace:0.15,knock:35,breakMin:1.0,breakMax:3.5,cue:0.8};
-const TUNE_INFO=[['vmax','走る速さ（最高速）',4,20,0.5,''],['accT','全速になるまで',0.05,1,0.05,'秒'],['stopT','全速から止まるまで',0.05,1.5,0.05,'秒'],
-  ['grace','振り向いた直後の見のがし',0,0.4,0.01,'秒'],['knock','捕まったら下がる',0,100,5,''],['breakMin','ひと休み（いちばん短い）',0,5,0.1,'秒'],
-  ['breakMax','ひと休み（いちばん長い）',0,8,0.1,'秒'],['cue','「すぅ…」の合図',0,2,0.1,'秒前']];
-let T={...TUNE_DEF,...store.get('dk-tune',{})};
-let GRACE=0.15,KNOCK=35;               // 振り向いた直後の見のがし（反応の分）・捕まったら下がる量
-const A={vmax:10,acc:30,dec:20};       // A：押すと加速、離すと減速（単位/秒）。applyTune が T から作る
-const B={dur:0.22,dist:1.8};           // B：1回押すと1歩（0.22秒で1.8進む）
-const C={vmax:11,px:110,dec:90};      // C：右へ px ピクセル引くと全速。離すとすぐ止まる
-const SYL=['だ','る','ま','さ','ん','が','こ','ろ','ん','だ'];
+const q=new URLSearchParams(location.search);
+let role=q.get('role')||store.get('dk-role','kid');if(role!=='daruma')role='kid';
+let pickedType='normal';
+let st=null,me=null,cpu=null,phase='setup',loop=null,timer=0,prev=null,prevAt=0,faceUntil=0,breakEnd=0;
+const caughtAt={};
 
-const HOW={A:'<b>押している間だけ走る</b>。離すと少しすべって止まります。全速で走っているほど、止まるのに時間がかかります。',
-  B:'<b>1回押すと1歩</b>。速く連打するほど速い。足が浮いている間（1歩の途中）に見られるとアウト。',
-  C:'<b>パッドを押したまま右へ引く</b>ほど速い。指を離すとすぐ止まります。'};
-const PAD={A:['押して走る','押しっぱなしで走る・離して止まる'],B:['連打で歩く','トン・トン・トン'],C:['右へ引いて走る','引くほど速い・離して止まる']};
-
-let mode=store.get('dk-mode','A');
-let best=store.get('dk-best',{});
-
-// ---------- 子ども ----------
-function kid(name,color,isMe,lane){return{name,color,isMe,lane,x:0,v:0,step:null,queued:0,out:0,phase:0,caught:0,plan:null}}
-let kids=[],me=null,t=0,running=false,outs=0,finished=false;
-
-// ---------- だるま ----------
-const D={state:'idle',i:0,next:0,watchEnd:0,turnAt:0,face:0,pattern:'',lv:0,qi:60};
-// 強気度（元の daruma と同じ考え方）：高いほど、見送ったときの気力の実入りも、振り向くときの気力の払いも大きい
-//   子どもからは、だるまのうしろの光（色・大きさ・脈の速さ）と気力のゲージで見える
-const LV={name:['低','中','高','激'],color:['#4f8fd8','#e5b830','#ef8a2c','#e0402c'],
-  gain:[8,14,22,32],cost:[10,18,28,40],turnP:[0.9,0.75,0.55,0.35],pulse:[0.6,1,1.6,2.6]};
-const QI_MAX=100;
-// CPU のだるまの強気度：気力が少ないときは高くして見送りで稼ぎたい。多いときは低めで振り向きやすく
-function pickLv(){
-  const w=D.qi<30?[1,2,4,3]:D.qi>75?[4,3,2,1]:[2,3,3,2];
-  let r=Math.random()*w.reduce((a,b)=>a+b,0);D.lv=0;while((r-=w[D.lv])>0)D.lv++;
+// ---------- 画面の部品 ----------
+function renderSetup(){
+  $('roles').innerHTML=[['kid','子どもで遊ぶ'],['daruma','だるまで遊ぶ']].map(([k,l])=>`<button class="btn${k===role?' on':''}" data-r="${k}" type="button">${l}</button>`).join('');
+  $('roles').querySelectorAll('button').forEach(b=>b.onclick=()=>{role=b.dataset.r;store.set('dk-role',role);renderSetup()});
+  $('howTo').textContent=HOW[role];
+  $('types').hidden=role!=='daruma';
+  $('types').innerHTML=Object.keys(P.DARUMA_TYPES).map(k=>`<button class="btn${k===pickedType?' on':''}" data-t="${k}" type="button" title="${TYPE_NOTE[k]||''}">${P.DARUMA_TYPES[k].label}</button>`).join('');
+  $('types').querySelectorAll('button').forEach(b=>b.onclick=()=>{pickedType=b.dataset.t;renderSetup()});
 }
-// 振り向いたあとのひと休み。この間は子どもも動けない。次の強気度はここで見える
-//   長さはだるまが決める（CPU は BREAK_MIN〜BREAK_MAX 秒でばらばら）。言い始める CUE 秒前に「すぅ…」と合図が出る
-let BREAK_MIN=1.0,BREAK_MAX=3.5,CUE=0.8;
-function applyTune(){A.vmax=T.vmax;A.acc=T.vmax/T.accT;A.dec=T.vmax/T.stopT;GRACE=T.grace;KNOCK=T.knock;BREAK_MIN=T.breakMin;BREAK_MAX=Math.max(T.breakMin,T.breakMax);CUE=Math.min(T.cue,BREAK_MIN+0.35)}
-applyTune();
-function newChant(now,keepLv,carry){
-  // 言い方を毎回変える：ふつう・ゆっくり・はやい・ためてからはやく・途中で止まる
-  const pats=['ふつう','ゆっくり','はやい','ためて一気','途中でためる'];
-  const p=pats[Math.floor(Math.random()*pats.length)];
-  const base={ふつう:0.27,ゆっくり:0.40,はやい:0.17,ためて一気:0.42,途中でためる:0.26}[p];
-  const gaps=SYL.map((_,k)=>{let g=base*(0.85+Math.random()*0.3);
-    if(p==='ためて一気'&&k>=6)g=0.12;
-    if(p==='途中でためる'&&k===5)g=0.9+Math.random()*0.6;
-    return g});
-  if(!keepLv)pickLv();
-  // carry：見送ったときは、最後の「だ」が次の「だ」を兼ねる（間をあけずに「…ころん だ るまさんが…」と続く）
-  D.state='chant';D.i=carry?1:0;D.gaps=gaps;D.next=now+(carry?gaps[1]:0.5);D.pattern=p;
-  kids.forEach(k=>{if(!k.isMe)k.plan=cpuPlan(k,p)});
-  drawChant();
+function renderCtl(){
+  if(!st)return;
+  $('left').textContent=Math.max(0,(P.GOAL_TICKS-st.elapsedTicks)*P.TICK_MS/1000).toFixed(1);$('cycle').textContent=st.cycle;
+  $('qiBox').hidden=role!=='daruma';
+  if(role!=='daruma')return;
+  const prep=phase==='prep';
+  $('lvRow').innerHTML=TIERS.map(t=>`<button class="btn lv${st.reward===t?' on':''}${st.nextReward===t?' next':''}" data-r="${t}" style="--c:${TIER_COL[t]}" type="button">${P.REWARD[t].label}<small>見送り+${Math.round(P.REWARD[t].reward*st.type.skipRewardScale)}<br>振向−${Math.round(Core.turnCostOf(P,st,t))}</small></button>`).join('');
+  const cost=Math.round(Core.turnCostOf(P,st)),afford=st.stamina>=cost;
+  $('arm').classList.toggle('on',st.turnArmed);
+  $('arm').innerHTML=st.turnArmed?`👀 言い終わったら振り向く<small>気力 -${cost}${afford?'':'（足りない）'}</small>`:`🙈 振り向かずに見送る<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`;
+  $('go').disabled=!prep;
+  $('tempo').value=Math.round(st.tempoValue);$('tempoTxt').textContent=Core.tempoLabel(st.tempoValue)+(phase==='chant'?'（上げると気力を使う）':'');
+  $('qi').textContent=`${Math.round(st.stamina)} / ${Math.round(st.staminaMax)}`;
+  $('lvNote').textContent=prep?'':st.nextReward?'次の「だ」で変わる':'押すと予約。次の「だ」で変わる';
 }
-function sayNext(now){
-  D.i++;beep(D.i===SYL.length?330:520+D.i*18,D.i===SYL.length?0.18:0.06);
-  drawChant();
-  if(D.i>=SYL.length){
-    // 振り向くか見送るか。強気度が高いほど見送りやすい。気力が足りなければ振り向けない（子どもにも見えている）
-    const cost=LV.cost[D.lv],canTurn=D.qi>=cost;
-    if(!canTurn||Math.random()>LV.turnP[D.lv]){D.qi=Math.min(QI_MAX,D.qi+LV.gain[D.lv]);
-      // 見送り：止まらずにそのまま次へ。強気度はこの「だ」のときだけ選び直せる（光の色が変わる）
-      // 強気度は、言っている間に予約したものにこの「だ」で変わる（CPU はここで選び直す）
-      pickLv();showMsg('見送り！');newChant(now,true,true);return}
-    D.qi-=cost;D.state='turn';D.turnAt=now;D.watchEnd=now+1.2+Math.random()*1.0;showMsg('見てる！');}
-  else D.next=now+D.gaps[D.i];
-}
-function drawChant(){
-  const el=$('chant');el.classList.toggle('look',D.state==='turn');
-  if(D.state==='break'){el.innerHTML=`<span class="said">${D.cued?'すぅ…':'ひと休み'}</span>`;return}
-  el.innerHTML=SYL.map((s,k)=>`<span class="${k<D.i?'said':''}">${s}</span>`).join('');
-}
-
-// ---------- CPU の子ども：その回の言い方を見て、どこで止まるかを決める ----------
-function cpuPlan(k,p){
-  const careful=k.name==='まじめ'?2:1;              // 止まる早さ（言い終わりの何音前で止まるか）
-  let stopAt=SYL.length-careful-(p==='はやい'||p==='ためて一気'?1:0);
-  if(D.lv>=2||D.qi<LV.cost[D.lv])stopAt+=1;         // 強気度が高い・気力が足りないときは、欲ばって最後まで走る
-  if(Math.random()<0.12)stopAt+=1;                  // たまに欲ばって遅れる
-  return{stopAt,rate:k.name==='せっかち'?0.16:0.24};
-}
-
-// ---------- 入力 ----------
-let pressed=false,dragX0=0,dragV=0;
-const pad=$('pad');
-function padDown(e){
-  if(!running)return;e.preventDefault();pressed=true;pad.classList.add('down');ac();
-  if(mode==='B')stepMe();
-  if(mode==='C'){dragX0=e.clientX??0;dragV=0}
-  try{pad.setPointerCapture(e.pointerId)}catch(_){}
-}
-function padMove(e){if(!pressed||mode!=='C')return;dragV=Math.max(0,Math.min(1,((e.clientX??0)-dragX0)/C.px))}
-function padUp(){pressed=false;dragV=0;pad.classList.remove('down')}
-pad.addEventListener('pointerdown',padDown);pad.addEventListener('pointermove',padMove);
-pad.addEventListener('pointerup',padUp);pad.addEventListener('pointercancel',padUp);
-// パソコンで試すとき：スペースキー（A・B）
-addEventListener('keydown',e=>{if(e.code!=='Space'||e.repeat)return;e.preventDefault();if(!running)return;pressed=true;pad.classList.add('down');ac();if(mode==='B')stepMe()});
-addEventListener('keyup',e=>{if(e.code==='Space')padUp()});
-function stepMe(){if(me.caught||D.state==='break')return;if(me.step)me.queued=Math.min(1,me.queued+1);else me.step={t0:t,x0:me.x}}
-
-// ---------- 動き ----------
-function moving(k){return mode==='B'||!k.isMe?!!k.step:k.v>0.4}
-function update(dt){
-  t+=dt;
-  // だるま
-  if(D.state==='chant'&&t>=D.next)sayNext(t);
-  else if(D.state==='turn'&&t>=D.watchEnd){D.state='break';D.cued=false;D.breakEnd=t+0.35+BREAK_MIN+Math.random()*(BREAK_MAX-BREAK_MIN);pickLv();hideMsg();drawChant()}
-  else if(D.state==='break'&&!D.cued&&t>=D.breakEnd-CUE){D.cued=true;beep(260,0.5,'sine');drawChant()}
-  else if(D.state==='break'&&t>=D.breakEnd)newChant(t,true);
-  D.face+=((D.state==='turn'?1:0)-D.face)*Math.min(1,dt*18);
-  for(const k of kids){
-    if(k.caught){k.caught-=dt;if(k.caught<=0){k.caught=0;k.x=Math.max(0,k.x-KNOCK);k.v=0;k.step=null;k.queued=0}continue}
-    if(k.isMe&&mode!=='B'){
-      if(mode==='A'){if(pressed)k.v=Math.min(A.vmax,k.v+A.acc*dt);else k.v=Math.max(0,k.v-A.dec*dt)}
-      else{const target=dragV*C.vmax;if(pressed&&target>k.v)k.v=Math.min(target,k.v+90*dt);else k.v=Math.max(target,k.v-C.dec*dt)}
-      if(D.state==='break')k.v=0; // ひと休み中は動けない
-      k.x+=k.v*dt;k.phase+=k.v*dt*0.9;
-    }else{
-      // 1歩ずつ（B の自分と、CPU）
-      if(!k.isMe&&!k.step&&D.state==='chant'&&D.i<k.plan.stopAt&&(!k.lastStep||t-k.lastStep>k.plan.rate))k.step={t0:t,x0:k.x};
-      if(k.step){const u=(t-k.step.t0)/B.dur;
-        if(u>=1){k.x=k.step.x0+B.dist;k.step=null;k.lastStep=t;if(k.queued){k.queued--;k.step={t0:t,x0:k.x}}}
-        else{k.x=k.step.x0+B.dist*(0.5-0.5*Math.cos(Math.PI*u));k.phase=k.step.x0*0.9+u*2.2}}
-    }
-    // 見られていたらアウト
-    if(D.state==='turn'&&t-D.turnAt>GRACE&&moving(k)){
-      k.caught=1.0;k.step=null;k.queued=0;k.v=0;beep(150,0.25,'sawtooth');
-      if(k.isMe){outs++;$('outs').textContent=outs;showMsg('アウト！ 下がる')}
-    }
-    if(k.x>=TOUCH&&!finished){
-      finished=true;running=false;beep(880,0.15);setTimeout(()=>beep(1175,0.2),120);
-      const win=k.isMe,sec=t.toFixed(1);
-      if(win&&(!best[mode]||t<best[mode])){best[mode]=t;store.set('dk-best',best)}
-      showOver(win?'タッチ！':`${k.name}が先にタッチ`,win?`${sec}秒・アウト${outs}回（操作 ${mode}）`:`あなたはあと${Math.max(0,TOUCH-me.x).toFixed(0)}。もう一回どうぞ`);
-    }
-  }
-  $('time').textContent=t.toFixed(1);
-  $('gauge').style.width=(mode==='C'?dragV*100:mode==='A'?me.v/A.vmax*100:0)+'%';
-}
-
-// ---------- 描く ----------
-const cv=$('cv'),cx=cv.getContext('2d');let W=0,H=0;
-function resize(){const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);W=r.width;H=r.height;cv.width=W*d;cv.height=H*d;cx.setTransform(d,0,0,d,0,0)}
-addEventListener('resize',resize);
-function draw(){
-  const ground=css('--ground'),ink=css('--ink'),red=css('--red'),card=css('--card'),muted=css('--muted');
-  cx.clearRect(0,0,W,H);
-  const gy=H*0.78,left=W*0.06,right=W*0.84,X=x=>left+(right-left)*x/L;
-  cx.fillStyle=ground;cx.fillRect(0,gy,W,H-gy);
-  // スタートの線
-  cx.strokeStyle=muted;cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(X(0),gy-6);cx.lineTo(X(0),H);cx.stroke();cx.setLineDash([]);
-  // だるま
-  const dx=W*0.91,dr=Math.min(H*0.17,W*0.07),dy=gy-dr*1.1;
-  // 強気度の光（色・大きさ・脈の速さ）
-  if(running||D.state!=='idle'){
-    const lc=LV.color[D.lv],beat=0.5+0.5*Math.sin(t*Math.PI*2*LV.pulse[D.lv]),ar=dr*(1.35+0.15*D.lv+0.12*beat);
-    const g=cx.createRadialGradient(dx,dy,dr*0.6,dx,dy,ar);g.addColorStop(0,lc+'cc');g.addColorStop(1,lc+'00');
-    cx.fillStyle=g;cx.beginPath();cx.arc(dx,dy,ar,0,7);cx.fill();
-    // 強気度の字と、気力のゲージ（足りないと振り向けない）
-    cx.textAlign='center';cx.font=`900 ${Math.max(11,dr*0.42)}px ${css('--ui')}`;cx.fillStyle=lc;cx.fillText('強気度 '+LV.name[D.lv],dx,dy-dr*1.55);
-    const bw=dr*2,bx=dx-dr,by=gy+8,bh=7;
-    cx.fillStyle=css('--line');cx.fillRect(bx,by,bw,bh);
-    cx.fillStyle=D.qi>=LV.cost[D.lv]?lc:muted;cx.fillRect(bx,by,bw*D.qi/QI_MAX,bh);
-    cx.strokeStyle=ink;cx.lineWidth=1.5;const cxp=bx+bw*LV.cost[D.lv]/QI_MAX;cx.beginPath();cx.moveTo(cxp,by-3);cx.lineTo(cxp,by+bh+3);cx.stroke();
-    cx.fillStyle=ink;cx.font=`700 ${Math.max(10,dr*0.32)}px ${css('--ui')}`;cx.fillText(D.qi>=LV.cost[D.lv]?'気力':'気力が足りない',dx,by+bh+14);
-  }
-  cx.fillStyle=red;cx.beginPath();cx.ellipse(dx,dy,dr*0.95,dr*1.1,0,0,7);cx.fill();
-  if(D.face>0.05){ // 顔（振り向いている）
-    cx.globalAlpha=D.face;cx.fillStyle=card;cx.beginPath();cx.ellipse(dx-dr*0.12,dy-dr*0.2,dr*0.55,dr*0.5,0,0,7);cx.fill();
-    cx.fillStyle=ink;for(const s of[-1,1]){cx.beginPath();cx.arc(dx-dr*0.12+s*dr*0.22,dy-dr*0.25,dr*0.11,0,7);cx.fill()}
-    cx.beginPath();cx.arc(dx-dr*0.12,dy-dr*0.02,dr*0.12,0,Math.PI);cx.stroke();cx.globalAlpha=1;
-  }
-  // 子ども（奥から順に）
-  const lanes=[0.55,0.7,0.85];
-  for(const k of [...kids].sort((a,b)=>a.lane-b.lane)){
-    // 足は地面の帯の上。奥（lane 0）ほど上で小さく、手前ほど下で大きい
-    const s=Math.min(H*0.075,W*0.05)*(0.8+0.15*k.lane),y=gy+6+k.lane*(H-gy-12)/2.2,x=X(k.x);
-    cx.globalAlpha=k.caught?0.35:1;
-    // 足（走っているときだけ動く）
-    const mv=moving(k),ph=k.phase*2.4,leg=mv?Math.sin(ph)*0.6:0;
-    cx.strokeStyle=k.color;cx.lineWidth=s*0.28;cx.lineCap='round';
-    for(const sg of[1,-1]){cx.beginPath();cx.moveTo(x,y-s*0.9);cx.lineTo(x+Math.sin(leg*sg)*s*0.7,y);cx.stroke()}
-    cx.fillStyle=k.color;cx.beginPath();cx.ellipse(x,y-s*1.5,s*0.55,s*0.75,0,0,7);cx.fill();
-    cx.fillStyle=card;cx.beginPath();cx.arc(x,y-s*2.55,s*0.48,0,7);cx.fill();cx.strokeStyle=k.color;cx.lineWidth=s*0.12;cx.stroke();
-    cx.globalAlpha=1;
-    if(k.isMe){cx.fillStyle=ink;cx.font=`700 ${Math.max(11,s*0.6)}px ${css('--ui')}`;cx.textAlign='center';cx.fillText('あなた',x,y-s*3.3)}
-    else{cx.fillStyle=muted;cx.font=`700 ${Math.max(10,s*0.5)}px ${css('--ui')}`;cx.textAlign='center';cx.fillText(k.name,x,y-s*3.3)}
-  }
-}
+function renderChant(){const el=$('chant');el.classList.toggle('look',performance.now()<faceUntil);
+  if(phase==='prep'||phase==='cue'){el.innerHTML=`<span class="said">${phase==='cue'?'すぅ…':'ひと休み'}</span>`;return}
+  const n=st?R.said(st):0;el.innerHTML=Core.CHANT_CHARS.map((s,k)=>`<span class="${k<n?'said':''}">${s}</span>`).join('')}
+let msgT=0;function showMsg(s,ms){const m=$('msg');m.textContent=s;m.hidden=false;clearTimeout(msgT);msgT=setTimeout(()=>m.hidden=true,ms||1100)}
+function log(s){$('log').insertAdjacentHTML('afterbegin',`<div>${s}</div>`)}
+function setPaused(s){$('paused').textContent=s||'';$('paused').hidden=!s}
 
 // ---------- 音 ----------
 let actx=null;
 function ac(){try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume()}catch(e){}return actx}
 function beep(f,d,type='triangle'){const a=actx;if(!a)return;const o=a.createOscillator(),g=a.createGain(),n=a.currentTime;o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0.12,n);g.gain.exponentialRampToValueAtTime(0.0001,n+d);o.connect(g).connect(a.destination);o.start(n);o.stop(n+d+0.02)}
 
-// ---------- 画面 ----------
-let msgT=0;
-function showMsg(s){const m=$('msg');m.textContent=s;m.hidden=false;clearTimeout(msgT);msgT=setTimeout(()=>{m.hidden=true},1100)}
-function hideMsg(){if(me&&!me.caught)$('msg').hidden=true}
-function showOver(h,p){const o=$('over');o.querySelector('h2').textContent=h;o.querySelector('p').textContent=p;$('go').textContent='もう一回';o.hidden=false;showBest()}
-function showBest(){$('best').textContent=best[mode]?best[mode].toFixed(1)+'秒':'—'}
-function setMode(m){mode=m;store.set('dk-mode',m);document.querySelectorAll('.modes button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===m));
-  $('how').innerHTML=HOW[m];$('padLabel').textContent=PAD[m][0];$('padSub').textContent=PAD[m][1];showBest();
-  if(me){me.v=0;me.step=null;me.queued=0}}
-document.querySelectorAll('.modes button').forEach(b=>b.addEventListener('click',()=>{setMode(b.dataset.m);b.blur()}));
+// ---------- 進める ----------
 function start(){
-  ac();kids=[kid('あなた',css('--accent'),true,2),kid('せっかち','#4f8fd8',false,1),kid('まじめ','#3aa65a',false,0)];me=kids[0];
-  t=0;outs=0;finished=false;$('outs').textContent='0';$('over').hidden=true;running=true;D.face=0;D.qi=60;newChant(0);
+  ac();clearInterval(loop);clearTimeout(timer);
+  st=R.newGame({withMe:role==='kid',type:role==='daruma'?pickedType:'normal'});
+  st.children.forEach((c,i)=>{c.lane=i;c.col=c.human?css('--ink'):KID_COL[i]});
+  me=st.children.find(c=>c.human)||null;cpu=role==='kid'?R.cpuDaruma():null;
+  $('ctlDaruma').hidden=role!=='daruma';$('pad').hidden=role!=='kid';
+  $('over').hidden=true;$('log').innerHTML='';prev=snap();prevAt=performance.now();
+  log(role==='kid'?`子ども：${st.children.map(c=>c.name).join('・')}`:`${st.type.label}で始めた。子ども：${st.children.map(c=>c.name).join('・')}`);
+  toPrep(true);
 }
-$('go').addEventListener('click',start);
+const snap=()=>st.children.map(c=>c.pos);
+function toPrep(first){
+  phase='prep';clearInterval(loop);loop=null;R.applyReserved(st);
+  if(role==='daruma'){st.turnArmed=true;setPaused(first?'':'時間は止まっている。今のうちに作戦を立てよう')}
+  else{cpu.onPrep(st);breakEnd=performance.now()+(first?1500:BREAK_MIN+Math.random()*(BREAK_MAX-BREAK_MIN));
+    timer=setTimeout(toCue,Math.max(0,breakEnd-performance.now()-CUE_MS));setPaused('ひと休み。動けない')}
+  renderCtl();renderChant();
+}
+function toCue(){phase='cue';beep(260,0.5,'sine');renderCtl();renderChant();timer=setTimeout(toChant,CUE_MS)}
+function toChant(){phase='chant';setPaused('');renderCtl();renderChant();clearInterval(loop);loop=setInterval(tick,P.TICK_MS)}
+let lastSaid=0;
+function tick(){
+  if(me)me.input=pressed;
+  prev=snap();prevAt=performance.now();
+  const before=R.said(st);
+  const res=Core.tick(P,st);
+  const n=R.said(st);if(n>before&&n<10)beep(520+n*18,0.06);
+  if(res.reached){end(res.reached);return}
+  if(res.timeUp){end(null);return}
+  if(res.chantDone){
+    beep(330,0.18);
+    const cost=Core.turnCostOf(P,st);
+    if(st.turnArmed&&st.stamina>=cost){phase='grace';clearInterval(loop);loop=null;faceUntil=performance.now()+WATCH_MS;renderChant();
+      // 振り向いた。GRACE_TICKS だけ動きを進めてから見る（止まりかけの子は見逃す）
+      let g=GRACE_TICKS;const step=()=>{if(me)me.input=pressed;prev=snap();prevAt=performance.now();
+        const cp=st.chantProgress,el=st.elapsedTicks;Core.tick(P,st);st.chantProgress=cp;st.elapsedTicks=el;
+        if(--g>0)timer=setTimeout(step,P.TICK_MS);else timer=setTimeout(resolve,P.TICK_MS)};
+      if(g>0)timer=setTimeout(step,0);else resolve();
+      return}
+    resolve();return}
+  if(cpu)cpu.onTick(st);
+  renderCtl();renderChant();
+}
+function resolve(){
+  const cost=Math.round(Core.turnCostOf(P,st)),cyc=st.cycle;
+  const out=R.resolve(st);
+  if(out.carry){
+    // 見送り：止まらずに続ける。最後の「だ」が次の「だ」
+    log(`${cyc}回目：見送った`+(role==='daruma'?`（気力+${Math.round(out.gained)}）`:''));showMsg('見送り！',800);
+    if(cpu)cpu.onCarry(st);else st.turnArmed=false;
+    renderCtl();renderChant();if(phase!=='chant')toChant();return}
+  clearInterval(loop);loop=null;phase='watch';
+  if(out.turned){faceUntil=performance.now()+WATCH_MS;
+    const names=out.caught.map(c=>c.name);
+    out.caught.forEach(c=>caughtAt[c.id]=performance.now());
+    const meCaught=me&&out.caught.includes(me);
+    showMsg(meCaught?'見つかった！スタートへ':out.caught.length?'見た！ '+names.join('・'):'見た！ …みんな止まってた',WATCH_MS);
+    log(`${cyc}回目：振り向いた`+(role==='daruma'?`（気力-${cost}）`:'')+(out.caught.length?` → ${names.join('・')} をスタートへ`:' → 誰も動いてなかった'))}
+  else{showMsg('力が足りない…',1000);log(`${cyc}回目：振り向こうとしたが、気力が足りなかった`)}
+  prev=snap();prevAt=performance.now();renderCtl();renderChant();
+  timer=setTimeout(()=>toPrep(false),out.turned?WATCH_MS:1000);
+}
+function end(kid){clearInterval(loop);loop=null;clearTimeout(timer);phase='over';renderCtl();renderChant();setPaused('');
+  const o=$('over'),left=Math.max(0,(P.GOAL_TICKS-st.elapsedTicks)*P.TICK_MS/1000).toFixed(1);let h,p;
+  if(role==='daruma'){h=kid?`${kid.name}にタッチされた`:'だるまの勝ち！';p=kid?`${st.cycle}回目、のこり${left}秒だった。捕まえたのは${st.catches}回。`:`40秒耐えきった。${st.cycle}回言って、捕まえたのは${st.catches}回。`}
+  else{h=!kid?'時間切れ…だるまの勝ち':kid===me?'タッチ！あなたの勝ち':`${kid.name}がタッチ！子どもの勝ち`;
+    p=kid?`だるまの時計は、のこり${left}秒だった。`:`あと少し。${st.cycle}回言われた。`}
+  o.querySelector('h2').textContent=h;$('howTo').textContent=p;$('startBtn').textContent='もう一回';o.hidden=false;renderSetup();$('howTo').textContent=p}
 
-let last=performance.now();
-function frame(now){const dt=Math.min(0.05,(now-last)/1000);last=now;if(running)update(dt);if(kids.length)draw();requestAnimationFrame(frame)}
-function renderTune(){
-  $('tuneRows').innerHTML=TUNE_INFO.map(([k,n,lo,hi,st,u])=>`<label for="t_${k}"><span>${n}<b id="tv_${k}">${T[k]}${u}</b></span><input type="range" id="t_${k}" min="${lo}" max="${hi}" step="${st}" value="${T[k]}"></label>`).join('');
-  TUNE_INFO.forEach(([k,,,,,u])=>{const el=$('t_'+k);el.oninput=()=>{T[k]=+el.value;$('tv_'+k).textContent=T[k]+u;applyTune();store.set('dk-tune',T)}});
-}
-$('tuneBtn').onclick=()=>{const t=$('tune');t.hidden=!t.hidden;$('tuneBtn').setAttribute('aria-expanded',!t.hidden)};
-$('tuneReset').onclick=()=>{T={...TUNE_DEF};store.set('dk-tune',T);applyTune();renderTune()};
-renderTune();
-resize();setMode(mode);drawChant();
-kids=[kid('あなた',css('--accent'),true,2),kid('せっかち','#4f8fd8',false,1),kid('まじめ','#3aa65a',false,0)];me=kids[0];
-requestAnimationFrame(frame);
+$('startBtn').onclick=start;
+// だるま役：強気度は、ひと休み中はすぐ変わり、言っている間は予約（次の「だ」かひと休みで変わる）。ボタンは描き直すので押した瞬間に拾う
+$('lvRow').addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||!st||role!=='daruma'||phase==='over'||phase==='setup')return;
+  const r=b.dataset.r;if(phase==='prep')st.reward=r;else st.nextReward=(r===st.reward||r===st.nextReward)?null:r;renderCtl()});
+$('go').onclick=()=>{if(phase==='prep'&&role==='daruma'){ac();toCue()}};
+$('arm').onclick=()=>{if(!st||phase==='over')return;st.turnArmed=!st.turnArmed;renderCtl()};
+$('tempo').oninput=()=>{if(!st)return;const want=+$('tempo').value;
+  if(phase==='chant'){const got=Core.applyTempoChange(P,st,want);if(got!==want)$('tempo').value=got}else st.tempoValue=want;renderCtl()};
+// 子ども役：押している間だけ走る
+let pressed=false;const pad=$('pad');
+pad.addEventListener('pointerdown',e=>{e.preventDefault();ac();pressed=true;pad.classList.add('down');try{pad.setPointerCapture(e.pointerId)}catch(_){}});
+const up=()=>{pressed=false;pad.classList.remove('down')};
+pad.addEventListener('pointerup',up);pad.addEventListener('pointercancel',up);
+addEventListener('keydown',e=>{if(e.code!=='Space'||e.repeat||role!=='kid')return;e.preventDefault();ac();pressed=true;pad.classList.add('down')});
+addEventListener('keyup',e=>{if(e.code==='Space')up()});
+
+// ---------- 描く（0.1秒ごとの位置を、間はなめらかにつなぐ） ----------
+const cv=$('cv'),cx=cv.getContext('2d');let W=0,H=0;
+function resize(){const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);W=r.width;H=r.height;cv.width=W*d;cv.height=H*d;cx.setTransform(d,0,0,d,0,0)}
+addEventListener('resize',resize);
+function frame(now){
+  cx.clearRect(0,0,W,H);const gy=H*0.42,left=W*0.06,right=W*0.84,X=x=>left+(right-left)*x/100;
+  cx.fillStyle=css('--ground');cx.fillRect(0,gy,W,H-gy);
+  cx.strokeStyle=css('--muted');cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(X(2),gy);cx.lineTo(X(2),H);cx.stroke();cx.setLineDash([]);
+  const dx=W*0.91,dr=Math.min(H*0.16,W*0.07),dy=gy-dr*1.1;
+  if(st){ // 強気度の光（予約は見えない）
+    const lc=TIER_COL[st.reward],beat=0.5+0.5*Math.sin(now/1000*Math.PI*2*PULSE[st.reward]),ar=dr*(1.35+0.15*TIERS.indexOf(st.reward)+0.12*beat);
+    const g=cx.createRadialGradient(dx,dy,dr*0.6,dx,dy,ar);g.addColorStop(0,lc+'cc');g.addColorStop(1,lc+'00');cx.fillStyle=g;cx.beginPath();cx.arc(dx,dy,ar,0,7);cx.fill();
+    // 気力のゲージ（黒い線が、今の強気度で振り向くのに要る気力）
+    const bw=dr*2,bx=dx-dr,by=gy+8,cost=Core.turnCostOf(P,st);cx.fillStyle=css('--line');cx.fillRect(bx,by,bw,7);
+    cx.fillStyle=st.stamina>=cost?lc:css('--muted');cx.fillRect(bx,by,bw*Math.min(1,st.stamina/st.staminaMax),7);
+    cx.strokeStyle=css('--ink');cx.lineWidth=1.5;const cxp=bx+bw*Math.min(1,cost/st.staminaMax);cx.beginPath();cx.moveTo(cxp,by-3);cx.lineTo(cxp,by+10);cx.stroke();
+  }
+  const look=now<faceUntil;cx.fillStyle=css('--red');cx.beginPath();cx.ellipse(dx,dy,dr*0.95,dr*1.1,0,0,7);cx.fill();
+  if(look){cx.fillStyle=css('--card');cx.beginPath();cx.ellipse(dx-dr*0.12,dy-dr*0.2,dr*0.55,dr*0.5,0,0,7);cx.fill();cx.fillStyle=css('--ink');for(const s of[-1,1]){cx.beginPath();cx.arc(dx-dr*0.12+s*dr*0.22,dy-dr*0.25,dr*0.1,0,7);cx.fill()}}
+  if(st){const u=(phase==='chant'||phase==='grace')?Math.min(1,(now-prevAt)/P.TICK_MS):1,n=st.children.length;
+    st.children.forEach((c,i)=>{// 地面の帯の上に並ぶ。奥（i=0）ほど上で小さい
+      const x0=prev?prev[i]:c.pos,pos=x0+(c.pos-x0)*u,lane=(H-gy-14)/n,s=Math.min(lane*0.36,W*0.04)*(0.85+0.1*i),y=gy+lane*(i+0.95),x=X(pos);
+      const ca=caughtAt[c.id]&&now-caughtAt[c.id]<700;cx.globalAlpha=ca?0.3:1;
+      const mv=c.vel>P.CATCH_VEL_THRESHOLD&&(phase==='chant'||phase==='grace'),leg=mv?Math.sin(pos*2.4)*0.6:0;
+      cx.strokeStyle=c.col;cx.lineWidth=s*0.28;cx.lineCap='round';for(const g of[1,-1]){cx.beginPath();cx.moveTo(x,y-s*0.9);cx.lineTo(x+Math.sin(leg*g)*s*0.7,y);cx.stroke()}
+      cx.fillStyle=c.col;cx.beginPath();cx.ellipse(x,y-s*1.5,s*0.55,s*0.75,0,0,7);cx.fill();cx.fillStyle=css('--card');cx.beginPath();cx.arc(x,y-s*2.55,s*0.48,0,7);cx.fill();cx.strokeStyle=c.col;cx.lineWidth=s*0.12;cx.stroke();
+      if(c.winded){cx.fillStyle=css('--muted');cx.font=`700 ${Math.max(9,s*0.55)}px ${css('--ui')}`;cx.textAlign='left';cx.fillText('ぜぇ…',x+s*0.9,y-s*2.6)}
+      cx.globalAlpha=1;cx.fillStyle=c.human?css('--ink'):css('--muted');cx.font=`${c.human?900:700} ${Math.max(9,s*(c.human?0.75:0.62))}px ${css('--ui')}`;cx.textAlign='left';cx.fillText(c.name,x+s*0.9,y-s*1.4)})}
+  requestAnimationFrame(frame)}
+resize();renderSetup();renderChant();requestAnimationFrame(frame);
 </script>
 </body>
 </html>
