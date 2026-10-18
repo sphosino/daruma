@@ -60,7 +60,10 @@
 
   // 言い終わった。振り向いたかどうかを返す。見送りなら止まらずに続ける形にしておく
   function resolve(st) {
+    // 振り向くつもりでも気力が足りなければ、自動で見送る（「力が足りない…」で全部失う落とし穴はなくした）
+    if (st.turnArmed && st.stamina < Core.turnCostOf(P, st)) { st.turnArmed = false; st.autoSkip = true; } else st.autoSkip = false;
     var out = Core.resolveCycle(P, st);
+    out.autoSkip = st.autoSkip;
     out.carry = !out.turned && !out.underpowered;
     if (out.carry) {
       st.chantProgress = 10;      // 最後の「だ」が次の「だ」を兼ねる

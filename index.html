@@ -174,7 +174,7 @@ function renderCtl(){
   $('lvRow').innerHTML=TIERS.map(t=>`<button class="btn lv${st.reward===t?' on':''}${st.nextReward===t?' next':''}" data-r="${t}" style="--c:${TIER_COL[t]}" type="button">${P.REWARD[t].label}<small>見送り+${Math.round(P.REWARD[t].reward*st.type.skipRewardScale)}<br>振向−${Math.round(Core.turnCostOf(P,st,t))}</small></button>`).join('');
   const cost=Math.round(Core.turnCostOf(P,st)),afford=st.stamina>=cost;
   $('arm').classList.toggle('on',st.turnArmed);
-  $('arm').innerHTML=st.turnArmed?`👀 言い終わったら振り向く<small>気力 -${cost}${afford?'':'（足りない）'}</small>`:`🙈 振り向かずに見送る<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`;
+  $('arm').innerHTML=st.turnArmed&&!afford?`🙈 気力が足りない。見送りになる<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`:st.turnArmed?`👀 言い終わったら振り向く<small>気力 -${cost}</small>`:`🙈 振り向かずに見送る<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`;
   $('go').disabled=!prep||paused;
   $('tempo').value=Math.round(st.tempoValue);$('tempoTxt').textContent=Core.tempoLabel(st.tempoValue)+(phase==='chant'?'（上げると気力を使う）':'');
   $('qi').textContent=`${Math.round(st.stamina)} / ${Math.round(st.staminaMax)}`;
@@ -243,7 +243,7 @@ function resolve(){
   const out=R.resolve(st);
   if(out.carry){
     // 見送り：止まらずに続ける。最後の「だ」が次の「だ」
-    log(`${cyc}回目：見送った`+(role==='daruma'?`（気力+${Math.round(out.gained)}）`:''));showMsg('見送り！',800);
+    log(`${cyc}回目：${out.autoSkip?'気力が足りず、見送った':'見送った'}`+(role==='daruma'?`（気力+${Math.round(out.gained)}）`:''));showMsg(out.autoSkip&&role==='daruma'?'気力が足りない…見送り':'見送り！',out.autoSkip?1100:800);
     if(cpu)cpu.onCarry(st);else st.turnArmed=false;
     phase='chant';renderCtl();renderChant();return}
   phase='watch';
