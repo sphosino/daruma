@@ -133,18 +133,20 @@ const TIER_COL={low:'#4f8fd8',mid:'#e5b830',high:'#ef8a2c',max:'#e0402c'},PULSE=
 const KID_COL=['#4f8fd8','#3aa65a','#b45cc8','#e0457b'];
 const TYPE_NOTE={normal:'クセなし。まずはこれで。',red:'気力の器が大きいぶん、見送っても実入りが細い。',oni:'振り向きが安い。そのかわりテンポを上げるのが高い。',attack:'テンポが安い。そのかわり振り向きが高い。'};
 const HOW={
-  kid:'あなたはオレンジの子。だるまが言っている間だけ進めます。振り向いたときに動いていたらスタートへ。だれか1人でもだるまにタッチしたら子どもの勝ち、だるまの時計（言っている時間だけ進む）が切れたらだるまの勝ち。うしろの光が強いほど、だるまは見送りやすい。',
-  daruma:'あなたはだるま。CPU の子ども4人がタッチしようと走ってきます。言い終わったときに動いていた子をスタートへ戻して、時計が切れるまで耐えたら勝ち。見送ると止まらずに「だ」からそのまま続きます。'};
+  kid:'あなたはオレンジの子。だるまが言っている間だけ進めます。振り向いたときに動いていたら40下がる。だれか1人でもだるまにタッチしたら子どもの勝ち、だるまの時計（言っている時間だけ進む）が切れたらだるまの勝ち。うしろの光が強いほど、だるまは見送りやすい。',
+  daruma:'あなたはだるま。CPU の子ども4人がタッチしようと走ってきます。言い終わったときに動いていた子を下がらせて、時計が切れるまで耐えたら勝ち。見送ると止まらずに「だ」からそのまま続きます。'};
 
 // ---------- 調整の数字（⚙ 調整で変えられる。変えた値はこのブラウザに覚える） ----------
-const TUNE_DEF={accT:0.33,stopT:0.5,cpuStopMin:0.4,cpuStopMax:0.7,grace:0.1,clock:40,breakMin:1.0,breakMax:3.5,cue:0.8,watch:1.2};
+// 時計と下がる量は、シミュレーター（sim.js）で決めた値（2026-10-18）。子ども役は 40 秒、だるま役は 42 秒
+const TUNE_DEF={accT:0.33,stopT:0.5,cpuStopMin:0.4,cpuStopMax:0.7,grace:0.1,clockKid:40,clockDaruma:42,knock:40,breakMin:1.0,breakMax:3.5,cue:0.8,watch:1.2};
 const TUNE_INFO=[['accT','あなた：全速になるまで',0.1,1,0.01,'秒'],['stopT','あなた：全速から止まるまで',0.1,1.5,0.05,'秒'],
   ['cpuStopMin','★CPU の子：止まるまで（最短）',0.1,1.5,0.05,'秒'],['cpuStopMax','★CPU の子：止まるまで（最長）',0.1,1.5,0.05,'秒'],
-  ['grace','振り向いてから見るまで',0,0.5,0.1,'秒'],['clock','だるまの時計',10,90,5,'秒'],
+  ['grace','振り向いてから見るまで',0,0.5,0.1,'秒'],['clockKid','だるまの時計（子ども役のとき）',20,90,1,'秒'],['clockDaruma','だるまの時計（だるま役のとき）',20,90,1,'秒'],
+  ['knock','捕まったら下がる（96でスタートへ）',0,96,1,''],
   ['breakMin','ひと休み（いちばん短い）',0,5,0.1,'秒'],['breakMax','ひと休み（いちばん長い）',0,8,0.1,'秒'],
   ['cue','「すぅ…」の合図',0,2,0.1,'秒前'],['watch','振り向いて見ている時間',0.3,3,0.1,'秒']];
-let T={...TUNE_DEF,...store.get('dk-tune2',{})};
-function applyTune(){P.GOAL_TICKS=Math.round(T.clock*1000/P.TICK_MS);if(me)R.setMe(me,T.accT,T.stopT);renderCtl()}
+let T={...TUNE_DEF,...store.get('dk-tune3',{})};
+function applyTune(){P.GOAL_TICKS=Math.round((role==='daruma'?T.clockDaruma:T.clockKid)*1000/P.TICK_MS);P.CATCH_KNOCK=T.knock>=96?null:T.knock;if(me)R.setMe(me,T.accT,T.stopT);renderCtl()}
 
 const q=new URLSearchParams(location.search);
 let role=q.get('role')||store.get('dk-role','kid');if(role!=='daruma')role='kid';
@@ -249,8 +251,8 @@ function resolve(){
     const names=out.caught.map(c=>c.name);
     out.caught.forEach(c=>caughtAt[c.id]=gt);if(out.caught.length)beep(150,0.25,'sawtooth');
     const meCaught=me&&out.caught.includes(me);
-    showMsg(meCaught?'見つかった！スタートへ':out.caught.length?'見た！ '+names.join('・'):'見た！ …みんな止まってた',T.watch*1000);
-    log(`${cyc}回目：振り向いた`+(role==='daruma'?`（気力-${cost}）`:'')+(out.caught.length?` → ${names.join('・')} をスタートへ`:' → 誰も動いてなかった'))}
+    showMsg(meCaught?'見つかった！下がる':out.caught.length?'見た！ '+names.join('・'):'見た！ …みんな止まってた',T.watch*1000);
+    log(`${cyc}回目：振り向いた`+(role==='daruma'?`（気力-${cost}）`:'')+(out.caught.length?` → ${names.join('・')} を下がらせた`:' → 誰も動いてなかった'))}
   else{showMsg('力が足りない…',1000);log(`${cyc}回目：振り向こうとしたが、気力が足りなかった`)}
   prev=snap();prevAt=gt;renderCtl();renderChant();
   later(out.turned?T.watch*1000:1000,()=>toPrep(false));
@@ -288,10 +290,10 @@ addEventListener('keyup',e=>{if(e.code==='Space')up()});
 // 調整
 function renderTune(){
   $('tuneRows').innerHTML=TUNE_INFO.map(([k,n,lo,hi,s,u])=>`<label for="t_${k}"><span>${n}<b id="tv_${k}">${T[k]}${u}</b></span><input type="range" id="t_${k}" min="${lo}" max="${hi}" step="${s}" value="${T[k]}"></label>`).join('');
-  TUNE_INFO.forEach(([k,,,,,u])=>{const el=$('t_'+k);el.oninput=()=>{T[k]=+el.value;$('tv_'+k).textContent=T[k]+u;store.set('dk-tune2',T);applyTune()}});
+  TUNE_INFO.forEach(([k,,,,,u])=>{const el=$('t_'+k);el.oninput=()=>{T[k]=+el.value;$('tv_'+k).textContent=T[k]+u;store.set('dk-tune3',T);applyTune()}});
 }
 $('tuneBtn').onclick=()=>{const t=$('tune');t.hidden=!t.hidden;$('tuneBtn').setAttribute('aria-expanded',!t.hidden);resize()};
-$('tuneReset').onclick=()=>{T={...TUNE_DEF};store.set('dk-tune2',T);applyTune();renderTune()};
+$('tuneReset').onclick=()=>{T={...TUNE_DEF};store.set('dk-tune3',T);applyTune();renderTune()};
 $('showMind').checked=store.get('dk-mind',false);$('showMind').onchange=()=>store.set('dk-mind',$('showMind').checked);
 
 // ---------- 描く ----------

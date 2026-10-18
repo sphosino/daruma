@@ -43,6 +43,7 @@
     ACTIVE_CHILDREN: 4,
     CATCH_VEL_THRESHOLD: 0.05,
     GOAL_POS: 96,
+    CATCH_KNOCK: null,
     TEMPO_CHANGE_COST_PER_UNIT: 0.025,
     STAMINA_MAX: 110,
 
@@ -972,14 +973,17 @@
       st.children.forEach(function (c) {
         if (c.vel > P.CATCH_VEL_THRESHOLD) {
           out.caught.push(c);
-          c.pos = 2; c.vel = 0; c.burstTicks = 0;
+          // CATCH_KNOCK（2026-10-18）：null ならスタートへ。数なら、その分だけ下がる
+          var back = P.CATCH_KNOCK == null ? c.pos - 2 : Math.min(c.pos - 2, P.CATCH_KNOCK);
+          c.pos -= back; c.vel = 0; c.burstTicks = 0;
           // Walking back to the line is the one real rest anybody gets, so the
           // tank comes back with them. Without this the punishment is double —
           // a kid caught late restarts the whole 94 units on an empty tank and
           // is out of the game in everything but name, which is neither how it
           // works nor interesting to watch.
-          c.energy = c.energyMax;
-          c.winded = false;
+          // 下がった分だけ戻る（スタートまでなら満タン）
+          c.energy = P.CATCH_KNOCK == null ? c.energyMax : Math.min(c.energyMax, c.energy + c.energyMax * back / (P.GOAL_POS - 2));
+          if (c.energy >= P.WINDED_RECOVER_AT) c.winded = false;
           st.catches += 1;
         }
       });
