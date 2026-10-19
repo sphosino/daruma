@@ -533,10 +533,10 @@ function draw(now){
     cx.restore();
     cx.globalAlpha=1;cx.textAlign='center';
     const label=(c.human?'あなた':c.name.replace(/^.*の/,''))+(c.winded?' ぜぇ…':'');
-    cx.fillStyle=c.human?ink:muted;cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.fillText(label,x,y-s*4.05);
-    if(hit){cx.fillStyle=red;cx.font=`900 ${Math.max(14,s*1.1)}px ${css('--pop')}`;cx.fillText('！',x,y-s*4.05-Math.max(12,s*0.7))}
+    cx.fillStyle=c.human?ink:muted;cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.fillText(label,x,y-s*3.7);
+    if(hit){cx.fillStyle=red;cx.font=`900 ${Math.max(14,s*1.1)}px ${css('--pop')}`;cx.fillText('！',x,y-s*3.7-Math.max(12,s*0.7))}
     if(mind||c.human){const bw=s*1.6,bx=x-bw/2,by=y+5;cx.fillStyle=css('--line');cx.fillRect(bx,by,bw,3);cx.fillStyle=c.winded?red:accent;cx.fillRect(bx,by,bw*c.energy/c.energyMax,3)}
-    if(mind&&!c.human){const m=[gaitOf(c,i),c.intendsToStop===false?'賭け':''].filter(Boolean).join('・');if(m){cx.fillStyle=c.intendsToStop===false?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*4.05-Math.max(11,s*0.6))}}
+    if(mind&&!c.human){const m=[gaitOf(c,i),c.intendsToStop===false?'賭け':''].filter(Boolean).join('・');if(m){cx.fillStyle=c.intendsToStop===false?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*3.7-Math.max(11,s*0.6))}}
   });
   $('gauge').style.width=`calc((100% - 24px) * ${me?Math.min(1,me.vel/me.maxSpeed):0})`;
 }
@@ -555,7 +555,9 @@ function pictoPose(g,hit,ph){
 }
 let PICTO_GAP='#fff';const PICTO_EDGE=0.11;   // 白い縁の太さ（両側あわせて、体の太さの単位で）
 function drawPicto(x,y,u,col,pose){PICTO_GAP=css('--card');
-  const hipY=y-u*(1.62+pose.bob),hip=[x,hipY],neck=[x+u*0.02,hipY-u*1.0];
+  // 子どもらしく少し低め（2026-10-19）：手足と胴を短く、頭を少し大きく
+  const LEG=0.74,TOR=0.86,UA=0.54,FA=0.52,HR=0.46;
+  const hipY=y-u*(1.42+pose.bob),hip=[x,hipY],neck=[x+u*0.02,hipY-u*TOR];
   const seg=(p,a,L)=>[p[0]+Math.sin(a*D2R)*L,p[1]+Math.cos(a*D2R)*L];
   cx.strokeStyle=col;cx.fillStyle=col;cx.lineCap='round';cx.lineJoin='round';
   // gap：手前の手足のまわりに明るいすき間（非常口のマークの白い境目のように。重なっても腕と胴が分かれて見える）
@@ -563,16 +565,16 @@ function drawPicto(x,y,u,col,pose){PICTO_GAP=css('--card');
     if(gap){cx.strokeStyle=PICTO_GAP;cx.lineWidth=u*(w+PICTO_EDGE);path();cx.stroke();cx.strokeStyle=col}
     cx.lineWidth=u*w;path();cx.stroke()};
   // まずキャラ全体を、ひとまわり太く白で描いて縁にする
-  const armP=[neck[0],neck[1]+u*0.12],head=[neck[0]+u*0.05,neck[1]-u*0.62];
-  limb(hip,pose.legs[1],u*0.85,u*0.85,0.36,true);limb(armP,pose.arms[1],u*0.62,u*0.6,0.3,true);
-  limb(hip,pose.legs[0],u*0.85,u*0.85,0.36,true);limb(armP,pose.arms[0],u*0.62,u*0.6,0.3,true);
+  const armP=[neck[0],neck[1]+u*0.12],head=[neck[0]+u*0.05,neck[1]-u*(HR+0.2)];
+  limb(hip,pose.legs[1],u*LEG,u*LEG,0.36,true);limb(armP,pose.arms[1],u*UA,u*FA,0.3,true);
+  limb(hip,pose.legs[0],u*LEG,u*LEG,0.36,true);limb(armP,pose.arms[0],u*UA,u*FA,0.3,true);
   cx.strokeStyle=PICTO_GAP;cx.lineWidth=u*(0.62+PICTO_EDGE);cx.beginPath();cx.moveTo(hip[0],hip[1]);cx.lineTo(neck[0],neck[1]);cx.stroke();
-  cx.fillStyle=PICTO_GAP;cx.beginPath();cx.arc(head[0],head[1],u*(0.42+PICTO_EDGE/2),0,7);cx.fill();cx.strokeStyle=col;cx.fillStyle=col;
+  cx.fillStyle=PICTO_GAP;cx.beginPath();cx.arc(head[0],head[1],u*(HR+PICTO_EDGE/2),0,7);cx.fill();cx.strokeStyle=col;cx.fillStyle=col;
   // 奥の手足 → 胴 → 手前の手足（手前は白いすき間つき）→ 頭（頭は首から少し離した丸）
-  limb(hip,pose.legs[1],u*0.85,u*0.85,0.36);limb([neck[0],neck[1]+u*0.12],pose.arms[1],u*0.62,u*0.6,0.3);
+  limb(hip,pose.legs[1],u*LEG,u*LEG,0.36);limb([neck[0],neck[1]+u*0.12],pose.arms[1],u*UA,u*FA,0.3);
   cx.lineWidth=u*0.62;cx.beginPath();cx.moveTo(hip[0],hip[1]);cx.lineTo(neck[0],neck[1]);cx.stroke();
-  limb(hip,pose.legs[0],u*0.85,u*0.85,0.36,true);limb([neck[0],neck[1]+u*0.12],pose.arms[0],u*0.62,u*0.6,0.3,true);
-  cx.beginPath();cx.arc(neck[0]+u*0.05,neck[1]-u*0.62,u*0.42,0,7);cx.fill();
+  limb(hip,pose.legs[0],u*LEG,u*LEG,0.36,true);limb([neck[0],neck[1]+u*0.12],pose.arms[0],u*UA,u*FA,0.3,true);
+  cx.beginPath();cx.arc(head[0],head[1],u*HR,0,7);cx.fill();
 }
 
 // ---------- まわす ----------
