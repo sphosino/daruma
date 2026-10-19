@@ -206,7 +206,7 @@ const HOW={
 
 // ---------- 調整の数字（⚙ 調整で変えられる。変えた値はこのブラウザに覚える） ----------
 // 時計・猶予・下がる量は、シミュレーター（sim.js）で決めた値（2026-10-18）。全速まで 2 秒・止まるまで 1 秒にしたので、どちらの役も 46 秒
-const TUNE_DEF={accT:2.0,stopT:1.0,cpuAccT:2.0,cpuStopMin:0.8,cpuStopMax:1.4,grace:0.2,clockKid:46,clockDaruma:46,knock:25,breakMin:1.0,breakMax:3.5,cue:0.8,watch:1.2};
+const TUNE_DEF={accT:2.0,stopT:1.0,cpuAccT:2.0,cpuStopMin:0.8,cpuStopMax:1.4,grace:0.3,clockKid:46,clockDaruma:46,knock:25,breakMin:1.0,breakMax:3.5,cue:0.8,watch:1.2};
 const TUNE_INFO=[['accT','あなた：全速になるまで',0.3,3,0.1,'秒'],['stopT','あなた：全速から止まるまで',0.1,2.5,0.05,'秒'],
   ['cpuAccT','★CPU の子：全速になるまで（±15%）',0.3,3,0.1,'秒'],
   ['cpuStopMin','★CPU の子：止まるまで（最短）',0.1,2.5,0.05,'秒'],['cpuStopMax','★CPU の子：止まるまで（最長）',0.1,2.5,0.05,'秒'],
@@ -215,7 +215,7 @@ const TUNE_INFO=[['accT','あなた：全速になるまで',0.3,3,0.1,'秒'],['
   ['breakMin','ひと休み（いちばん短い）',0,5,0.1,'秒'],['breakMax','ひと休み（いちばん長い）',0,8,0.1,'秒'],
   ['cue','「すぅ…」の合図',0,2,0.1,'秒前'],['watch','振り向いて見ている時間',0.3,3,0.1,'秒']];
 // 前の最初の値（下がる量40）のまま覚えていたら、新しい最初の値にする
-const saved=store.get('dk-tune3',{});if(saved.knock===40)delete saved.knock;if(saved.grace===0.1)delete saved.grace;for(const [k,olds] of Object.entries({accT:[0.33,1.5],stopT:[0.5],cpuAccT:[1.5],cpuStopMin:[0.4],cpuStopMax:[0.7]}))if(olds.includes(saved[k]))delete saved[k];if([41,42,44].includes(saved.clockDaruma))delete saved.clockDaruma;if(saved.clockKid===40)delete saved.clockKid;
+const saved=store.get('dk-tune3',{});if(saved.knock===40)delete saved.knock;if([0.1,0.2].includes(saved.grace))delete saved.grace;for(const [k,olds] of Object.entries({accT:[0.33,1.5],stopT:[0.5],cpuAccT:[1.5],cpuStopMin:[0.4],cpuStopMax:[0.7]}))if(olds.includes(saved[k]))delete saved[k];if([41,42,44].includes(saved.clockDaruma))delete saved.clockDaruma;if(saved.clockKid===40)delete saved.clockKid;
 let T={...TUNE_DEF,...saved};
 function applyTune(){R.LOOK.grace=Math.round(T.grace*10);R.LOOK.ticks=Math.max(R.LOOK.grace+1,Math.round(T.watch*10));P.GOAL_TICKS=Math.round((role==='daruma'?T.clockDaruma:T.clockKid)*1000/P.TICK_MS);P.CATCH_KNOCK=T.knock>=96?null:T.knock;if(me)R.setMe(me,T.accT,T.stopT);renderCtl()}
 

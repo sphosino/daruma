@@ -79,7 +79,8 @@
   // 言い終わって振り向くと、LOOK の間だるまが見ている。この間も子どもの体は動く（時計と言葉は止まる）。
   // 振り向き始めてから GRACE（振り向く動き＋すべって止まりきる猶予）がたっても動いている子が見つかる。
   // 見つかった子はその場で固まり、見終わってから押し戻される。何が起きたか見て分かるようにするため
-  var LOOK = { grace: 2, ticks: 12 };   // 0.2 秒（振り向く動きのぶん）・1.2 秒（tick は 0.1 秒）。猶予 0.3 秒だと子どもがほとんど捕まらず、時間切れだけのゲームになった
+  var LOOK = { grace: 3, ticks: 12 };   // 猶予 0.3 秒・見る 1.2 秒（tick は 0.1 秒）。振り向いてから 0.3 秒たった時点で、まだ動いている子が見つかる
+  //   （2026-10-19：前は「0.2 秒」と書いていたが、数え方が 1 つずれていて実際は 0.3 秒だった。遊んだ感じとシミュレーターの結果はこの 0.3 秒なので、書き方をそろえた）
   function wantsTurn(st) { return st.turnArmed && st.stamina >= Core.turnCostOf(P, st); }
   function startLook(st) {
     st.looking = true;
@@ -92,7 +93,7 @@
     st.chantProgress = cp; st.elapsedTicks = el; st.stamina = sta;
     st.look.t += 1;
     var newly = [];
-    if (st.look.t > LOOK.grace) {
+    if (st.look.t >= LOOK.grace) {
       st.children.forEach(function (c) {
         if (c.caughtNow || c.vel <= P.CATCH_VEL_THRESHOLD) return;
         c.caughtNow = true;

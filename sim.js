@@ -163,7 +163,7 @@ function table(opt) {
 const mode = process.argv[2] || "table";
 const knockArg = v => (v === "start" ? null : +v);
 // 何も指定しないときは、ゲーム（index.html）の今の値：時計 46 秒・猶予 0.2 秒・下がる 25
-const GAME = { clock: 46, grace: 0.2, knock: "25" };
+const GAME = { clock: 46, grace: 0.3, knock: "25" };
 const MAIN = require.main === module;   // ほかのファイルから読みこんだときは、表を出さない
 if (MAIN && mode === "table") table({ clock: +env("CLOCK", GAME.clock), knock: knockArg(env("KNOCK", GAME.knock)), grace: +env("GRACE", GAME.grace) });
 if (MAIN && mode === "sweep") {
