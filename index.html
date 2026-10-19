@@ -24,40 +24,44 @@ window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}
 /* だるま役も子ども役も同じ画面。上に「だるまさんがころんだ」、まん中に道（横から見た図）、下に役ごとの操作。
    決まりは rules.js（old/daruma-core.js の上に今の決まりを足したもの）。見た目は前の子ども役の試作（proto-kids.html）と同じ */
 :root{
-  --bg:#fff7ec; --card:#fffdf9; --ink:#4a2f22; --muted:#8f6b58; --line:#f1dcc6;
-  --accent:#c2601a; --on:#ffe2bd; --red:#d8452f; --ground:#e9d2b0; --sky:#fff1dc;
+  --bg:#fff7ec; --dot:#fde9cf; --card:#fffdf9; --ink:#4a2f22; --muted:#8f6b58; --line:#f1dcc6;
+  --accent:#e8743b; --on:#ffe2bd; --red:#e0402c; --ground:#ecd3a8; --ground2:#e3c393; --sky:#cfeeff; --sky2:#f4fbff;
+  --p0:#ff6f9f; --p1:#43b2f5; --p2:#6cc94e; --p3:#e8743b;
   --ui:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
   --pop:"Mochiy Pop One","Zen Maru Gothic",sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#231a15; --card:#2f241d; --ink:#f6e6d6; --muted:#c3a58f; --line:#4a382c;
-  --accent:#f0954a; --on:#5a3a1f; --red:#ff6a52; --ground:#4a3a2c; --sky:#2a201a; color-scheme:dark}}
+  --bg:#231a15; --dot:#2d221b; --card:#2f241d; --ink:#f6e6d6; --muted:#c3a58f; --line:#4a382c;
+  --accent:#f0954a; --on:#5a3a1f; --red:#ff6a52; --ground:#4a3a2c; --ground2:#3f3125; --sky:#1d2a36; --sky2:#2a201a; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#231a15; --card:#2f241d; --ink:#f6e6d6; --muted:#c3a58f; --line:#4a382c;
-  --accent:#f0954a; --on:#5a3a1f; --red:#ff6a52; --ground:#4a3a2c; --sky:#2a201a; color-scheme:dark}
+  --bg:#231a15; --dot:#2d221b; --card:#2f241d; --ink:#f6e6d6; --muted:#c3a58f; --line:#4a382c;
+  --accent:#f0954a; --on:#5a3a1f; --red:#ff6a52; --ground:#4a3a2c; --ground2:#3f3125; --sky:#1d2a36; --sky2:#2a201a; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{height:100%}
 [hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-weight:500;
+body{margin:0;background-color:var(--bg);background-image:radial-gradient(var(--dot) 18%,transparent 19%),radial-gradient(var(--dot) 18%,transparent 19%);background-size:34px 34px;background-position:0 0,17px 17px;color:var(--ink);font-family:var(--ui);font-weight:500;
   padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
   overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .app{height:100%;max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
-header{display:flex;align-items:center;gap:8px}
-h1{font-family:var(--pop);font-size:1.05rem;margin:0;font-weight:400;flex:1 1 auto;min-width:0}
+header{display:flex;align-items:center;gap:8px;position:relative;z-index:6}
+h1{font-family:var(--pop);font-size:1.15rem;margin:0;font-weight:400;flex:1 1 auto;min-width:0;letter-spacing:.02em;text-shadow:0 2px 0 var(--card)}
+h1 span:nth-child(4n+1){color:var(--p0)}h1 span:nth-child(4n+2){color:var(--p1)}h1 span:nth-child(4n+3){color:var(--p2)}h1 span:nth-child(4n){color:var(--p3)}
 .chant{font-family:var(--pop);font-size:clamp(1.3rem,6vw,2rem);text-align:center;letter-spacing:.06em;min-height:1.4em;white-space:nowrap}
-.chant span{color:var(--line)}.chant span.said{color:var(--ink)}.chant.look{color:var(--red)}
-.stage{position:relative;flex:0 0 auto;height:clamp(160px,52vw,300px);border-radius:16px;overflow:hidden;background:var(--sky);border:2px solid var(--line)}
+.chant span{color:var(--line)}.chant span.said:nth-child(4n+1){color:var(--p0)}.chant span.said:nth-child(4n+2){color:var(--p1)}.chant span.said:nth-child(4n+3){color:var(--p2)}.chant span.said:nth-child(4n){color:var(--p3)}
+.chant span.said{text-shadow:0 3px 0 var(--card)}.chant.look span.said{color:var(--red)}
+.stage{position:relative;flex:0 0 auto;box-shadow:0 5px 0 var(--line);height:clamp(160px,52vw,300px);border-radius:16px;overflow:hidden;background:var(--sky);border:2px solid var(--line)}
 canvas{display:block;width:100%;height:100%}
 .msg{position:absolute;left:50%;top:10%;transform:translateX(-50%);width:94%;text-align:center;font-family:var(--pop);font-size:clamp(1.3rem,6.5vw,2.2rem);line-height:1.2;color:var(--red);text-shadow:0 2px 0 var(--card);pointer-events:none}
 .msg small{display:block;font-size:.55em;color:var(--ink)}
 .paused{position:absolute;left:0;right:0;top:4px;text-align:center;font-size:.8rem;font-weight:700;color:var(--muted);pointer-events:none}
 .hud{display:flex;justify-content:space-between;gap:8px;font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
 .hud b{color:var(--ink)}
-.pill{white-space:nowrap;font:inherit;font-weight:700;font-size:.85rem;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
+.pill{white-space:nowrap;box-shadow:0 3px 0 var(--line);font:inherit;font-weight:700;font-size:.85rem;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
 .pill[aria-expanded="true"],.pill.on{background:var(--on);border-color:var(--accent)}
+.pill:active,.btn:active,.go:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
 .pill:focus-visible,.btn:focus-visible,.pad:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 /* 子ども役：大きなパッド */
-.pad{flex:1 1 auto;min-height:130px;max-height:340px;border-radius:20px;border:3px solid var(--accent);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+.pad{box-shadow:0 5px 0 color-mix(in srgb,var(--accent) 55%,var(--line));flex:1 1 auto;min-height:130px;max-height:340px;border-radius:20px;border:3px solid var(--accent);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
   touch-action:none;cursor:pointer;font-family:var(--pop);font-size:1.3rem;color:var(--accent);position:relative;overflow:hidden}
 .pad small{font-family:var(--ui);font-weight:700;font-size:.8rem;color:var(--muted)}
 .pad.down{background:var(--on)}
@@ -67,24 +71,25 @@ canvas{display:block;width:100%;height:100%}
 .target{position:absolute;bottom:0;top:0;width:3px;margin-left:-1.5px;background:var(--accent);opacity:.55;pointer-events:none}
 .target::after{content:'';position:absolute;top:6px;left:50%;transform:translateX(-50%);border:8px solid transparent;border-top-color:var(--accent)}
 /* だるま役：操作のカード */
-.card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;box-shadow:0 4px 0 var(--line);padding:10px;display:flex;flex-direction:column;gap:8px}
 .lbl{font-size:.8rem;font-weight:700;color:var(--muted);display:flex;justify-content:space-between}
 .row{display:flex;gap:6px}.row>*{flex:1 1 0;min-width:0}
-.btn{font:inherit;font-weight:700;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:8px 6px;cursor:pointer;line-height:1.3}
+.btn{font:inherit;font-weight:700;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;box-shadow:0 3px 0 var(--line);padding:8px 6px;cursor:pointer;line-height:1.3}
 .btn small{display:block;font-size:.68rem;font-weight:500;color:var(--muted)}
 .btn.on{background:var(--on);border-color:var(--accent)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--card);font-family:var(--pop);font-weight:400;font-size:1.1rem}
+.btn.primary{box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 60%,var(--ink));background:var(--accent);border-color:var(--accent);color:var(--card);font-family:var(--pop);font-weight:400;font-size:1.1rem}
 .btn[disabled]{opacity:.45;cursor:default}
 .lv{--c:var(--line);position:relative}.lv.on{border-color:var(--c);box-shadow:0 0 0 2px var(--c) inset}
 .lv.next{border-style:dashed;border-color:var(--c)}.lv.next::after{content:'予約';position:absolute;top:3px;right:6px;font-size:.65rem;color:var(--c)}
 input[type=range]{width:100%;accent-color:var(--accent)}
 .arm.on{background:var(--on);border-color:var(--red)}
 /* はじめる・終わりの画面 */
-.over{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:color-mix(in srgb,var(--bg) 86%,transparent);text-align:center;padding:12px;overflow:auto}
-.over h2{font-family:var(--pop);font-weight:400;margin:0;font-size:1.5rem}
+.over{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:color-mix(in srgb,var(--bg) 88%,transparent);text-align:center;padding:20px 16px;overflow:auto}
+.over>*{max-width:520px}
+.over h2{font-family:var(--pop);font-weight:400;margin:0;font-size:1.6rem;color:var(--accent);text-shadow:0 3px 0 var(--card)}
 .over p{margin:0;font-size:.86rem;color:var(--muted);max-width:32em}
 .choices{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
-.go{font:inherit;font-family:var(--pop);font-size:1.15rem;border:0;border-radius:14px;background:var(--accent);color:var(--card);padding:12px 26px;cursor:pointer}
+.go{box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 60%,var(--ink));font:inherit;font-family:var(--pop);font-size:1.25rem;border:0;border-radius:16px;background:var(--accent);color:var(--card);padding:12px 26px;cursor:pointer}
 /* 調整（デバッグ） */
 /* 画面の上にかぶせて広く出す。開いている間はゲームは中断 */
 .tuneWrap{position:fixed;inset:0;z-index:10;background:color-mix(in srgb,var(--ink) 35%,transparent);display:flex;justify-content:center;align-items:flex-start;padding:10px 12px}
@@ -103,7 +108,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .kidTable th,.kidTable td{padding:3px 6px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
 .kidTable th:first-child,.kidTable td:first-child{text-align:left}.kidTable th{color:var(--muted);font-weight:700}
 .bar{display:inline-block;width:44px;height:6px;background:var(--line);border-radius:3px;vertical-align:middle;margin-right:4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
-.tut{flex:0 0 auto;background:var(--card);border:2px solid var(--accent);border-radius:12px;padding:8px 10px;font-size:.84rem;line-height:1.5}
+.tut{flex:0 0 auto;background:var(--card);border:2px solid var(--accent);border-radius:16px;box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 40%,var(--line));padding:8px 10px;font-size:.84rem;line-height:1.5}
 .hl{outline:3px solid var(--accent)!important;outline-offset:3px;animation:hl 1s ease-in-out infinite}
 @keyframes hl{50%{outline-color:transparent}}
 .tutHold{border-width:3px;box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 25%,transparent)}
@@ -115,7 +120,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 <body>
 <div class="app">
   <header>
-    <h1>だるまさんがころんだ</h1>
+    <h1 aria-label="だるまさんがころんだ"><span>だ</span><span>る</span><span>ま</span><span>さ</span><span>ん</span><span>が</span><span>こ</span><span>ろ</span><span>ん</span><span>だ</span></h1>
     <button type="button" class="pill" id="helpBtn" aria-label="あそびかた">？<span class="wide"> あそびかた</span></button>
     <button type="button" class="pill" id="pauseBtn" hidden>⏸ 中断</button>
     <button type="button" class="pill" id="tuneBtn" aria-expanded="false">⚙ 調整</button>
@@ -488,8 +493,16 @@ try{new ResizeObserver(resize).observe(cv)}catch(e){}
 function draw(now){
   const ground=css('--ground'),ink=css('--ink'),red=css('--red'),card=css('--card'),muted=css('--muted'),accent=css('--accent');
   cx.clearRect(0,0,W,H);
+  // 空：上ほど青く。雲がゆっくり流れる
+  {const sg=cx.createLinearGradient(0,0,0,H*0.56);sg.addColorStop(0,css('--sky'));sg.addColorStop(1,css('--sky2'));cx.fillStyle=sg;cx.fillRect(0,0,W,H*0.56);
+   cx.fillStyle=card;cx.globalAlpha=0.9;
+   for(const [k,yy,sz] of [[0.1,0.16,1],[0.45,0.08,0.75],[0.75,0.22,0.9]]){const cxp=((k+now/90000)%1.2-0.1)*W,cyp=H*yy,r=Math.min(H,W)*0.05*sz;
+     cx.beginPath();cx.arc(cxp,cyp,r,0,7);cx.arc(cxp+r*1.1,cyp-r*0.35,r*1.2,0,7);cx.arc(cxp+r*2.2,cyp,r*0.95,0,7);cx.rect(cxp,cyp-r*0.1,r*2.2,r*0.95);cx.fill()}
+   cx.globalAlpha=1}
   const gy=H*0.56,left=W*0.06,right=W*0.84,X=x=>left+(right-left)*(x-2)/(P.GOAL_POS-2);
   cx.fillStyle=ground;cx.fillRect(0,gy,W,H-gy);
+  // 地面の横じま（ならした土の公園）
+  cx.strokeStyle=css('--ground2');cx.lineWidth=2;for(let k=1;k<4;k++){const yy=gy+(H-gy)*k/4;cx.beginPath();cx.moveTo(0,yy);cx.lineTo(W,yy);cx.stroke()}
   // スタートの線
   cx.strokeStyle=muted;cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(X(2),gy-6);cx.lineTo(X(2),H);cx.stroke();cx.setLineDash([]);
   // だるま
