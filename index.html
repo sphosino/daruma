@@ -529,29 +529,40 @@ function draw(now){
         cx.globalAlpha=(1-t)*0.45;cx.fillStyle=muted;cx.beginPath();cx.arc(px,py,s*(0.15+t*0.25),0,7);cx.fill()}cx.globalAlpha=1}
     if(g==='ブレーキ'){cx.strokeStyle=muted;cx.lineWidth=Math.max(1.5,s*0.1);cx.beginPath();cx.moveTo(x-s*1.2,y+1);cx.lineTo(x+s*0.3,y+1);cx.stroke()}
     cx.save();cx.translate(x,y);cx.rotate(lean);cx.translate(-x,-y);
-    cx.strokeStyle=col;cx.lineWidth=s*0.28;cx.lineCap='round';
-    for(const sg of[1,-1]){cx.beginPath();cx.moveTo(x,y-s*0.9);cx.lineTo(x+Math.sin(leg*sg)*s*0.8,y-Math.max(0,Math.cos(leg*sg))*0+(g==='全力'?-Math.max(0,Math.sin(leg*sg))*s*0.25:0));cx.stroke()}
-    cx.fillStyle=col;cx.beginPath();cx.ellipse(x,y-s*1.5,s*0.55,s*0.75,0,0,7);cx.fill();
-    // 腕と手（2026-10-19）。手は頭と同じ白い丸で、体に重なっても見えるように。
-    //   走る：足と逆に振る（全力ほど大きく）／止まる：下ろす／ブレーキ：前に出して踏んばる／見つかった：両手を上げてビクッ
-    const sh={x,y:y-s*1.95},hands=[];
-    if(hit)hands.push([x-s*0.75,y-s*3.0],[x+s*0.75,y-s*3.0]);
-    else if(g==='ブレーキ')hands.push([x+s*0.85,y-s*2.2],[x+s*0.55,y-s*1.6]);
-    else if(mv&&amp>0.2)for(const sg of[1,-1]){const v=Math.sin(leg*sg);hands.push([x+sg*s*(0.62+0.3*amp)+v*s*0.25*amp,y-s*(1.45+0.35*amp*v)])}
-    else hands.push([x-s*0.72,y-s*1.1],[x+s*0.72,y-s*1.1]);
-    cx.strokeStyle=col;cx.lineWidth=s*0.18;
-    for(const [hx,hy] of hands){cx.beginPath();cx.moveTo(sh.x,sh.y);cx.lineTo(hx,hy);cx.stroke()}
-    for(const [hx,hy] of hands){cx.fillStyle=card;cx.beginPath();cx.arc(hx,hy,s*0.17,0,7);cx.fill();cx.strokeStyle=col;cx.lineWidth=s*0.08;cx.stroke()}
-    cx.fillStyle=card;cx.beginPath();cx.arc(x,y-s*2.55,s*0.48,0,7);cx.fill();cx.strokeStyle=col;cx.lineWidth=s*0.12;cx.stroke();
+    drawPicto(x,y,s,col,pictoPose(g,hit,mv?pos*(g==='全力'?1.6:g==='小走り'?2.2:2.6):0));
     cx.restore();
     cx.globalAlpha=1;cx.textAlign='center';
     const label=(c.human?'あなた':c.name.replace(/^.*の/,''))+(c.winded?' ぜぇ…':'');
-    cx.fillStyle=c.human?ink:muted;cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.fillText(label,x,y-s*3.3);
-    if(hit){cx.fillStyle=red;cx.font=`900 ${Math.max(14,s*1.1)}px ${css('--pop')}`;cx.fillText('！',x,y-s*3.3-Math.max(12,s*0.7))}
+    cx.fillStyle=c.human?ink:muted;cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.fillText(label,x,y-s*4.05);
+    if(hit){cx.fillStyle=red;cx.font=`900 ${Math.max(14,s*1.1)}px ${css('--pop')}`;cx.fillText('！',x,y-s*4.05-Math.max(12,s*0.7))}
     if(mind||c.human){const bw=s*1.6,bx=x-bw/2,by=y+5;cx.fillStyle=css('--line');cx.fillRect(bx,by,bw,3);cx.fillStyle=c.winded?red:accent;cx.fillRect(bx,by,bw*c.energy/c.energyMax,3)}
-    if(mind&&!c.human){const m=[gaitOf(c,i),c.intendsToStop===false?'賭け':''].filter(Boolean).join('・');if(m){cx.fillStyle=c.intendsToStop===false?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*3.3-Math.max(11,s*0.6))}}
+    if(mind&&!c.human){const m=[gaitOf(c,i),c.intendsToStop===false?'賭け':''].filter(Boolean).join('・');if(m){cx.fillStyle=c.intendsToStop===false?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*4.05-Math.max(11,s*0.6))}}
   });
   $('gauge').style.width=`calc((100% - 24px) * ${me?Math.min(1,me.vel/me.maxSpeed):0})`;
+}
+
+// ---------- ピクトグラムの人（2026-10-19、非常口のマークのような） ----------
+// 角度は、まっすぐ下が 0、走る向き（右）がプラス（度）。ももとすね、二の腕と前腕で、ひざとひじが曲がる
+const D2R=Math.PI/180;
+function pictoPose(g,hit,ph){
+  if(hit)return{legs:[[4,4],[-4,-4]],arms:[[150,165],[-150,-165]],bob:0};                 // 見つかった：両手を上げる
+  if(g==='ブレーキ')return{legs:[[38,30],[-8,-14]],arms:[[95,70],[60,40]],bob:0};          // 前の足をつっぱって踏んばる
+  const A={全力:[55,105,70,95],小走り:[32,65,42,80],歩く:[18,28,20,30]}[g];
+  if(!A)return{legs:[[5,5],[-5,-5]],arms:[[12,12],[-12,-12]],bob:0};                        // 止まっている
+  const [At,Kb,Aa,Ke]=A,leg=q=>{const th=At*Math.sin(q);return[th,th-Kb*(0.5-0.5*Math.sin(q))]};
+  const arm=q=>{const ua=-Aa*Math.sin(q);return[ua,ua+Ke]};
+  return{legs:[leg(ph),leg(ph+Math.PI)],arms:[arm(ph),arm(ph+Math.PI)],bob:Math.abs(Math.sin(ph))*(At/55)*0.12};
+}
+function drawPicto(x,y,u,col,pose){
+  const hipY=y-u*(1.62+pose.bob),hip=[x,hipY],neck=[x+u*0.02,hipY-u*1.0];
+  const seg=(p,a,L)=>[p[0]+Math.sin(a*D2R)*L,p[1]+Math.cos(a*D2R)*L];
+  cx.strokeStyle=col;cx.fillStyle=col;cx.lineCap='round';cx.lineJoin='round';
+  const limb=(p,[a1,a2],L1,L2,w)=>{const k=seg(p,a1,L1),e=seg(k,a2,L2);cx.lineWidth=u*w;cx.beginPath();cx.moveTo(p[0],p[1]);cx.lineTo(k[0],k[1]);cx.lineTo(e[0],e[1]);cx.stroke()};
+  // 奥の手足 → 胴 → 手前の手足 → 頭（頭は首から少し離した丸）
+  limb(hip,pose.legs[1],u*0.85,u*0.85,0.36);limb([neck[0],neck[1]+u*0.12],pose.arms[1],u*0.62,u*0.6,0.3);
+  cx.lineWidth=u*0.62;cx.beginPath();cx.moveTo(hip[0],hip[1]);cx.lineTo(neck[0],neck[1]);cx.stroke();
+  limb(hip,pose.legs[0],u*0.85,u*0.85,0.36);limb([neck[0],neck[1]+u*0.12],pose.arms[0],u*0.62,u*0.6,0.3);
+  cx.beginPath();cx.arc(neck[0]+u*0.05,neck[1]-u*0.62,u*0.42,0,7);cx.fill();
 }
 
 // ---------- まわす ----------
