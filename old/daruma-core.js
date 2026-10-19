@@ -687,9 +687,11 @@
   // The caller resolves the cycle (so it can animate first).
   function tick(P, st) {
     st.stamina = Math.max(0, st.stamina - tempoDrain(P, st.tempoValue) * st.type.tempoScale);
-    if (st.stamina <= 0 && st.tempoValue > 0) {
-      st.tempoValue = 0; // out of gas -> the pace collapses to a crawl, for free
-    }
+    // 気力切れ（2026-10-19）：0 になった瞬間に、テンポの数字が半分になる（前は一番遅いところまで落ちていて、重すぎた）。
+    // 気力が少しでも戻ったら、次に 0 になったときにまた半分にする
+    if (st.stamina <= 0) {
+      if (!st.outOfGas) { st.outOfGas = true; st.tempoValue = st.tempoValue / 2; st.justOutOfGas = true; }
+    } else st.outOfGas = false;
     st.chantProgress += tempoFill(P, st.tempoValue);
 
 
