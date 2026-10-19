@@ -532,8 +532,16 @@ function draw(now){
     cx.strokeStyle=col;cx.lineWidth=s*0.28;cx.lineCap='round';
     for(const sg of[1,-1]){cx.beginPath();cx.moveTo(x,y-s*0.9);cx.lineTo(x+Math.sin(leg*sg)*s*0.8,y-Math.max(0,Math.cos(leg*sg))*0+(g==='全力'?-Math.max(0,Math.sin(leg*sg))*s*0.25:0));cx.stroke()}
     cx.fillStyle=col;cx.beginPath();cx.ellipse(x,y-s*1.5,s*0.55,s*0.75,0,0,7);cx.fill();
-    // 腕（全力ほど大きく振る）
-    if(mv&&amp>0.2){cx.strokeStyle=col;cx.lineWidth=s*0.2;for(const sg of[1,-1]){cx.beginPath();cx.moveTo(x,y-s*1.75);cx.lineTo(x-Math.sin(leg*sg)*s*0.7*amp,y-s*1.25);cx.stroke()}}
+    // 腕と手（2026-10-19）。手は頭と同じ白い丸で、体に重なっても見えるように。
+    //   走る：足と逆に振る（全力ほど大きく）／止まる：下ろす／ブレーキ：前に出して踏んばる／見つかった：両手を上げてビクッ
+    const sh={x,y:y-s*1.95},hands=[];
+    if(hit)hands.push([x-s*0.75,y-s*3.0],[x+s*0.75,y-s*3.0]);
+    else if(g==='ブレーキ')hands.push([x+s*0.85,y-s*2.2],[x+s*0.55,y-s*1.6]);
+    else if(mv&&amp>0.2)for(const sg of[1,-1]){const v=Math.sin(leg*sg);hands.push([x+sg*s*(0.62+0.3*amp)+v*s*0.25*amp,y-s*(1.45+0.35*amp*v)])}
+    else hands.push([x-s*0.72,y-s*1.1],[x+s*0.72,y-s*1.1]);
+    cx.strokeStyle=col;cx.lineWidth=s*0.18;
+    for(const [hx,hy] of hands){cx.beginPath();cx.moveTo(sh.x,sh.y);cx.lineTo(hx,hy);cx.stroke()}
+    for(const [hx,hy] of hands){cx.fillStyle=card;cx.beginPath();cx.arc(hx,hy,s*0.17,0,7);cx.fill();cx.strokeStyle=col;cx.lineWidth=s*0.08;cx.stroke()}
     cx.fillStyle=card;cx.beginPath();cx.arc(x,y-s*2.55,s*0.48,0,7);cx.fill();cx.strokeStyle=col;cx.lineWidth=s*0.12;cx.stroke();
     cx.restore();
     cx.globalAlpha=1;cx.textAlign='center';
