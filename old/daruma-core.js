@@ -670,6 +670,14 @@
     return Math.max(0, Math.min(top, m * (1 - Math.pow(1 - t2, 1.5))) - c.vel);
   }
 
+  // ゆるめる（2026-10-19）：目標の速さまで、差の 25% ずつ落とす（近づくほどふんわり、1 秒ほどで落ちつく）。
+  // ただし落ち方はブレーキの半分まで。止まるとき（ブレーキ）は brake ずつまっすぐ落ちる
+  function easeStep(c, target, brake) {
+    var d = c.vel - target;
+    if (d <= 0.002) return Math.max(0, d);
+    return Math.min(brake * 0.5, Math.max(0.002, d * 0.25));
+  }
+
   function turnCostOf(P, st, tier) {
     return P.REWARD[tier || st.reward].turnCost * st.type.turnCostScale;
   }
@@ -765,7 +773,8 @@
         var hWant = c.input === true ? 1 : (+c.input || 0);
         var hTgt = hTop * Math.max(0, Math.min(1, hWant));
         if (hWant > 0 && c.vel <= hTgt) c.vel = Math.min(hTgt, c.vel + accelStep(c, hTgt));
-        else c.vel = Math.max(hWant > 0 ? hTgt : 0, c.vel - hBrake);
+        else if (hWant > 0) c.vel = Math.max(hTgt, c.vel - easeStep(c, hTgt, hBrake));   // 指を左へ：ゆるめる
+        else c.vel = Math.max(0, c.vel - hBrake);                                          // 指を離す：ブレーキ
         var hEffort = P.RUN_DRAIN_EXPONENT === 1 ? 1
           : Math.pow(clamp(c.vel / Math.max(0.001, c.maxSpeed), 0, 1), P.RUN_DRAIN_EXPONENT - 1);
         var hSteady = (c.vel < c.maxSpeed * P.REGEN_VEL_RATIO)
@@ -940,7 +949,7 @@
               (1 - P.EFFORT_SPEED_FLOOR) * c.motive.effort;
             var target = effMaxSpeed * clamp(want, P.CRUISE_MIN, effortCeil);
             c.vel = (c.vel > target)
-              ? Math.max(target, c.vel - effBrake * 0.5)
+              ? Math.max(target, c.vel - easeStep(c, target, effBrake))
               : Math.min(target, c.vel + accelStep(c, effMaxSpeed));
           }
 

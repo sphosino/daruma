@@ -431,8 +431,9 @@ addEventListener('keydown',e=>{if(e.code!=='Space'||e.repeat||role!=='kid'||!st)
 addEventListener('keyup',e=>{if(e.code==='Space')up()});
 // 調整
 // いまの走り方（ブレーキ・歩く・小走り・全力）。前の 0.1 秒より遅くなっていればブレーキ
-function gaitOf(c,i){const f=c.vel/c.maxSpeed,slow=prevVel&&c.vel<prevVel[i]-1e-4;
-  return f<0.03?'止まってる':slow||c.freezing?'ブレーキ':f<0.4?'歩く':f<0.75?'小走り':'全力'}
+// ブレーキの形になるのは、強く減速しているとき（ブレーキの 7 割以上で落ちている）だけ。ゆるめているだけなら走ったまま
+function gaitOf(c,i){const f=c.vel/c.maxSpeed,braking=prevVel&&prevVel[i]-c.vel>=c.brake*0.7;
+  return f<0.03?'止まってる':braking||c.freezing?'ブレーキ':f<0.4?'歩く':f<0.75?'小走り':'全力'}
 // 子どもの表（調整を開いているときだけ、0.3 秒ごとに描き直す）
 const MOTIVE_JA={scorer:'勝ちたい',careless:'気にしない',slacker:'やる気なし',steady:'ふつう'};
 function renderKids(){
