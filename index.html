@@ -553,15 +553,19 @@ function pictoPose(g,hit,ph){
   const arm=q=>{const ua=-Aa*Math.sin(q);return[ua,ua+Ke]};
   return{legs:[leg(ph),leg(ph+Math.PI)],arms:[arm(ph),arm(ph+Math.PI)],bob:Math.abs(Math.sin(ph))*(At/55)*0.12};
 }
-function drawPicto(x,y,u,col,pose){
+let PICTO_GAP='#fff';
+function drawPicto(x,y,u,col,pose){PICTO_GAP=css('--card');
   const hipY=y-u*(1.62+pose.bob),hip=[x,hipY],neck=[x+u*0.02,hipY-u*1.0];
   const seg=(p,a,L)=>[p[0]+Math.sin(a*D2R)*L,p[1]+Math.cos(a*D2R)*L];
   cx.strokeStyle=col;cx.fillStyle=col;cx.lineCap='round';cx.lineJoin='round';
-  const limb=(p,[a1,a2],L1,L2,w)=>{const k=seg(p,a1,L1),e=seg(k,a2,L2);cx.lineWidth=u*w;cx.beginPath();cx.moveTo(p[0],p[1]);cx.lineTo(k[0],k[1]);cx.lineTo(e[0],e[1]);cx.stroke()};
+  // gap：手前の手足のまわりに明るいすき間（非常口のマークの白い境目のように。重なっても腕と胴が分かれて見える）
+  const limb=(p,[a1,a2],L1,L2,w,gap)=>{const k=seg(p,a1,L1),e=seg(k,a2,L2),path=()=>{cx.beginPath();cx.moveTo(p[0],p[1]);cx.lineTo(k[0],k[1]);cx.lineTo(e[0],e[1])};
+    if(gap){cx.strokeStyle=PICTO_GAP;cx.lineWidth=u*(w+0.22);path();cx.stroke();cx.strokeStyle=col}
+    cx.lineWidth=u*w;path();cx.stroke()};
   // 奥の手足 → 胴 → 手前の手足 → 頭（頭は首から少し離した丸）
   limb(hip,pose.legs[1],u*0.85,u*0.85,0.36);limb([neck[0],neck[1]+u*0.12],pose.arms[1],u*0.62,u*0.6,0.3);
   cx.lineWidth=u*0.62;cx.beginPath();cx.moveTo(hip[0],hip[1]);cx.lineTo(neck[0],neck[1]);cx.stroke();
-  limb(hip,pose.legs[0],u*0.85,u*0.85,0.36);limb([neck[0],neck[1]+u*0.12],pose.arms[0],u*0.62,u*0.6,0.3);
+  limb(hip,pose.legs[0],u*0.85,u*0.85,0.36,true);limb([neck[0],neck[1]+u*0.12],pose.arms[0],u*0.62,u*0.6,0.3,true);
   cx.beginPath();cx.arc(neck[0]+u*0.05,neck[1]-u*0.62,u*0.42,0,7);cx.fill();
 }
 
