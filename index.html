@@ -85,16 +85,18 @@ canvas{display:block;width:100%;height:100%}
 .btn small{display:block;font-size:.68rem;font-weight:500;color:var(--muted)}
 .btn.on{background:var(--on);border-color:var(--accent)}
 .btn.primary{box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 60%,var(--ink));background:var(--accent);border-color:var(--accent);color:var(--card);font-family:var(--pop);font-weight:400;font-size:1.1rem}
-.btn[disabled]{opacity:.45;cursor:default}
+.btn[disabled],.pill[disabled]{opacity:.45;cursor:default}
 .lv{--c:var(--line);position:relative}.lv.on{border-color:var(--c);box-shadow:0 0 0 2px var(--c) inset}
 .lv.next{border-style:dashed;border-color:var(--c)}.lv.next::after{content:'予約';position:absolute;top:3px;right:6px;font-size:.65rem;color:var(--c)}
 input[type=range]{width:100%;accent-color:var(--accent)}
 .arm.on{background:var(--on);border-color:var(--red)}
 /* はじめる・終わりの画面 */
-.over{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:color-mix(in srgb,var(--bg) 88%,transparent);text-align:center;padding:20px 16px;overflow:auto}
+.over{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:color-mix(in srgb,var(--bg) 94%,transparent);text-align:center;padding:20px 16px;overflow:auto}
 .over>*{max-width:520px}
 .over h2{font-family:var(--pop);font-weight:400;margin:0;font-size:1.6rem;color:var(--accent);text-shadow:0 3px 0 var(--card)}
 .over p{margin:0;font-size:.86rem;color:var(--muted);max-width:32em}
+.fb{margin-top:6px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.fb .fbQ,.fb .fbThanks{font-size:.85rem;color:var(--muted);margin:0}.fb a{color:var(--accent);font-weight:700}
 .choices{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 .go{box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 60%,var(--ink));font:inherit;font-family:var(--pop);font-size:1.25rem;border:0;border-radius:16px;background:var(--accent);color:var(--card);padding:12px 26px;cursor:pointer}
 /* 調整（デバッグ） */
@@ -156,6 +158,11 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <p id="overP"></p>
       <div class="choices" id="types"></div>
       <button class="go" id="startBtn" type="button">はじめる</button>
+      <div class="fb" id="fb" hidden>
+        <p class="fbQ">遊んでみて、どうでした？</p>
+        <div class="choices" id="fbBtns"></div>
+        <p class="fbThanks" id="fbThanks" hidden>ありがとう！ 感想を書いてもらえるなら <a href="https://x.com/mataasobo_games" target="_blank" rel="noopener">X（@mataasobo_games）</a> へどうぞ。</p>
+      </div>
     </div>
   </div>
   <div class="hud"><span>だるまの時計 のこり <b id="left">40.0</b><span id="sec">秒</span></span><span><b id="cycle">1</b>回目</span><span id="qiBox">気力 <b id="qi">—</b></span></div>
@@ -351,10 +358,19 @@ function end(kid){
   else{h=!kid?'時間切れ…だるまの勝ち':kid===me?'タッチ！あなたの勝ち':`${kid.name}がタッチ！子どもの勝ち`;
     p=kid?`だるまの時計は、のこり${left}秒だった。`:`あなたはあと${Math.max(0,P.GOAL_POS-me.pos).toFixed(0)}だった。`}
   if(kid)beep(880,0.15);
-  $('overH').textContent=h;$('overP').textContent=p;$('startBtn').textContent='もう一回';$('over').hidden=false;renderSetup()}
+  $('overH').textContent=h;$('overP').textContent=p;$('startBtn').textContent='もう一回';$('over').hidden=false;renderSetup();showFb()}
+// ---------- ワンタップの感想（終わりの画面） ----------
+const FB=[['fun','おもしろい'],['hard','むずかしい'],['easy','かんたん'],['confused','よくわからない']];
+let fbSent=false;
+function showFb(){fbSent=false;$('fb').hidden=false;$('fbThanks').hidden=true;
+  $('fbBtns').innerHTML=FB.map(([k,l])=>`<button class="pill" type="button" data-k="${k}">${l}</button>`).join('');
+  $('fbBtns').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    if(fbSent)return;fbSent=true;b.classList.add('on');
+    try{gtag('event','daruma_fb_'+b.dataset.k,{role})}catch(e){}
+    $('fbBtns').querySelectorAll('button').forEach(x=>{if(x!==b)x.disabled=true});$('fbThanks').hidden=false})}
 function quit(){if(tut){tut=null;tutHl(null);$('tut').hidden=true}$('tune').hidden=true;tunePaused=false;phase='setup';timers=[];paused=false;st=null;me=null;note('');$('pauseBtn').hidden=true;renderPause();
   $('ctlDaruma').hidden=true;$('pad').hidden=true;
-  $('overH').textContent='だるまさんがころんだ';$('overP').textContent=HOW[role];$('startBtn').textContent='はじめる';$('over').hidden=false;renderSetup();renderChant()}
+  $('fb').hidden=true;$('overH').textContent='だるまさんがころんだ';$('overP').textContent=HOW[role];$('startBtn').textContent='はじめる';$('over').hidden=false;renderSetup();renderChant()}
 function togglePause(){if(!st||phase==='over'||phase==='setup')return;paused=!paused;renderPause();note(pausedNote);renderCtl()}
 function renderPause(){const t=paused?'▶ 再開':'⏸ 中断';$('pauseBtn').textContent=t;$('pause2').textContent=t;$('pauseBtn').classList.toggle('on',paused);$('pause2').classList.toggle('on',paused)}
 
