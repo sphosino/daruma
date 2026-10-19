@@ -4,7 +4,7 @@
 //   - 子どもの止まり方は人に合わせる（全速から止まるまで 0.4〜0.7 秒）
 //   - 人の子どもも、元の子どもの1人として同じコースを走る（押している間だけ加速）
 //   - 見送ったら止まらず、最後の「だ」が次の「だ」を兼ねる
-//   - 強気度は言っている間に予約でき、見送りの「だ」かひと休みで変わる
+//   - オーラ（前の名前は強気度）は言っている間に予約でき、見送りの「だ」かひと休みで変わる
 //   - 子ども役のときの CPU のだるま（シミュレーターの「人間の読み」と同じ見方）
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory(require("./old/daruma-core.js"));
@@ -148,7 +148,7 @@
     return {
       // ひと休みのあと、言い始める前
       onPrep: function (st) { st.reward = pickReward(st); seen = []; newPhrase(st); },
-      // 見送りの「だ」で強気度を変える（予約していたもの）
+      // 見送りの「だ」でオーラを変える（予約していたもの）
       onCarry: function (st) { st.reward = pickReward(st); newPhrase(st); },
       // 言っている間、毎 tick
       onTick: function (st) {
