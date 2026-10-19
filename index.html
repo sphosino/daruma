@@ -227,7 +227,7 @@ function later(ms,fn){timers.push({at:gt+ms,fn})}
 function renderSetup(){
   $('roles').innerHTML=[['kid','子どもで遊ぶ'],['daruma','だるまで遊ぶ']].map(([k,l])=>`<button class="pill${k===role?' on':''}" data-r="${k}" type="button">${l}</button>`).join('');
   $('roles').querySelectorAll('button').forEach(b=>b.onclick=()=>{role=b.dataset.r;store.set('dk-role',role);renderSetup();if(phase==='setup')$('overP').textContent=HOW[role]});
-  $('types').hidden=role!=='daruma';
+  $('types').hidden=role!=='daruma'||!q.has('debug');   // だるまの種類は、まだ ?debug のときだけ（初めての人には意味が分からない）
   $('types').innerHTML=Object.keys(P.DARUMA_TYPES).map(k=>`<button class="pill${k===pickedType?' on':''}" data-t="${k}" type="button" title="${TYPE_NOTE[k]||''}">${P.DARUMA_TYPES[k].label}</button>`).join('');
   $('types').querySelectorAll('button').forEach(b=>b.onclick=()=>{pickedType=b.dataset.t;renderSetup()});
 }
