@@ -117,10 +117,16 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .kidTable th,.kidTable td{padding:3px 6px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
 .kidTable th:first-child,.kidTable td:first-child{text-align:left}.kidTable th{color:var(--muted);font-weight:700}
 .bar{display:inline-block;width:44px;height:6px;background:var(--line);border-radius:3px;vertical-align:middle;margin-right:4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
-.tut{flex:0 0 auto;background:var(--card);border:2px solid var(--accent);border-radius:16px;box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 40%,var(--line));padding:8px 10px;font-size:.84rem;line-height:1.5}
+.tut{position:fixed;z-index:8;left:12px;top:40%;width:min(360px,calc(100vw - 24px));background:var(--card);border:3px solid var(--accent);border-radius:16px;box-shadow:0 5px 0 color-mix(in srgb,var(--accent) 40%,var(--line)),0 12px 30px -8px #0005;padding:9px 12px;font-size:.86rem;line-height:1.55}
+/* 吹き出しの矢印（説明している場所を指す） */
+.tut::after{content:'';position:absolute;left:var(--ax,50%);transform:translateX(-50%);border:11px solid transparent}
+.tut.up::after{top:-22px;border-bottom-color:var(--accent)}
+.tut.down::after{bottom:-22px;border-top-color:var(--accent)}
+/* 説明している場所だけ明るく、まわりを少し暗く */
+.spot{position:fixed;z-index:7;pointer-events:none;border-radius:20px;box-shadow:0 0 0 9999px rgba(40,24,12,.36);transition:left .2s,top .2s,width .2s,height .2s}
 .hl{outline:3px solid var(--accent)!important;outline-offset:3px;animation:hl 1s ease-in-out infinite}
 @keyframes hl{50%{outline-color:transparent}}
-.tutHold{border-width:3px;box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 25%,transparent)}
+.tutHold{}
 .tutTop{display:flex;align-items:center;gap:8px;margin-bottom:2px}.tutTop b{flex:1;font-family:var(--pop);font-weight:400;color:var(--accent)}
 .tut p{margin:0}.tut .pill{font-size:.78rem;padding:3px 10px}.tutBtns{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
 .log{font-size:.76rem;color:var(--muted);max-height:7em;overflow:auto;border-top:1px dashed var(--line);padding-top:6px}
@@ -167,6 +173,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   </div>
   <div class="hud"><span>だるまの時計 のこり <b id="left">40.0</b><span id="sec">秒</span></span><span><b id="cycle">1</b>回目</span><span id="qiBox">気力 <b id="qi">—</b></span></div>
 
+  <div class="spot" id="spot" hidden></div>
   <div class="tut" id="tut" hidden><div class="tutTop"><b id="tutStep"></b><button type="button" class="pill" id="tutSkip">とばす</button></div><p id="tutText"></p><div class="tutBtns"><button type="button" class="pill on" id="tutNext" hidden>次へ</button></div></div>
   <!-- だるま役の操作 -->
   <div class="card" id="ctlDaruma" hidden>
@@ -368,7 +375,7 @@ function showFb(){fbSent=false;$('fb').hidden=false;$('fbThanks').hidden=true;
     if(fbSent)return;fbSent=true;b.classList.add('on');
     try{gtag('event','daruma_fb_'+b.dataset.k,{role})}catch(e){}
     $('fbBtns').querySelectorAll('button').forEach(x=>{if(x!==b)x.disabled=true});$('fbThanks').hidden=false})}
-function quit(){if(tut){tut=null;tutHl(null);$('tut').hidden=true}$('tune').hidden=true;tunePaused=false;phase='setup';timers=[];paused=false;st=null;me=null;note('');$('pauseBtn').hidden=true;renderPause();
+function quit(){if(tut){tut=null;$('tut').hidden=true;tutHl(null)}$('tune').hidden=true;tunePaused=false;phase='setup';timers=[];paused=false;st=null;me=null;note('');$('pauseBtn').hidden=true;renderPause();
   $('ctlDaruma').hidden=true;$('pad').hidden=true;
   $('fb').hidden=true;$('overH').textContent='だるまさんがころんだ';$('overP').textContent=HOW[role];$('startBtn').textContent='はじめる';$('over').hidden=false;renderSetup();renderChant()}
 function togglePause(){if(!st||phase==='over'||phase==='setup')return;paused=!paused;renderPause();note(pausedNote);renderCtl()}
@@ -414,11 +421,24 @@ const TUT={
 let tut=null,tutDm='normal',nudged=-1;
 function startTut(){tut={steps:TUT[role],i:-1,hold:false};tutDm='normal';start()}
 function tutCur(){return tut&&tut.steps[tut.i]}
-function tutHl(sel){document.querySelectorAll('.hl').forEach(e=>e.classList.remove('hl'));if(sel){const e=document.querySelector(sel);if(e)e.classList.add('hl')}}
+function tutHl(sel){document.querySelectorAll('.hl').forEach(e=>e.classList.remove('hl'));tutSel=sel||null;if(sel){const e=document.querySelector(sel);if(e)e.classList.add('hl')}tutPlace()}
+// 吹き出しを、説明している場所のそばに置く。画面の上のほうなら下に、下のほうなら上に出して、矢印でさす
+let tutSel=null;
+function tutPlace(){
+  const box=$('tut'),spot=$('spot');if(!tut||box.hidden){spot.hidden=true;return}
+  const el=document.querySelector(tutSel||'#stage'),r=el.getBoundingClientRect(),bw=box.offsetWidth,bh=box.offsetHeight,vw=innerWidth,vh=innerHeight;
+  const below=r.top+r.height/2<vh*0.45;
+  let top=below?r.bottom+16:r.top-bh-16;top=Math.max(8,Math.min(vh-bh-8,top));
+  const cxp=r.left+r.width/2,left=Math.max(12,Math.min(vw-bw-12,cxp-bw/2));
+  box.style.top=top+'px';box.style.left=left+'px';box.classList.toggle('up',below);box.classList.toggle('down',!below);
+  box.style.setProperty('--ax',Math.max(22,Math.min(bw-22,cxp-left))+'px');
+  if(tutSel){spot.hidden=false;const pad=6;Object.assign(spot.style,{left:(r.left-pad)+'px',top:(r.top-pad)+'px',width:(r.width+pad*2)+'px',height:(r.height+pad*2)+'px'})}else spot.hidden=true;
+}
+addEventListener('resize',()=>tutPlace());
 function tutShow(b,e,hold){
   $('tut').hidden=false;$('tut').classList.toggle('tutHold',!!hold);
   $('tutStep').textContent=`あそびかた ${tut.i+1}/${tut.steps.length}：${b.t}`;$('tutText').textContent=typeof b.x==='function'?b.x(e||{}):b.x;
-  $('tutNext').hidden=!hold;$('tutNext').textContent=b.last?'あそびかたを終える':'わかった';tutHl(b.hl);
+  $('tutNext').hidden=!hold;$('tutNext').textContent=b.last?'あそびかたを終える':'わかった';tutHl(b.hl);requestAnimationFrame(tutPlace);
 }
 function tutNextBeat(){
   tut.i++;tut.hold=false;const b=tutCur();if(!b){endTut();return}
@@ -457,7 +477,7 @@ const TUT_END={
 
 時計が切れるまでタッチされなければ、だるまの勝ち！`};
 function endTut(finished){
-  store.set('dk-tut-'+role,true);tut=null;tutHl(null);$('tut').hidden=true;
+  store.set('dk-tut-'+role,true);tut=null;$('tut').hidden=true;tutHl(null);
   if(!finished){start();return}
   timers=[];phase='over';$('pauseBtn').hidden=true;$('fb').hidden=true;
   $('overH').textContent='あそびかた、おしまい！';$('overP').textContent=TUT_END[role];$('overP').classList.add('lines');
