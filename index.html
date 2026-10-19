@@ -51,9 +51,9 @@ h1 span:nth-child(4n+1){color:var(--p0)}h1 span:nth-child(4n+2){color:var(--p1)}
 .chant span.said{text-shadow:0 3px 0 var(--card)}.chant.look span.said{color:var(--red)}
 .stage{position:relative;flex:0 0 auto;box-shadow:0 5px 0 var(--line);height:clamp(160px,52vw,300px);border-radius:16px;overflow:hidden;background:var(--sky);border:2px solid var(--line)}
 canvas{display:block;width:100%;height:100%}
-.msg{position:absolute;left:50%;top:10%;transform:translateX(-50%);width:94%;text-align:center;font-family:var(--pop);font-size:clamp(1.3rem,6.5vw,2.2rem);line-height:1.2;color:var(--red);text-shadow:0 2px 0 var(--card);pointer-events:none}
-.msg small{display:block;font-size:.55em;color:var(--ink)}
-.paused{position:absolute;left:0;right:0;top:4px;text-align:center;font-size:.8rem;font-weight:700;color:var(--muted);pointer-events:none}
+.msg{position:absolute;left:50%;top:10%;transform:translateX(-50%);width:94%;text-align:center;font-family:var(--pop);font-size:clamp(1.3rem,6.5vw,2.2rem);line-height:1.2;color:#e0402c;text-shadow:0 2px 0 #fffdf9;pointer-events:none}
+.msg small{display:block;font-size:.55em;color:#4a2f22}
+.paused{position:absolute;left:0;right:0;top:4px;text-align:center;font-size:.8rem;font-weight:700;color:#8f6b58;pointer-events:none}
 .hud{display:flex;justify-content:space-between;gap:8px;font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
 .hud b{color:var(--ink)}
 .pill{white-space:nowrap;box-shadow:0 3px 0 var(--line);font:inherit;font-weight:700;font-size:.85rem;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
@@ -490,11 +490,13 @@ function resize(){const r=cv.getBoundingClientRect(),d=Math.min(devicePixelRatio
 addEventListener('resize',resize);
 // 下の操作が出たり、調整を開いたりすると道の枠の大きさが変わる。そのたびに測り直す（測り直さないと絵がつぶれる）
 try{new ResizeObserver(resize).observe(cv)}catch(e){}
+// 道の絵の中の色：ダークモードでも、いつも昼の公園（2026-10-19、けんじさん「全体的に夜に見える」）
+const SC={sky:'#cfeeff',sky2:'#f4fbff',ground:'#ecd3a8',ground2:'#e3c393',ink:'#4a2f22',muted:'#8f6b58',card:'#fffdf9',red:'#e0402c',accent:'#e8743b',line:'#f1dcc6'};
 function draw(now){
-  const ground=css('--ground'),ink=css('--ink'),red=css('--red'),card=css('--card'),muted=css('--muted'),accent=css('--accent');
+  const {ground,ink,red,card,muted,accent}=SC;
   cx.clearRect(0,0,W,H);
   // 空：上ほど青く。雲がゆっくり流れる
-  {const sg=cx.createLinearGradient(0,0,0,H*0.56);sg.addColorStop(0,css('--sky'));sg.addColorStop(1,css('--sky2'));cx.fillStyle=sg;cx.fillRect(0,0,W,H*0.56);
+  {const sg=cx.createLinearGradient(0,0,0,H*0.56);sg.addColorStop(0,SC.sky);sg.addColorStop(1,SC.sky2);cx.fillStyle=sg;cx.fillRect(0,0,W,H*0.56);
    cx.fillStyle=card;cx.globalAlpha=0.9;
    for(const [k,yy,sz] of [[0.1,0.16,1],[0.45,0.08,0.75],[0.75,0.22,0.9]]){const cxp=((k+now/90000)%1.2-0.1)*W,cyp=H*yy,r=Math.min(H,W)*0.05*sz;
      cx.beginPath();cx.arc(cxp,cyp,r,0,7);cx.arc(cxp+r*1.1,cyp-r*0.35,r*1.2,0,7);cx.arc(cxp+r*2.2,cyp,r*0.95,0,7);cx.rect(cxp,cyp-r*0.1,r*2.2,r*0.95);cx.fill()}
@@ -502,7 +504,7 @@ function draw(now){
   const gy=H*0.56,left=W*0.06,right=W*0.84,X=x=>left+(right-left)*(x-2)/(P.GOAL_POS-2);
   cx.fillStyle=ground;cx.fillRect(0,gy,W,H-gy);
   // 地面の横じま（ならした土の公園）
-  cx.strokeStyle=css('--ground2');cx.lineWidth=2;for(let k=1;k<4;k++){const yy=gy+(H-gy)*k/4;cx.beginPath();cx.moveTo(0,yy);cx.lineTo(W,yy);cx.stroke()}
+  cx.strokeStyle=SC.ground2;cx.lineWidth=2;for(let k=1;k<4;k++){const yy=gy+(H-gy)*k/4;cx.beginPath();cx.moveTo(0,yy);cx.lineTo(W,yy);cx.stroke()}
   // スタートの線
   cx.strokeStyle=muted;cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(X(2),gy-6);cx.lineTo(X(2),H);cx.stroke();cx.setLineDash([]);
   // だるま
@@ -515,7 +517,7 @@ function draw(now){
     cx.textAlign='center';cx.font=`900 ${Math.max(11,dr*0.42)}px ${css('--ui')}`;cx.fillStyle=lc;cx.fillText('強気度 '+LV_NAME[st.reward],dx-dr*0.3,dy-dr*1.55);
     // 気力のゲージ（線より少ないと振り向けない）
     const cost=Core.turnCostOf(P,st),bw=dr*2,bx=dx-dr,by=yT+6,bh=7;
-    cx.fillStyle=css('--line');cx.fillRect(bx,by,bw,bh);
+    cx.fillStyle=SC.line;cx.fillRect(bx,by,bw,bh);
     cx.fillStyle=st.stamina>=cost?lc:muted;cx.fillRect(bx,by,bw*Math.min(1,st.stamina/st.staminaMax),bh);
     cx.strokeStyle=ink;cx.lineWidth=1.5;const cxp=bx+bw*Math.min(1,cost/st.staminaMax);cx.beginPath();cx.moveTo(cxp,by-3);cx.lineTo(cxp,by+bh+3);cx.stroke();
     cx.fillStyle=ink;cx.font=`700 ${Math.max(10,dr*0.32)}px ${css('--ui')}`;cx.fillText(st.stamina>=cost?'気力':'気力が足りない',dx,by+bh+14);
@@ -564,7 +566,7 @@ function draw(now){
     const label=(c.human?'あなた':c.name.replace(/^.*の/,''))+(c.winded?' ぜぇ…':'');
     cx.fillStyle=c.human?ink:muted;cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.fillText(label,x,y-s*3.7);
     if(hit){cx.fillStyle=red;cx.font=`900 ${Math.max(14,s*1.1)}px ${css('--pop')}`;cx.fillText('！',x,y-s*3.7-Math.max(12,s*0.7))}
-    if(mind||c.human){const bw=s*1.6,bx=x-bw/2,by=y+5;cx.fillStyle=css('--line');cx.fillRect(bx,by,bw,3);cx.fillStyle=c.winded?red:accent;cx.fillRect(bx,by,bw*c.energy/c.energyMax,3)}
+    if(mind||c.human){const bw=s*1.6,bx=x-bw/2,by=y+5;cx.fillStyle=SC.line;cx.fillRect(bx,by,bw,3);cx.fillStyle=c.winded?red:accent;cx.fillRect(bx,by,bw*c.energy/c.energyMax,3)}
     if(mind&&!c.human){const m=[gaitOf(c,i),c.intendsToStop===false?'賭け':''].filter(Boolean).join('・');if(m){cx.fillStyle=c.intendsToStop===false?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*3.7-Math.max(11,s*0.6))}}
   });
   $('gauge').style.width=`calc((100% - 24px) * ${me?Math.min(1,me.vel/me.maxSpeed):0})`;
@@ -583,7 +585,7 @@ function pictoPose(g,hit,ph){
   return{legs:[leg(ph),leg(ph+Math.PI)],arms:[arm(ph),arm(ph+Math.PI)],bob:Math.abs(Math.sin(ph))*(At/55)*0.12};
 }
 let PICTO_GAP='#fff';const PICTO_EDGE=0.11;   // 白い縁の太さ（両側あわせて、体の太さの単位で）
-function drawPicto(x,y,u,col,pose){PICTO_GAP=css('--card');
+function drawPicto(x,y,u,col,pose){PICTO_GAP=SC.card;
   // 子どもらしく少し低め（2026-10-19）：手足と胴を短く、頭を少し大きく
   const LEG=0.74,TOR=0.86,UA=0.54,FA=0.52,HR=0.46;
   const hipY=y-u*(1.42+pose.bob),hip=[x,hipY],neck=[x+u*0.02,hipY-u*TOR];
