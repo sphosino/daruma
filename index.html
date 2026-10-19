@@ -92,7 +92,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .arm.on{background:var(--on);border-color:var(--red)}
 /* はじめる・終わりの画面 */
 .over{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:color-mix(in srgb,var(--bg) 94%,transparent);text-align:center;padding:20px 16px;overflow:auto}
-.over>*{max-width:520px}
+.over>*{max-width:520px}.over p.lines{white-space:pre-line;text-align:left;color:var(--ink);font-size:.92rem;line-height:1.8}
 .over h2{font-family:var(--pop);font-weight:400;margin:0;font-size:1.6rem;color:var(--accent);text-shadow:0 3px 0 var(--card)}
 .over p{margin:0;font-size:.86rem;color:var(--muted);max-width:32em}
 .fb{margin-top:6px;display:flex;flex-direction:column;align-items:center;gap:6px}
@@ -262,7 +262,7 @@ function beep(f,d,type='triangle'){const a=actx;if(!a)return;const o=a.createOsc
 
 // ---------- 進める ----------
 function start(){
-  ac();timers=[];acc=0;paused=false;
+  $('overP').classList.remove('lines');$('roles').hidden=false;ac();timers=[];acc=0;paused=false;
   const nk=tut?(role==='kid'?1:3):P.ACTIVE_CHILDREN;
   st=R.newGame({withMe:role==='kid',kids:nk,lane:nk-1,type:role==='daruma'?pickedType:'normal',accT:T.accT,stopT:T.stopT,cpuStop:[T.cpuStopMin,Math.max(T.cpuStopMin,T.cpuStopMax)],cpuAccT:T.cpuAccT});
   let ci=0;st.children.forEach((c,i)=>{c.lane=i;c.col=c.human?null:KID_COL[ci++]});
@@ -418,7 +418,7 @@ function tutHl(sel){document.querySelectorAll('.hl').forEach(e=>e.classList.remo
 function tutShow(b,e,hold){
   $('tut').hidden=false;$('tut').classList.toggle('tutHold',!!hold);
   $('tutStep').textContent=`あそびかた ${tut.i+1}/${tut.steps.length}：${b.t}`;$('tutText').textContent=typeof b.x==='function'?b.x(e||{}):b.x;
-  $('tutNext').hidden=!hold;$('tutNext').textContent=b.last?'本番をはじめる':'わかった';tutHl(b.hl);
+  $('tutNext').hidden=!hold;$('tutNext').textContent=b.last?'あそびかたを終える':'わかった';tutHl(b.hl);
 }
 function tutNextBeat(){
   tut.i++;tut.hold=false;const b=tutCur();if(!b){endTut();return}
@@ -444,16 +444,32 @@ function tutDaruma(){
   else if(tutDm==='always'){st.stamina=st.staminaMax;st.turnArmed=true}
   else if(tutDm==='skip'){st.reward='max';st.turnArmed=false}
 }
-function endTut(){
-  store.set('dk-tut-'+role,true);tut=null;tutHl(null);$('tut').hidden=true;start();
+// 終わり方：最後まで来たら、いきなり本番にせず「おしまい」の画面で振り返ってから。「とばす」ならすぐ本番
+const TUT_END={
+  kid:`・押した場所の速さで走る。離すと止まる（全力からは1秒かかる）
+・言い終わったときに動いていたら、見つかって押し戻される
+・強気度が低いだるまほど、見送りやすい
+
+本番は CPU の子ども3人と一緒。だれか1人でもタッチしたら子どもの勝ち！`,
+  daruma:`・言い終わりで振り向いて、動いている子を見つける
+・見送ると止まらずに続いて、気力がたまる
+・強気度が高いほど振り向きやすい。速く言うほど気力を使う
+
+時計が切れるまでタッチされなければ、だるまの勝ち！`};
+function endTut(finished){
+  store.set('dk-tut-'+role,true);tut=null;tutHl(null);$('tut').hidden=true;
+  if(!finished){start();return}
+  timers=[];phase='over';$('pauseBtn').hidden=true;$('fb').hidden=true;
+  $('overH').textContent='あそびかた、おしまい！';$('overP').textContent=TUT_END[role];$('overP').classList.add('lines');
+  $('startBtn').textContent='本番をはじめる';$('over').hidden=false;renderSetup();$('roles').hidden=true;$('types').hidden=true;
 }
 
 // ---------- 入力 ----------
 // はじめる：その役で初めてなら、まずあそびかた（チュートリアル）
 $('startBtn').onclick=()=>{if(!store.get('dk-tut-'+role,false))startTut();else start()};
 $('helpBtn').onclick=()=>{$('tune').hidden=true;startTut()};
-$('tutSkip').onclick=()=>endTut();
-$('tutNext').onclick=()=>{const b=tutCur();if(!b)return;if(b.last)endTut();else tutNextBeat()};
+$('tutSkip').onclick=()=>endTut(false);
+$('tutNext').onclick=()=>{const b=tutCur();if(!b)return;if(b.last)endTut(true);else tutNextBeat()};
 $('pauseBtn').onclick=togglePause;$('pause2').onclick=()=>{tunePaused=false;togglePause()};$('quitBtn').onclick=quit;
 // だるま役：強気度は、ひと休み中はすぐ変わり、言っている間は予約（次の「だ」かひと休みで変わる）。ボタンは描き直すので押した瞬間に拾う
 $('lvRow').addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||!st||role!=='daruma'||phase==='over'||phase==='setup'||paused)return;
