@@ -4,6 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>だるまさんがころんだ</title>
+<script>
+/* アクセス解析（Google アナリティクス）。自分の閲覧は数えない：一度 ?me を付けて開くと、このブラウザは数えなくなる（?me=off で戻す） */
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}
+(function(){
+  let me=false;
+  try{const q=new URLSearchParams(location.search);
+    if(q.has('me')){const off=q.get('me')==='off';if(off)localStorage.removeItem('mataasobo-me');else localStorage.setItem('mataasobo-me','1');
+      alert(off?'このブラウザも数えるように戻しました':'このブラウザでの閲覧は、もう数えません')}
+    me=!!localStorage.getItem('mataasobo-me')}catch(e){}
+  if(me)return;
+  const s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=G-E7FT1414CV';document.head.appendChild(s);
+  gtag('js',new Date());gtag('config','G-E7FT1414CV');
+})();
+</script>
+<link rel="icon" href="/favicon.png" type="image/png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Mochiy+Pop+One&display=swap">
 <style>
 /* だるま役も子ども役も同じ画面。上に「だるまさんがころんだ」、まん中に道（横から見た図）、下に役ごとの操作。
