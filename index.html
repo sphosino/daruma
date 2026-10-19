@@ -19,6 +19,13 @@ window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}
 })();
 </script>
 <link rel="icon" href="/favicon.png" type="image/png">
+<meta name="description" content="だるまさんがころんだ（試作）。だるまが言っている間だけ進める。振り向かれたときに動いていたら見つかって押し戻されます。だるまにも子どもにもなれて、CPU の子どもたちと遊べます。また遊ぼ。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="だるまさんがころんだ（試作）｜また遊ぼ">
+<meta property="og:description" content="だるまが言っている間だけ進める。振り向かれたら止まれ！ だるまにも子どもにもなれます。">
+<meta property="og:url" content="https://mataasobo.com/daruma/">
+<meta property="og:image" content="https://mataasobo.com/img/ogp.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Mochiy+Pop+One&display=swap">
 <style>
 /* だるま役も子ども役も同じ画面。上に「だるまさんがころんだ」、まん中に道（横から見た図）、下に役ごとの操作。
@@ -123,7 +130,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <h1 aria-label="だるまさんがころんだ"><span>だ</span><span>る</span><span>ま</span><span>さ</span><span>ん</span><span>が</span><span>こ</span><span>ろ</span><span>ん</span><span>だ</span></h1>
     <button type="button" class="pill" id="helpBtn" aria-label="あそびかた">？<span class="wide"> あそびかた</span></button>
     <button type="button" class="pill" id="pauseBtn" hidden>⏸ 中断</button>
-    <button type="button" class="pill" id="tuneBtn" aria-expanded="false">⚙ 調整</button>
+    <button type="button" class="pill" id="tuneBtn" aria-expanded="false" hidden>⚙ 調整</button>
   </header>
   <div class="tuneWrap" id="tune" hidden><section class="tune" role="dialog" aria-label="調整">
     <div class="tuneHead"><h2>⚙ 調整</h2><button type="button" class="pill" id="tuneClose">閉じて続ける</button></div>
@@ -199,6 +206,8 @@ let T={...TUNE_DEF,...saved};
 function applyTune(){R.LOOK.grace=Math.round(T.grace*10);R.LOOK.ticks=Math.max(R.LOOK.grace+1,Math.round(T.watch*10));P.GOAL_TICKS=Math.round((role==='daruma'?T.clockDaruma:T.clockKid)*1000/P.TICK_MS);P.CATCH_KNOCK=T.knock>=96?null:T.knock;if(me)R.setMe(me,T.accT,T.stopT);renderCtl()}
 
 const q=new URLSearchParams(location.search);
+// 「⚙ 調整」は ?debug をつけたときだけ（遊ぶ人には出さない）
+if(q.has('debug'))$('tuneBtn').hidden=false;
 let role=q.get('role')||store.get('dk-role','kid');if(role!=='daruma')role='kid';
 let pickedType='normal';
 let st=null,me=null,cpu=null,phase='setup',paused=false;
