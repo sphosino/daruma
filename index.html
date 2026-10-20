@@ -39,12 +39,8 @@ window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}
   --ui:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
   --pop:"Mochiy Pop One","Zen Maru Gothic",sans-serif;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#231a15; --dot:#2d221b; --card:#2f241d; --ink:#f6e6d6; --muted:#c3a58f; --line:#4a382c;
-  --accent:#f0954a; --on:#5a3a1f; --red:#ff6a52; --ground:#4a3a2c; --ground2:#3f3125; --sky:#1d2a36; --sky2:#2a201a; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#231a15; --dot:#2d221b; --card:#2f241d; --ink:#f6e6d6; --muted:#c3a58f; --line:#4a382c;
-  --accent:#f0954a; --on:#5a3a1f; --red:#ff6a52; --ground:#4a3a2c; --ground2:#3f3125; --sky:#1d2a36; --sky2:#2a201a; color-scheme:dark}
+/* ダークモードでも、いつも明るい色（トップページと同じ。また遊ぼのポップな感じは明るい色あってのもの。2026-10-20） */
+:root{color-scheme:light}
 *{box-sizing:border-box}
 html,body{height:100%}
 [hidden]{display:none!important}
