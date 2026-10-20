@@ -125,6 +125,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .hl{outline:3px solid var(--accent)!important;outline-offset:3px;animation:hl 1s ease-in-out infinite}
 @keyframes hl{50%{outline-color:transparent}}
 .tutHold{}
+.tutQuit{font:inherit;font-size:.72rem;font-weight:700;color:var(--muted);background:none;border:0;padding:2px 0;text-decoration:underline;cursor:pointer;white-space:nowrap}
+#tutNext{font-size:.95rem;padding:6px 18px;background:var(--accent);border-color:var(--accent);color:var(--card)}
 .tutTop{display:flex;align-items:center;gap:8px;margin-bottom:2px}.tutTop b{flex:1;font-family:var(--pop);font-weight:400;color:var(--accent)}
 .tut p{margin:0}.tut .pill{font-size:.78rem;padding:3px 10px}.tutBtns{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
 .log{font-size:.76rem;color:var(--muted);max-height:7em;overflow:auto;border-top:1px dashed var(--line);padding-top:6px}
@@ -172,7 +174,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   <div class="hud"><span>だるまの時計 のこり <b id="left">40.0</b><span id="sec">秒</span></span><span><b id="cycle">1</b>回目</span><span id="qiBox">気力 <b id="qi">—</b></span></div>
 
   <div class="spot" id="spot" hidden></div>
-  <div class="tut" id="tut" hidden><div class="tutTop"><b id="tutStep"></b><button type="button" class="pill" id="tutSkip">とばす</button></div><p id="tutText"></p><div class="tutBtns"><button type="button" class="pill on" id="tutNext" hidden>次へ</button></div></div>
+  <div class="tut" id="tut" hidden><div class="tutTop"><b id="tutStep"></b><button type="button" class="tutQuit" id="tutSkip">チュートリアルを終える</button></div><p id="tutText"></p><div class="tutBtns"><button type="button" class="pill on" id="tutNext" hidden>次へ</button></div></div>
   <!-- だるま役の操作 -->
   <div class="card" id="ctlDaruma" hidden>
     <div><div class="lbl"><span>オーラ</span><span id="lvNote"></span></div>
@@ -446,7 +448,11 @@ function tutNextBeat(){
   else if(b.on==='now'){tut.hold=true;tutShow(b,null,true)}
 }
 function tutEv(name,e){
-  const b=tutCur();if(!b||tut.hold||b.on!==name)return;
+  const b=tutCur();
+  // だるま役で、振り向くのを待っているのに見送りになった：ボタンを振り向くに戻して知らせる（待ったまま進めなくなるのを防ぐ）
+  if(b&&role==='daruma'&&name==='carry'&&(b.on==='lookStart'||b.on==='lookEnd')&&!tut.hold){
+    st.turnArmed=true;renderCtl();showMsg('見送りになりました',1600,'ボタンを「👀 振り向く」にして、言い終わるのを待とう');return}
+  if(!b||tut.hold||b.on!==name)return;
   if(b.if&&!b.if(e||{})){if(b.fail)showMsg(b.fail[0],1400,b.fail[1]);return}
   if(b.type==='do')tutNextBeat();
   else{tut.hold=true;tutShow(b,e,true)}
@@ -458,7 +464,9 @@ function tutTick(){
 }
 // 子ども役の練習中、CPU のだるまの振り向き方を手順に合わせる
 function tutDaruma(){
-  if(!tut||role!=='kid')return;
+  if(!tut)return;
+  // だるま役：「気力」の説明までは気力を満タンに（オーラを変えても振り向けなくならないように）
+  if(role==='daruma'){const qi=tut.steps.findIndex(b=>b.t==='気力');if(tut.i<qi)st.stamina=st.staminaMax;return}
   if(tutDm==='never')st.turnArmed=false;
   else if(tutDm==='always'){st.stamina=st.staminaMax;st.turnArmed=true}
   else if(tutDm==='skip'){st.reward='max';st.turnArmed=false}
@@ -487,7 +495,9 @@ function endTut(finished){
 // はじめる：その役で初めてなら、まずあそびかた（チュートリアル）
 $('startBtn').onclick=()=>{if(!store.get('dk-tut-'+role,false))startTut();else start()};
 $('helpBtn').onclick=()=>{$('tune').hidden=true;startTut()};
-$('tutSkip').onclick=()=>endTut(false);
+// 「わかった」とまちがえて押さないよう、やめる前に確かめる
+$('tutSkip').onclick=()=>{if(confirm(`チュートリアルを終えて、本番を始めますか？
+（右上の「？」から、いつでもやり直せます）`))endTut(false)};
 $('tutNext').onclick=()=>{const b=tutCur();if(!b)return;if(b.last)endTut(true);else tutNextBeat()};
 $('pauseBtn').onclick=togglePause;$('pause2').onclick=()=>{tunePaused=false;togglePause()};$('quitBtn').onclick=quit;
 // だるま役：オーラは、ひと休み中はすぐ変わり、言っている間は予約（次の「だ」かひと休みで変わる）。ボタンは描き直すので押した瞬間に拾う
