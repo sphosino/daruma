@@ -138,6 +138,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
     <h1 aria-label="だるまさんがころんだ"><span>だ</span><span>る</span><span>ま</span><span>さ</span><span>ん</span><span>が</span><span>こ</span><span>ろ</span><span>ん</span><span>だ</span></h1>
     <button type="button" class="pill" id="helpBtn" aria-label="あそびかた">？<span class="wide"> あそびかた</span></button>
     <button type="button" class="pill" id="pauseBtn" hidden>⏸ 中断</button>
+    <button type="button" class="pill" id="endBtn" hidden>■ 終了</button>
     <button type="button" class="pill" id="tuneBtn" aria-expanded="false" hidden>⚙ 調整</button>
   </header>
   <div class="tuneWrap" id="tune" hidden><section class="tune" role="dialog" aria-label="調整">
@@ -275,7 +276,7 @@ function start(){
   let ci=0;st.children.forEach((c,i)=>{c.lane=i;c.col=c.human?null:KID_COL[ci++]});
   me=st.children.find(c=>c.human)||null;cpu=role==='kid'?R.cpuDaruma():null;
   applyTune();if(tut)P.GOAL_TICKS=1e7;
-  $('ctlDaruma').hidden=role!=='daruma';$('pad').hidden=role!=='kid';$('pauseBtn').hidden=false;
+  $('ctlDaruma').hidden=role!=='daruma';$('pad').hidden=role!=='kid';$('pauseBtn').hidden=false;$('endBtn').hidden=false;
   $('over').hidden=true;$('log').innerHTML='';prev=snap();prevAt=gt;
   log(role==='kid'?`子ども：${st.children.map(c=>c.name).join('・')}`:`${st.type.label}で始めた。子ども：${st.children.map(c=>c.name).join('・')}`);
   renderPause();toPrep(true);
@@ -360,7 +361,7 @@ function end(kid){
   if(tut&&kid){ // 練習中はタッチしても終わらない：みんなスタートに戻って続ける
     showMsg('タッチ！',1500,role==='kid'?'本番なら、これで子どもの勝ち':'本番なら、これでだるまの負け');
     st.children.forEach(c=>{c.pos=2;c.vel=0});prev=snap();return}
-  phase='over';timers=[];paused=false;renderCtl();renderChant();note('');$('pauseBtn').hidden=true;renderPause();
+  phase='over';timers=[];paused=false;renderCtl();renderChant();note('');$('pauseBtn').hidden=true;$('endBtn').hidden=true;renderPause();
   const left=Math.max(0,(P.GOAL_TICKS-st.elapsedTicks)*P.TICK_MS/1000).toFixed(1);let h,p;
   if(role==='daruma'){h=kid?`${kid.name}にタッチされた`:'だるまの勝ち！';p=kid?`${st.cycle}回目、時計はのこり${left}秒だった。捕まえたのは${st.catches}回。`:`耐えきった。${st.cycle}回言って、捕まえたのは${st.catches}回。`}
   else{h=!kid?'時間切れ…だるまの勝ち':kid===me?'タッチ！あなたの勝ち':`${kid.name}がタッチ！子どもの勝ち`;
@@ -376,7 +377,7 @@ function showFb(){fbSent=false;$('fb').hidden=false;$('fbThanks').hidden=true;
     if(fbSent)return;fbSent=true;b.classList.add('on');
     try{gtag('event','daruma_fb_'+b.dataset.k,{role})}catch(e){}
     $('fbBtns').querySelectorAll('button').forEach(x=>{if(x!==b)x.disabled=true});$('fbThanks').hidden=false})}
-function quit(){if(tut){tut=null;$('tut').hidden=true;tutHl(null)}$('tune').hidden=true;tunePaused=false;phase='setup';timers=[];paused=false;st=null;me=null;note('');$('pauseBtn').hidden=true;renderPause();
+function quit(){$('roles').hidden=false;if(tut){tut=null;$('tut').hidden=true;tutHl(null)}$('tune').hidden=true;tunePaused=false;phase='setup';timers=[];paused=false;st=null;me=null;note('');$('pauseBtn').hidden=true;$('endBtn').hidden=true;renderPause();
   $('ctlDaruma').hidden=true;$('pad').hidden=true;
   $('fb').hidden=true;$('overH').textContent='だるまさんがころんだ';$('overP').textContent=HOW[role];$('startBtn').textContent='はじめる';$('over').hidden=false;renderSetup();renderChant()}
 function togglePause(){if(!st||phase==='over'||phase==='setup')return;paused=!paused;renderPause();note(pausedNote);renderCtl()}
@@ -486,7 +487,7 @@ const TUT_END={
 function endTut(finished){
   store.set('dk-tut-'+role,true);tut=null;$('tut').hidden=true;tutHl(null);
   if(!finished){start();return}
-  timers=[];phase='over';$('pauseBtn').hidden=true;$('fb').hidden=true;
+  timers=[];phase='over';$('pauseBtn').hidden=true;$('endBtn').hidden=true;$('fb').hidden=true;
   $('overH').textContent='あそびかた、おしまい！';$('overP').textContent=TUT_END[role];$('overP').classList.add('lines');
   $('startBtn').textContent='本番をはじめる';$('over').hidden=false;renderSetup();$('roles').hidden=true;$('types').hidden=true;
 }
@@ -499,7 +500,9 @@ $('helpBtn').onclick=()=>{$('tune').hidden=true;startTut()};
 $('tutSkip').onclick=()=>{if(confirm(`チュートリアルを終えて、本番を始めますか？
 （右上の「？」から、いつでもやり直せます）`))endTut(false)};
 $('tutNext').onclick=()=>{const b=tutCur();if(!b)return;if(b.last)endTut(true);else tutNextBeat()};
-$('pauseBtn').onclick=togglePause;$('pause2').onclick=()=>{tunePaused=false;togglePause()};$('quitBtn').onclick=quit;
+$('pauseBtn').onclick=togglePause;
+// 終了：はじめの画面に戻る（役を選び直せる）。まちがえて押さないよう確かめる
+$('endBtn').onclick=()=>{if(confirm('このゲームを終了して、はじめの画面に戻りますか？'))quit()};$('pause2').onclick=()=>{tunePaused=false;togglePause()};$('quitBtn').onclick=quit;
 // だるま役：オーラは、ひと休み中はすぐ変わり、言っている間は予約（次の「だ」かひと休みで変わる）。ボタンは描き直すので押した瞬間に拾う
 $('lvRow').addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||!st||role!=='daruma'||phase==='over'||phase==='setup'||paused)return;
   const r=b.dataset.r;if(phase==='prep')st.reward=r;else st.nextReward=(r===st.reward||r===st.nextReward)?null:r;renderCtl();if(phase!=='prep')tutEv('reserve')});
