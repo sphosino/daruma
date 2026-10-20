@@ -138,6 +138,7 @@ body.tutRun #stage{z-index:8}
 .hl{outline:3px solid var(--accent)!important;outline-offset:3px;animation:hl 1s ease-in-out infinite}
 @keyframes hl{50%{outline-color:transparent}}
 .tutHold{}
+.tutDo{font-size:.78rem;font-weight:900;color:var(--accent);padding:4px 0}
 .tutQuit{font:inherit;font-size:.72rem;font-weight:700;color:var(--muted);background:none;border:0;padding:2px 0;text-decoration:underline;cursor:pointer;white-space:nowrap}
 #tutNext{font-size:.95rem;padding:6px 18px;background:var(--accent);border-color:var(--accent);color:var(--card)}
 .tutTop{display:flex;align-items:center;gap:8px;margin-bottom:2px}.tutTop b{flex:1;font-family:var(--pop);font-weight:400;color:var(--accent)}
@@ -189,7 +190,7 @@ body.tutRun #stage{z-index:8}
   <div class="hud"><span><b id="cycle">1</b>回目</span><span id="qiBox">気力 <b id="qi">—</b></span></div>
 
   <div class="spot" id="spot" hidden></div>
-  <div class="tut" id="tut" hidden><div class="tutTop"><b id="tutStep"></b><button type="button" class="tutQuit" id="tutSkip">チュートリアルを終える</button></div><p id="tutText"></p><div class="tutBtns"><button type="button" class="pill on" id="tutNext" hidden>次へ</button></div></div>
+  <div class="tut" id="tut" hidden><div class="tutTop"><b id="tutStep"></b><button type="button" class="tutQuit" id="tutSkip">チュートリアルを終える</button></div><p id="tutText"></p><div class="tutBtns"><span class="tutDo" id="tutDo" hidden>やってみると、次に進みます</span><button type="button" class="pill on" id="tutNext" hidden>次へ</button></div></div>
   <!-- だるま役の操作 -->
   <div class="card" id="ctlDaruma" hidden>
     <div><div class="lbl"><span>オーラ</span><span id="lvNote"></span></div>
@@ -466,7 +467,7 @@ addEventListener('resize',()=>tutPlace());
 function tutShow(b,e,hold){
   $('tut').hidden=false;$('tut').classList.toggle('tutHold',!!hold);
   $('tutStep').textContent=`あそびかた ${tut.i+1}/${tut.steps.length}：${b.t}`;$('tutText').textContent=(typeof b.x==='function'?b.x(e||{}):b.x).replace(/。(?=.)/g,'。\n');   // 文ごとに改行
-  $('tutNext').hidden=!hold;$('tutNext').textContent=b.last?'あそびかたを終える':'わかった';tutHl(b.hl);requestAnimationFrame(tutPlace);
+  $('tutNext').hidden=!hold;$('tutDo').hidden=!!hold;$('tutNext').textContent=b.last?'あそびかたを終える':'わかった';tutHl(b.hl);requestAnimationFrame(tutPlace);
 }
 function tutNextBeat(){
   tut.i++;tut.hold=false;const b=tutCur();if(!b){endTut();return}
