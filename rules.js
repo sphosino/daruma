@@ -62,6 +62,21 @@
     return st;
   }
 
+  // みんなで遊ぶとき：子どもの席ごとに、人（{name}）か CPU（null）かを決めて始める（2026-10-20）
+  //   人の子は id が h0〜h3（席の順）。CPU の子は、元の子どもの中からくじで選ぶ
+  function newGameSeats(opt) {
+    var kids = opt.kids, cs = opt.cpuStop || [STOP_TICKS_MIN / 10, STOP_TICKS_MAX / 10];
+    var ai = Core.pickActiveChildren(P, kids.filter(function (k) { return !k; }).length)
+      .map(function (d) { return humanStop(d, cs[0] * 10, cs[1] * 10, opt.cpuAccT); });
+    var defs = kids.map(function (k, i) { return k ? Object.assign({}, ME, { id: 'h' + i, name: k.name }) : ai.shift(); });
+    var st = Core.newRunState(P, defs, opt.type);
+    st.children.forEach(function (c) {
+      if (/^h\d$/.test(c.id)) { c.human = true; c.input = 0; setMe(c, opt.accT != null ? opt.accT : ACC_T, opt.stopT != null ? opt.stopT : 1.0); }
+    });
+    st.turnArmed = true; st.reward = "mid"; st.nextReward = null;
+    return st;
+  }
+
   // 言い終わった。振り向いたかどうかを返す。見送りなら止まらずに続ける形にしておく
   function resolve(st) {
     // 振り向くつもりでも気力が足りなければ、自動で見送る（「力が足りない…」で全部失う落とし穴はなくした）
@@ -175,7 +190,7 @@
 
   return {
     Core: Core, P: P, TIERS: TIERS, ME: ME,
-    humanStop: humanStop, setMe: setMe, newGame: newGame,
+    humanStop: humanStop, setMe: setMe, newGame: newGame, newGameSeats: newGameSeats,
     LOOK: LOOK, wantsTurn: wantsTurn, startLook: startLook, lookTick: lookTick, endLook: endLook, resolve: resolve, applyReserved: applyReserved,
     said: said, cpuDaruma: cpuDaruma
   };
