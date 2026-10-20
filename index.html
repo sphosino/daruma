@@ -141,7 +141,7 @@ body.tutRun #stage{z-index:8}
 .tutQuit{font:inherit;font-size:.72rem;font-weight:700;color:var(--muted);background:none;border:0;padding:2px 0;text-decoration:underline;cursor:pointer;white-space:nowrap}
 #tutNext{font-size:.95rem;padding:6px 18px;background:var(--accent);border-color:var(--accent);color:var(--card)}
 .tutTop{display:flex;align-items:center;gap:8px;margin-bottom:2px}.tutTop b{flex:1;font-family:var(--pop);font-weight:400;color:var(--accent)}
-.tut p{margin:0}.tut .pill{font-size:.78rem;padding:3px 10px}.tutBtns{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
+.tut p{margin:0;white-space:pre-line}.tut .pill{font-size:.78rem;padding:3px 10px}.tutBtns{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}
 .log{font-size:.76rem;color:var(--muted);max-height:7em;overflow:auto;border-top:1px dashed var(--line);padding-top:6px}
 </style>
 </head>
@@ -461,7 +461,7 @@ function tutPlace(){
 addEventListener('resize',()=>tutPlace());
 function tutShow(b,e,hold){
   $('tut').hidden=false;$('tut').classList.toggle('tutHold',!!hold);
-  $('tutStep').textContent=`あそびかた ${tut.i+1}/${tut.steps.length}：${b.t}`;$('tutText').textContent=typeof b.x==='function'?b.x(e||{}):b.x;
+  $('tutStep').textContent=`あそびかた ${tut.i+1}/${tut.steps.length}：${b.t}`;$('tutText').textContent=(typeof b.x==='function'?b.x(e||{}):b.x).replace(/。(?=.)/g,'。\n');   // 文ごとに改行
   $('tutNext').hidden=!hold;$('tutNext').textContent=b.last?'あそびかたを終える':'わかった';tutHl(b.hl);requestAnimationFrame(tutPlace);
 }
 function tutNextBeat(){
