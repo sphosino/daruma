@@ -132,6 +132,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .tut.up::after{top:-22px;border-bottom-color:var(--accent)}
 .tut.down::after{bottom:-22px;border-top-color:var(--accent)}
 /* 説明している場所だけ明るく、まわりを少し暗く */
+/* 道の絵（ボード）はチュートリアル中もいつも明るく（暗い影より上に出す） */
+body.tutRun #stage{z-index:8}
 .spot{position:fixed;z-index:7;pointer-events:none;border-radius:20px;box-shadow:0 0 0 9999px rgba(40,24,12,.36);transition:left .2s,top .2s,width .2s,height .2s}
 .hl{outline:3px solid var(--accent)!important;outline-offset:3px;animation:hl 1s ease-in-out infinite}
 @keyframes hl{50%{outline-color:transparent}}
@@ -447,7 +449,7 @@ function tutHl(sel){document.querySelectorAll('.hl').forEach(e=>e.classList.remo
 // 吹き出しを、説明している場所のそばに置く。画面の上のほうなら下に、下のほうなら上に出して、矢印でさす
 let tutSel=null;
 function tutPlace(){
-  const box=$('tut'),spot=$('spot');if(!tut||box.hidden){spot.hidden=true;return}
+  const box=$('tut'),spot=$('spot');document.body.classList.toggle('tutRun',!!(tut&&!box.hidden));if(!tut||box.hidden){spot.hidden=true;return}
   const el=document.querySelector(tutSel||'#stage'),r=el.getBoundingClientRect(),bw=box.offsetWidth,bh=box.offsetHeight,vw=innerWidth,vh=innerHeight;
   const below=r.top+r.height/2<vh*0.45;
   let top=below?r.bottom+16:r.top-bh-16;top=Math.max(8,Math.min(vh-bh-8,top));
