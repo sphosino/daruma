@@ -19,10 +19,10 @@ window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}
 })();
 </script>
 <link rel="icon" href="/favicon.png" type="image/png">
-<meta name="description" content="だるまさんがころんだ（試作）。だるまが言っている間だけ進める。振り向かれたときに動いていたら見つかって押し戻されます。だるまにも子どもにもなれて、CPU の子どもたちと遊べます。また遊ぼ。">
+<meta name="description" content="だるまさんがころんだ（試作）。だるまが唱えている間だけ進める。振り向かれたときに動いていたら見つかって押し戻されます。だるまにも子どもにもなれて、CPU の子どもたちと遊べます。また遊ぼ。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="だるまさんがころんだ（試作）｜また遊ぼ">
-<meta property="og:description" content="だるまが言っている間だけ進める。振り向かれたら止まれ！ だるまにも子どもにもなれます。">
+<meta property="og:description" content="だるまが唱えている間だけ進める。振り向かれたら止まれ！ だるまにも子どもにもなれます。">
 <meta property="og:url" content="https://mataasobo.com/daruma/">
 <meta property="og:image" content="https://mataasobo.com/daruma/ogp.jpg">
 <meta property="og:image:width" content="1200">
@@ -59,7 +59,7 @@ canvas{display:block;width:100%;height:100%}
 .msg{position:absolute;left:50%;top:10%;transform:translateX(-50%);width:94%;text-align:center;font-family:var(--pop);font-size:clamp(1.3rem,6.5vw,2.2rem);line-height:1.2;color:#e0402c;text-shadow:0 2px 0 #fffdf9;pointer-events:none}
 .msg small{display:block;font-size:.55em;color:#4a2f22}
 .paused{position:absolute;left:8px;right:140px;top:6px;text-align:center;font-size:.8rem;font-weight:700;color:#8f6b58;pointer-events:none}
-/* だるまの時計（2026-10-20）：道の絵の左上に大きく。言っている間だけ進む。止まっている間は薄く、残り10秒から赤く、5秒から脈打つ */
+/* だるまの時計（2026-10-20）：道の絵の左上に大きく。唱えている間だけ進む。止まっている間は薄く、残り10秒から赤く、5秒から脈打つ */
 .clock{position:absolute;right:10px;top:8px;z-index:1;min-width:118px;padding:4px 10px 7px;border-radius:16px;background:#fffdf9;border:3px solid #e8743b;box-shadow:0 4px 0 #e3c393;text-align:center;line-height:1.1;pointer-events:none;transition:opacity .2s}
 .clock small{display:block;white-space:nowrap;font-size:.68rem;font-weight:900;color:#8f6b58}
 .clock b{display:block;white-space:nowrap;font-family:var(--pop);font-weight:400;font-size:clamp(1.45rem,6vw,1.9rem);color:#4a2f22;font-variant-numeric:tabular-nums}
@@ -196,7 +196,7 @@ body.tutRun #stage{z-index:8}
       <div class="row" id="lvRow"></div></div>
     <div><div class="lbl"><span>テンポ</span><span id="tempoTxt"></span></div>
       <input type="range" id="tempo" min="0" max="100" step="1" value="45" aria-label="テンポ"></div>
-    <div class="row" id="armRow"><button class="btn arm on" id="arm" type="button"></button><button class="btn primary" id="go" type="button">言い始める</button></div>
+    <div class="row" id="armRow"><button class="btn arm on" id="arm" type="button"></button><button class="btn primary" id="go" type="button">唱える</button></div>
   </div>
   <!-- 子ども役の操作 -->
   <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る">押した場所の速さで走る<small>右ほど速い・押したまま左右に動かせる・離すと止まる</small><div class="scale"><span>歩く</span><span>小走り</span><span>全力</span></div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
@@ -216,8 +216,8 @@ const TIER_COL={low:'#e0402c',mid:'#ef8a2c',high:'#e5b830',max:'#4f8fd8'},PULSE=
 const KID_COL=['#4f8fd8','#3aa65a','#b45cc8','#e0457b'];
 const TYPE_NOTE={normal:'クセなし。まずはこれで。',red:'気力の器が大きいぶん、見送っても実入りが細い。',oni:'振り向きが安い。そのかわりテンポを上げるのが高い。',attack:'テンポが安い。そのかわり振り向きが高い。'};
 const HOW={
-  kid:'あなたはオレンジの子。だるまが言っている間だけ進めます。振り向いたときに動いていたら少し下がる。だれか1人でもだるまにタッチしたら子どもの勝ち、だるまの時計（言っている時間だけ進む）が切れたらだるまの勝ち。だるまのオーラが強いほど、だるまは振り向きやすい。',
-  daruma:'あなたはだるま。CPU の子ども4人がタッチしようと走ってきます。言い終わったときに動いていた子を下がらせて、時計が切れるまで耐えたら勝ち。見送ると止まらずに「だ」からそのまま続きます。'};
+  kid:'あなたはオレンジの子。だるまが唱えている間だけ進めます。振り向いたときに動いていたら少し下がる。だれか1人でもだるまにタッチしたら子どもの勝ち、だるまの時計（唱えている時間だけ進む）が切れたらだるまの勝ち。だるまのオーラが強いほど、だるまは振り向きやすい。',
+  daruma:'あなたはだるま。CPU の子ども4人がタッチしようと走ってきます。唱え終わったときに動いていた子を下がらせて、時計が切れるまで耐えたら勝ち。見送ると止まらずに「だ」からそのまま続きます。'};
 
 // ---------- 調整の数字（⚙ 調整で変えられる。変えた値はこのブラウザに覚える） ----------
 // 時計・猶予・下がる量は、シミュレーター（sim.js）で決めた値（2026-10-18）。全速まで 2 秒・止まるまで 1 秒にしたので、どちらの役も 46 秒
@@ -262,13 +262,13 @@ function renderCtl(){
   $('lvRow').innerHTML=LV_ORDER.map(t=>`<button class="btn lv${st.reward===t?' on':''}${st.nextReward===t?' next':''}" data-r="${t}" style="--c:${TIER_COL[t]}" type="button">${LV_NAME[t]}<small>見送り+${Math.round(P.REWARD[t].reward*st.type.skipRewardScale)}<br>振向−${Math.round(Core.turnCostOf(P,st,t))}</small></button>`).join('');
   const cost=Math.round(Core.turnCostOf(P,st)),afford=st.stamina>=cost;
   $('arm').classList.toggle('on',st.turnArmed);
-  $('arm').innerHTML=st.turnArmed&&!afford?`🙈 気力が足りない。見送りになる<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`:st.turnArmed?`👀 言い終わったら振り向く<small>気力 -${cost}</small>`:`🙈 振り向かずに見送る<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`;
+  $('arm').innerHTML=st.turnArmed&&!afford?`🙈 気力が足りない。見送りになる<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`:st.turnArmed?`👀 唱え終わったら振り向く<small>気力 -${cost}</small>`:`🙈 振り向かずに見送る<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`;
   $('go').disabled=!prep||paused;
   $('tempo').value=Math.round(st.tempoValue);$('tempoTxt').textContent=Core.tempoLabel(st.tempoValue)+(phase==='chant'?'（上げると気力を使う）':'');
   $('qi').textContent=`${Math.round(st.stamina)} / ${Math.round(st.staminaMax)}`;
   $('lvNote').textContent=prep?'':st.nextReward?'次の「だ」で変わる':'押すと予約';
 }
-// だるまの時計を描く。言っている間だけ進むので、それ以外は「止まってる」
+// だるまの時計を描く。唱えている間だけ進むので、それ以外は「止まってる」
 function renderClock(){
   const el=$('clock');if(!st||phase==='setup'){el.hidden=true;return}el.hidden=false;
   const left=Math.max(0,(P.GOAL_TICKS-st.elapsedTicks)*P.TICK_MS/1000);
@@ -385,7 +385,7 @@ function end(kid){
     st.children.forEach(c=>{c.pos=2;c.vel=0});prev=snap();return}
   phase='over';timers=[];paused=false;renderCtl();renderChant();note('');$('pauseBtn').hidden=true;$('endBtn').hidden=true;renderPause();
   const left=Math.max(0,(P.GOAL_TICKS-st.elapsedTicks)*P.TICK_MS/1000).toFixed(1);let h,p;
-  if(role==='daruma'){h=kid?`${kid.name}にタッチされた`:'だるまの勝ち！';p=kid?`${st.cycle}回目、時計はのこり${left}秒だった。捕まえたのは${st.catches}回。`:`耐えきった。${st.cycle}回言って、捕まえたのは${st.catches}回。`}
+  if(role==='daruma'){h=kid?`${kid.name}にタッチされた`:'だるまの勝ち！';p=kid?`${st.cycle}回目、時計はのこり${left}秒だった。捕まえたのは${st.catches}回。`:`耐えきった。${st.cycle}回唱えて、捕まえたのは${st.catches}回。`}
   else{h=!kid?'時間切れ…だるまの勝ち':kid===me?'タッチ！あなたの勝ち':`${kid.name}がタッチ！子どもの勝ち`;
     p=kid?`だるまの時計は、のこり${left}秒だった。`:`あなたはあと${Math.max(0,P.GOAL_POS-me.pos).toFixed(0)}だった。`}
   if(kid)beep(880,0.15);
@@ -412,35 +412,35 @@ function renderPause(){const t=paused?'▶ 再開':'⏸ 中断';$('pauseBtn').te
 const STOPPED=()=>me.vel<=P.CATCH_VEL_THRESHOLD;
 const TUT={
   kid:[
-    {type:'stop',on:'now',t:'あなた',x:'あなたはオレンジの子。だるまが「だるまさんがころんだ」と言っている間だけ進めます。',hl:'#stage',dm:'never'},
+    {type:'stop',on:'now',t:'あなた',x:'あなたはオレンジの子。だるまが「だるまさんがころんだ」と唱えている間だけ進めます。',hl:'#stage',dm:'never'},
     {type:'stop',on:'now',t:'走る',x:'パッドを押すと走ります。押した場所が速さで、右ほど速い（右はしが全力）。押したまま左右に動かせて、離すと止まります。',hl:'#pad'},
     // 本当に全力（全速の 99%）になったら。右はしより手前を押していると全力にならないので、そのときはひとこと
     {type:'do',on:'tick',if:()=>want>=0.9&&me.vel>=me.maxSpeed*want*0.99,t:'やってみよう',x:'右のはしを押して、全力で走ってみよう。',hl:'#pad',
       nudge:()=>pressed&&want<0.9&&me.vel>=me.maxSpeed*want*0.95,nudgeMsg:'もっと右のはしを押そう'},
     {type:'stop',on:'now',t:'全力',x:'全力になりました。止まっているところから全力になるまで、2秒かかります。'},
-    {type:'do',on:'chantEnd',if:STOPPED,fail:['まだ動いてた','もう少し早く離そう'],t:'止まる',x:'こんどは止まる練習。全力からは止まるまで1秒かかります。「ころんだ」と言い終わる前に指を離して、言い終わったときに止まっていよう。',
+    {type:'do',on:'chantEnd',if:STOPPED,fail:['まだ動いてた','もう少し早く離そう'],t:'止まる',x:'こんどは止まる練習。全力からは止まるまで1秒かかります。「ころんだ」と唱え終わる前に指を離して、唱え終わったときに止まっていよう。',
       nudge:()=>pressed&&R.said(st)>=7},
-    {type:'stop',on:'now',t:'止まれた！',x:'言い終わったときに止まっていれば、だるまが振り向いてもセーフです。'},
-    {type:'do',on:'lookStart',t:'見つかる',x:'こんどは、だるまが必ず振り向きます。走ったまま、言い終わるのを待ってみよう。',dm:'always',hl:'#pad'},
+    {type:'stop',on:'now',t:'止まれた！',x:'唱え終わったときに止まっていれば、だるまが振り向いてもセーフです。'},
+    {type:'do',on:'lookStart',t:'見つかる',x:'こんどは、だるまが必ず振り向きます。走ったまま、唱え終わるのを待ってみよう。',dm:'always',hl:'#pad'},
     {type:'stop',on:'now',t:'振り向いた！',x:'だるまが振り向きました。少し見ている間に、まだ動いている子は「！」で見つかります。',hl:'#stage'},
     {type:'stop',on:'lookEnd',t:'見つかると',x:e=>e.meCaught?'見つかったので、押し戻されます。':'止まれていたのでセーフ。動いていたら、見つかって押し戻されます。'},
-    {type:'do',on:'carry',t:'見送り',x:'だるまは振り向かないこともあります。走ったまま、言い終わるのを待ってみよう。',dm:'skip'},
+    {type:'do',on:'carry',t:'見送り',x:'だるまは振り向かないこともあります。走ったまま、唱え終わるのを待ってみよう。',dm:'skip'},
     {type:'stop',on:'now',t:'見送り！',x:'だるまが振り向かずに見送ったので、止まらずに次が続きます。走り続けられます。だるまのオーラが弱いほど、見送りやすい。いまはオーラが「弱」でした。',hl:'#stage'},
     {type:'stop',on:'now',t:'体力',x:'走ると、足もとの体力のバーが減ります。0になると「ぜぇ」で遅くなります。ずっと全力ではなく、ゆるめるところも作ろう。',dm:'normal'},
-    {type:'stop',on:'now',t:'勝ち負け',x:'本番は CPU の子ども3人も一緒です。だれか1人でもだるまにタッチしたら子どもの勝ち。だるまの時計（言っている時間だけ進む）が切れたら負けです。',last:true}],
+    {type:'stop',on:'now',t:'勝ち負け',x:'本番は CPU の子ども3人も一緒です。だれか1人でもだるまにタッチしたら子どもの勝ち。だるまの時計（唱えている時間だけ進む）が切れたら負けです。',last:true}],
   daruma:[
     {type:'stop',on:'now',t:'だるま',x:'あなたはだるま。CPU の子どもたちが、だるまにタッチしようと走ってきます。',hl:'#stage'},
-    {type:'do',on:'chantStart',t:'言い始める',x:'「言い始める」を押そう。',hl:'#go'},
-    {type:'stop',on:'now',t:'言っている間',x:'言っている間だけ、子どもは進めます。言い終わったとき、このボタンが「👀 振り向く」なら振り向きます。',hl:'#arm'},
+    {type:'do',on:'chantStart',t:'唱える',x:'「唱える」を押そう。',hl:'#go'},
+    {type:'stop',on:'now',t:'唱えている間',x:'唱えている間だけ、子どもは進めます。唱え終わったとき、このボタンが「👀 振り向く」なら振り向きます。',hl:'#arm'},
     {type:'stop',on:'lookStart',t:'振り向いた！',x:'このあと少し見ている間に、まだ動いている子を見つけます。',hl:'#stage'},
     {type:'stop',on:'lookEnd',t:'見つけると',x:e=>e.n?'見つけた子は押し戻されます。':'みんな止まっていました。止まっている子は見つけられません。'},
-    {type:'stop',on:'prep',t:'見送る',x:'次は見送ってみよう。「言い始める」を押して、言っている間に左のボタンで「🙈 見送る」に切り替えます。',hl:'#armRow'},
-    {type:'do',on:'carry',t:'見送る',x:'「言い始める」を押して、言っている間に左のボタンを「🙈 見送る」に切り替えよう。',hl:'#armRow'},
-    {type:'stop',on:'now',t:'見送った！',x:'見送ると、止まらずに「だ」から言い続けます。子どもは走り続けられます。そのかわり、気力がたまります。',hl:'#qiBox'},
+    {type:'stop',on:'prep',t:'見送る',x:'次は見送ってみよう。「唱える」を押して、唱えている間に左のボタンで「🙈 見送る」に切り替えます。',hl:'#armRow'},
+    {type:'do',on:'carry',t:'見送る',x:'「唱える」を押して、唱えている間に左のボタンを「🙈 見送る」に切り替えよう。',hl:'#armRow'},
+    {type:'stop',on:'now',t:'見送った！',x:'見送ると、止まらずに「だ」から唱え続けます。子どもは走り続けられます。そのかわり、気力がたまります。',hl:'#qiBox'},
     {type:'stop',on:'now',t:'気力',x:'振り向くと気力が減って、見送るとたまります。だるまの足もとのゲージの線より少ないと振り向けず、自動で見送りになります。気力が0になると、テンポが半分に落ちます。',hl:'#stage'},
-    {type:'stop',on:'now',t:'オーラ',x:'だるまのオーラが強いほど、振り向く気力が安くなって、振り向きやすいだるまになります。そのかわり、見送ってもあまりたまりません。弱いと、振り向くのは高くつきますが、見送るとたくさんたまります。オーラは子どもにも見えていて、弱いと子どもは攻めてきます。言っている間に押すと「予約」になって、次の「だ」で変わります。',hl:'#lvRow'},
-    {type:'stop',on:'now',t:'テンポ',x:'速く言うほど（スライダーを右へ動かすほど）、気力をたくさん使います。',hl:'#tempo'},
-    {type:'stop',on:'now',t:'勝ち負け',x:'子どもにタッチされずに、だるまの時計（言っている時間だけ進む）が切れるまで耐えたら勝ちです。',last:true}]
+    {type:'stop',on:'now',t:'オーラ',x:'だるまのオーラが強いほど、振り向く気力が安くなって、振り向きやすいだるまになります。そのかわり、見送ってもあまりたまりません。弱いと、振り向くのは高くつきますが、見送るとたくさんたまります。オーラは子どもにも見えていて、弱いと子どもは攻めてきます。唱えている間に押すと「予約」になって、次の「だ」で変わります。',hl:'#lvRow'},
+    {type:'stop',on:'now',t:'テンポ',x:'速く唱えるほど（スライダーを右へ動かすほど）、気力をたくさん使います。',hl:'#tempo'},
+    {type:'stop',on:'now',t:'勝ち負け',x:'子どもにタッチされずに、だるまの時計（唱えている時間だけ進む）が切れるまで耐えたら勝ちです。',last:true}]
 };
 let tut=null,tutDm='normal',nudged=-1;
 function startTut(){tut={steps:TUT[role],i:-1,hold:false};tutDm='normal';start()}
@@ -474,7 +474,7 @@ function tutEv(name,e){
   const b=tutCur();
   // だるま役で、振り向くのを待っているのに見送りになった：ボタンを振り向くに戻して知らせる（待ったまま進めなくなるのを防ぐ）
   if(b&&role==='daruma'&&name==='carry'&&(b.on==='lookStart'||b.on==='lookEnd')&&!tut.hold){
-    st.turnArmed=true;renderCtl();showMsg('見送りになりました',1600,'ボタンを「👀 振り向く」にして、言い終わるのを待とう');return}
+    st.turnArmed=true;renderCtl();showMsg('見送りになりました',1600,'ボタンを「👀 振り向く」にして、唱え終わるのを待とう');return}
   if(!b||tut.hold||b.on!==name)return;
   if(b.if&&!b.if(e||{})){if(b.fail)showMsg(b.fail[0],1400,b.fail[1]);return}
   if(b.type==='do')tutNextBeat();
@@ -497,13 +497,13 @@ function tutDaruma(){
 // 終わり方：最後まで来たら、いきなり本番にせず「おしまい」の画面で振り返ってから。「とばす」ならすぐ本番
 const TUT_END={
   kid:`・押した場所の速さで走る。離すと止まる（全力からは1秒かかる）
-・言い終わったときに動いていたら、見つかって押し戻される
+・唱え終わったときに動いていたら、見つかって押し戻される
 ・オーラが弱いだるまほど、見送りやすい
 
 本番は CPU の子ども3人と一緒。だれか1人でもタッチしたら子どもの勝ち！`,
-  daruma:`・言い終わりで振り向いて、動いている子を見つける
+  daruma:`・唱え終わりで振り向いて、動いている子を見つける
 ・見送ると止まらずに続いて、気力がたまる
-・オーラが強いほど振り向きやすい。速く言うほど気力を使う
+・オーラが強いほど振り向きやすい。速く唱えるほど気力を使う
 
 時計が切れるまでタッチされなければ、だるまの勝ち！`};
 function endTut(finished){
@@ -525,7 +525,7 @@ $('tutNext').onclick=()=>{const b=tutCur();if(!b)return;if(b.last)endTut(true);e
 $('pauseBtn').onclick=togglePause;
 // 終了：はじめの画面に戻る（役を選び直せる）。まちがえて押さないよう確かめる
 $('endBtn').onclick=()=>{if(confirm('このゲームを終了して、はじめの画面に戻りますか？'))quit()};$('pause2').onclick=()=>{tunePaused=false;togglePause()};$('quitBtn').onclick=quit;
-// だるま役：オーラは、ひと休み中はすぐ変わり、言っている間は予約（次の「だ」かひと休みで変わる）。ボタンは描き直すので押した瞬間に拾う
+// だるま役：オーラは、ひと休み中はすぐ変わり、唱えている間は予約（次の「だ」かひと休みで変わる）。ボタンは描き直すので押した瞬間に拾う
 $('lvRow').addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||!st||role!=='daruma'||phase==='over'||phase==='setup'||paused)return;
   const r=b.dataset.r;if(phase==='prep')st.reward=r;else st.nextReward=(r===st.reward||r===st.nextReward)?null:r;renderCtl();if(phase!=='prep')tutEv('reserve')});
 $('go').onclick=()=>{if(phase==='prep'&&role==='daruma'&&!paused){ac();toCue()}};
