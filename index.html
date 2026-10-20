@@ -277,9 +277,11 @@ function renderCtl(){
 function renderClock(){
   const el=$('clock');if(!st||phase==='setup'){el.hidden=true;return}el.hidden=false;
   const left=Math.max(0,(P.GOAL_TICKS-st.elapsedTicks)*P.TICK_MS/1000);
-  $('clockNum').firstChild.nodeValue=tut?'練習中':left.toFixed(1);$('clockNum').lastChild.hidden=!!tut;
+  // 練習中も本番と同じ秒数を出す（進まないだけ）。前は「練習中」と出していて、時計の説明のときに分かりにくかった
+  const full=(role==='daruma'?T.clockDaruma:T.clockKid);
+  $('clockNum').firstChild.nodeValue=(tut?full:left).toFixed(1);
   $('clockBar').style.width=tut?'100%':(100*left/(P.GOAL_TICKS*P.TICK_MS/1000))+'%';
-  el.classList.toggle('stop',phase!=='chant');$('clockLbl').textContent=phase==='chant'?'だるまの時計':'時計は止まってる';el.classList.toggle('low',!tut&&left<=10);el.classList.toggle('panic',!tut&&left<=5&&phase==='chant');
+  el.classList.toggle('stop',tut||phase!=='chant');$('clockLbl').textContent=tut?'練習中は進まない':phase==='chant'?'だるまの時計':'時計は止まってる';el.classList.toggle('low',!tut&&left<=10);el.classList.toggle('panic',!tut&&left<=5&&phase==='chant');
 }
 function renderChant(){const el=$('chant');el.classList.toggle('look',phase==='look'||phase==='push');
   if(phase==='prep'||phase==='cue'){el.innerHTML=`<span class="said">${phase==='cue'?'すぅ…':'ひと休み'}</span>`;return}
