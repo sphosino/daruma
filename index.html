@@ -253,17 +253,20 @@ function renderSetup(){
   $('types').innerHTML=Object.keys(P.DARUMA_TYPES).map(k=>`<button class="pill${k===pickedType?' on':''}" data-t="${k}" type="button" title="${TYPE_NOTE[k]||''}">${P.DARUMA_TYPES[k].label}</button>`).join('');
   $('types').querySelectorAll('button').forEach(b=>b.onclick=()=>{pickedType=b.dataset.t;renderSetup()});
 }
+// 中身が変わったときだけ描き直す。0.1 秒ごとに描き直すと、押してから離すまでの間に中身が入れかわって、
+// 押したことが無視される（唱えている間に振り向くボタンが切りかわらなかった、2026-10-20）
+function setHTML(el,h){if(el._h!==h){el._h=h;el.innerHTML=h}}
 function renderCtl(){
   if(!st)return;
   renderClock();$('cycle').textContent=st.cycle;
   $('qiBox').hidden=role!=='daruma';
   if(role!=='daruma')return;
   const prep=phase==='prep';
-  $('lvRow').innerHTML=LV_ORDER.map(t=>`<button class="btn lv${st.reward===t?' on':''}${st.nextReward===t?' next':''}" data-r="${t}" style="--c:${TIER_COL[t]}" type="button">${LV_NAME[t]}<small>見送り+${Math.round(P.REWARD[t].reward*st.type.skipRewardScale)}<br>振向−${Math.round(Core.turnCostOf(P,st,t))}</small></button>`).join('');
+  setHTML($('lvRow'),LV_ORDER.map(t=>`<button class="btn lv${st.reward===t?' on':''}${st.nextReward===t?' next':''}" data-r="${t}" style="--c:${TIER_COL[t]}" type="button">${LV_NAME[t]}<small>見送り+${Math.round(P.REWARD[t].reward*st.type.skipRewardScale)}<br>振向−${Math.round(Core.turnCostOf(P,st,t))}</small></button>`).join(''));
   const cost=Math.round(Core.turnCostOf(P,st)),afford=st.stamina>=cost;
   // 気力が足りないときは、どちらを選んでも見送りになるので、押せない灰色にして理由を出す（押しても見た目が変わらず、壊れたように見えていた）
   $('arm').disabled=!afford;$('arm').classList.toggle('on',st.turnArmed&&afford);
-  $('arm').innerHTML=!afford?`🙈 気力が足りないので見送り<small>${st.reward==='low'?'見送って気力をためよう':'オーラを強くすると振り向ける'}（気力+${Math.round(Core.currentSkipReward(P,st))}）</small>`:st.turnArmed?`👀 唱え終わったら振り向く<small>気力 -${cost}</small>`:`🙈 振り向かずに見送る<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`;
+  setHTML($('arm'),!afford?`🙈 気力が足りないので見送り<small>${st.reward==='low'?'見送って気力をためよう':'オーラを強くすると振り向ける'}（気力+${Math.round(Core.currentSkipReward(P,st))}）</small>`:st.turnArmed?`👀 唱え終わったら振り向く<small>気力 -${cost}</small>`:`🙈 振り向かずに見送る<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`);
   $('go').disabled=!prep||paused;
   $('tempo').value=Math.round(st.tempoValue);$('tempoTxt').textContent=Core.tempoLabel(st.tempoValue)+(phase==='chant'?'（上げると気力を使う）':'');
   $('qi').textContent=`${Math.round(st.stamina)} / ${Math.round(st.staminaMax)}`;
