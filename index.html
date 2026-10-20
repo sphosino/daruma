@@ -56,7 +56,7 @@ h1 span:nth-child(4n+1){color:var(--p0)}h1 span:nth-child(4n+2){color:var(--p1)}
 .chant span.said{text-shadow:0 3px 0 var(--card)}.chant.look span.said{color:var(--red)}
 .stage{position:relative;flex:0 0 auto;box-shadow:0 5px 0 var(--line);height:clamp(160px,52vw,300px);border-radius:16px;overflow:hidden;background:var(--sky);border:2px solid var(--line)}
 canvas{display:block;width:100%;height:100%}
-.msg{position:absolute;left:50%;top:10%;transform:translateX(-50%);width:94%;text-align:center;font-family:var(--pop);font-size:clamp(1.3rem,6.5vw,2.2rem);line-height:1.2;color:#e0402c;text-shadow:0 2px 0 #fffdf9;pointer-events:none}
+.msg{position:absolute;left:8px;right:138px;top:12%;width:auto;text-align:center;font-family:var(--pop);font-size:clamp(1.3rem,6.5vw,2.2rem);line-height:1.2;color:#e0402c;text-shadow:0 2px 0 #fffdf9;pointer-events:none}
 .msg small{display:block;font-size:.55em;color:#4a2f22}
 .paused{position:absolute;left:8px;right:140px;top:6px;text-align:center;font-size:.8rem;font-weight:700;color:#8f6b58;pointer-events:none}
 /* だるまの時計（2026-10-20）：道の絵の左上に大きく。唱えている間だけ進む。止まっている間は薄く、残り10秒から赤く、5秒から脈打つ */
@@ -106,6 +106,16 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .over p{margin:0;font-size:.86rem;color:var(--muted);max-width:32em}
 .fb{margin-top:6px;display:flex;flex-direction:column;align-items:center;gap:6px}
 .fb .fbQ,.fb .fbThanks{font-size:.85rem;color:var(--muted);margin:0}.fb a{color:var(--accent);font-weight:700}
+/* みんなで遊ぶ：部屋のカード（online.js） */
+.roomCard{width:min(440px,100%);display:flex;flex-direction:column;gap:8px;text-align:left}
+.rseats{display:flex;flex-direction:column;gap:5px}
+.rseat{display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:6px 10px;font-size:.88rem}
+.rseat b{flex:0 0 4.2em;font-family:var(--pop);font-weight:400;color:var(--accent)}.rseat span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rseat.mine{border-color:var(--accent);background:var(--on)}.rseat .pill{font-size:.75rem;padding:3px 10px}
+.rinv{display:flex;gap:6px;align-items:center}.rinv input{flex:1;min-width:0;font:inherit;font-size:.78rem;padding:6px 8px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+.rinv a.pill{text-decoration:none}
+.rname{font-size:.82rem;font-weight:700;color:var(--muted);display:flex;gap:8px;align-items:center}.rname input{font:inherit;width:9em;padding:5px 8px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+#waitHost{font-weight:700;color:var(--accent)}
 .choices{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 .go{box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 60%,var(--ink));font:inherit;font-family:var(--pop);font-size:1.25rem;border:0;border-radius:16px;background:var(--accent);color:var(--card);padding:12px 26px;cursor:pointer}
 /* 調整（デバッグ） */
@@ -179,7 +189,10 @@ body.tutRun #stage{z-index:8}
       <div class="choices" id="roles"></div>
       <p id="overP"></p>
       <div class="choices" id="types"></div>
+      <div class="roomCard" id="roomCard" hidden></div>
       <button class="go" id="startBtn" type="button">はじめる</button>
+      <p id="waitHost" hidden>部屋を作った人が始めるのを待っています</p>
+      <button class="pill" id="roomBtn" type="button">みんなで遊ぶ（部屋を作る）</button>
       <div class="fb" id="fb" hidden>
         <p class="fbQ">遊んでみて、どうでした？</p>
         <div class="choices" id="fbBtns"></div>
@@ -531,7 +544,8 @@ $('pauseBtn').onclick=togglePause;
 // 終了：はじめの画面に戻る（役を選び直せる）。まちがえて押さないよう確かめる
 $('endBtn').onclick=()=>{if(confirm('このゲームを終了して、はじめの画面に戻りますか？'))quit()};$('pause2').onclick=()=>{tunePaused=false;togglePause()};$('quitBtn').onclick=quit;
 // だるま役：オーラは、ひと休み中はすぐ変わり、唱えている間は予約（次の「だ」かひと休みで変わる）。ボタンは描き直すので押した瞬間に拾う
-$('lvRow').addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||!st||role!=='daruma'||phase==='over'||phase==='setup'||paused)return;
+$('lvRow').addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||!st||role!=='daruma'||phase==='over'||phase==='setup'||paused)return
+  if(window.DARUMA_ONLINE){sendAura(b.dataset.r);return}   // みんなで遊ぶとき：サーバーに送る;
   const r=b.dataset.r;if(phase==='prep')st.reward=r;else st.nextReward=(r===st.reward||r===st.nextReward)?null:r;renderCtl();if(phase!=='prep')tutEv('reserve')});
 $('go').onclick=()=>{if(phase==='prep'&&role==='daruma'&&!paused){ac();toCue()}};
 $('arm').onclick=()=>{if(!st||phase==='over'||paused)return;st.turnArmed=!st.turnArmed;renderCtl()};
@@ -711,7 +725,8 @@ function drawPicto(x,y,u,col,pose){PICTO_GAP=SC.card;
 // ---------- まわす ----------
 function frame(now){
   const dt=Math.min(100,now-lastNow);lastNow=now;
-  if(!paused&&!(tut&&tut.hold)&&st&&phase!=='over'&&phase!=='setup'){
+  if(window.DARUMA_ONLINE)gt+=dt;   // みんなで遊ぶとき：ゲームはサーバーが進める。ここでは見た目の時間だけ進める（online.js）
+  else if(!paused&&!(tut&&tut.hold)&&st&&phase!=='over'&&phase!=='setup'){
     gt+=dt;
     for(let k=0;k<timers.length;k++){if(gt>=timers[k].at){const f=timers[k].fn;timers.splice(k--,1);f()}}
     if(phase==='chant'||phase==='look'){acc+=dt;while(acc>=P.TICK_MS&&(phase==='chant'||phase==='look')&&!(tut&&tut.hold)){acc-=P.TICK_MS;if(phase==='chant')tick();else lookTick()}}
@@ -720,5 +735,7 @@ function frame(now){
 }
 renderTune();resize();renderSetup();$('overP').textContent=HOW[role];renderChant();requestAnimationFrame(frame);
 </script>
+<script src="room.js"></script>
+<script src="online.js"></script>
 </body>
 </html>
