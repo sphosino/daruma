@@ -474,6 +474,8 @@ function tutNextBeat(){
   if(b.dm)tutDm=b.dm;
   if(b.type==='do')tutShow(b,null,false);
   else if(b.on==='now'){tut.hold=true;tutShow(b,null,true)}
+  // 何かが起きたら出す説明：起きるまでは吹き出しを隠す（前の説明と「わかった」が残っていて、押すと次の説明が飛ばされていた）
+  else{$('tut').hidden=true;tutHl(null)}
 }
 function tutEv(name,e){
   const b=tutCur();
