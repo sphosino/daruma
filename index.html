@@ -261,8 +261,9 @@ function renderCtl(){
   const prep=phase==='prep';
   $('lvRow').innerHTML=LV_ORDER.map(t=>`<button class="btn lv${st.reward===t?' on':''}${st.nextReward===t?' next':''}" data-r="${t}" style="--c:${TIER_COL[t]}" type="button">${LV_NAME[t]}<small>見送り+${Math.round(P.REWARD[t].reward*st.type.skipRewardScale)}<br>振向−${Math.round(Core.turnCostOf(P,st,t))}</small></button>`).join('');
   const cost=Math.round(Core.turnCostOf(P,st)),afford=st.stamina>=cost;
-  $('arm').classList.toggle('on',st.turnArmed);
-  $('arm').innerHTML=st.turnArmed&&!afford?`🙈 気力が足りない。見送りになる<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`:st.turnArmed?`👀 唱え終わったら振り向く<small>気力 -${cost}</small>`:`🙈 振り向かずに見送る<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`;
+  // 気力が足りないときは、どちらを選んでも見送りになるので、押せない灰色にして理由を出す（押しても見た目が変わらず、壊れたように見えていた）
+  $('arm').disabled=!afford;$('arm').classList.toggle('on',st.turnArmed&&afford);
+  $('arm').innerHTML=!afford?`🙈 気力が足りないので見送り<small>${st.reward==='low'?'見送って気力をためよう':'オーラを強くすると振り向ける'}（気力+${Math.round(Core.currentSkipReward(P,st))}）</small>`:st.turnArmed?`👀 唱え終わったら振り向く<small>気力 -${cost}</small>`:`🙈 振り向かずに見送る<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`;
   $('go').disabled=!prep||paused;
   $('tempo').value=Math.round(st.tempoValue);$('tempoTxt').textContent=Core.tempoLabel(st.tempoValue)+(phase==='chant'?'（上げると気力を使う）':'');
   $('qi').textContent=`${Math.round(st.stamina)} / ${Math.round(st.staminaMax)}`;
