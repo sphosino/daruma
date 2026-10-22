@@ -77,7 +77,7 @@ canvas{display:block;width:100%;height:100%}
 .pill:active,.btn:active,.go:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
 .pill:focus-visible,.btn:focus-visible,.pad:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 /* 子ども役：大きなパッド */
-.pad{box-shadow:0 5px 0 color-mix(in srgb,var(--accent) 55%,var(--line));flex:1 1 auto;min-height:130px;max-height:340px;border-radius:20px;border:3px solid var(--accent);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+.pad{box-shadow:0 5px 0 color-mix(in srgb,var(--accent) 55%,var(--line));flex:1 1 auto;min-height:120px;max-height:min(340px,34vh);border-radius:20px;border:3px solid var(--accent);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
   touch-action:none;cursor:pointer;font-family:var(--pop);font-size:1.3rem;color:var(--accent);position:relative;overflow:hidden}
 .pad small{font-family:var(--ui);font-weight:700;font-size:.8rem;color:var(--muted)}
 .pad.down{background:var(--on)}
@@ -475,8 +475,11 @@ function tutPlace(){
   const el=document.querySelector(tutSel||'#stage'),r=el.getBoundingClientRect(),bw=box.offsetWidth,bh=box.offsetHeight,vw=innerWidth,vh=innerHeight;
   const below=r.top+r.height/2<vh*0.45;
   let top=below?r.bottom+16:r.top-bh-16;top=Math.max(8,Math.min(vh-bh-8,top));
+  // 下のもの（パッドなど）の上に出すとボードにかぶるとき：そのものの中の上のほうに出す（小さい画面でボードが見えなくなっていた）
+  const sr=$('stage').getBoundingClientRect(),inside=!below&&tutSel&&tutSel!=='#stage'&&top<sr.bottom-8;
+  if(inside)top=Math.min(vh-bh-8,Math.max(sr.bottom+4,r.top+8));
   const cxp=r.left+r.width/2,left=Math.max(12,Math.min(vw-bw-12,cxp-bw/2));
-  box.style.top=top+'px';box.style.left=left+'px';box.classList.toggle('up',below);box.classList.toggle('down',!below);
+  box.style.top=top+'px';box.style.left=left+'px';box.classList.toggle('up',below);box.classList.toggle('down',!below&&!inside);
   box.style.setProperty('--ax',Math.max(22,Math.min(bw-22,cxp-left))+'px');
   if(tutSel){spot.hidden=false;const pad=6;Object.assign(spot.style,{left:(r.left-pad)+'px',top:(r.top-pad)+'px',width:(r.width+pad*2)+'px',height:(r.height+pad*2)+'px'})}else spot.hidden=true;
 }
