@@ -442,7 +442,7 @@ const TUT={
     {type:'stop',on:'now',t:'唱えている間',x:'唱えている間だけ、子どもは進めます。唱え終わったとき、このボタンが「👀 振り向く」なら振り向きます。',hl:'#arm'},
     {type:'stop',on:'lookStart',t:'振り向いた！',x:'このあと少し見ている間に、まだ動いている子を見つけます。',hl:'#stage'},
     {type:'stop',on:'lookEnd',t:'見つけると',x:e=>e.n?'見つけた子は押し戻されます。':'みんな止まっていました。止まっている子は見つけられません。'},
-    {type:'stop',on:'now',t:'気力',x:'振り向くと、だるまの「気力」が減ります。だるまの足もとのゲージと、左上の数字が気力です。ゲージの線より少ないと振り向けず、自動で見送りになります。気力が0になると、テンポが半分に落ちます。',hl:'#stage'},
+    {type:'stop',on:'now',t:'気力',x:'振り向くと、だるまの「気力」が減ります。だるまの足もとのゲージと、左上の数字が気力です。気力が足りないと（ゲージが灰色）振り向けず、自動で見送りになります。気力が0になると、テンポが半分に落ちます。',hl:'#stage'},
     {type:'stop',on:'prep',t:'見送る',x:'次は見送ってみよう。「唱える」を押して、唱えている間に左のボタンで「🙈 見送る」に切り替えます。',hl:'#armRow'},
     {type:'do',on:'carry',t:'見送る',x:'「唱える」を押して、唱えている間に左のボタンを「🙈 見送る」に切り替えよう。',hl:'#armRow'},
     {type:'stop',on:'now',t:'見送った！',x:'見送ると、止まらずにそのまま次の「だるまさんがころんだ」を唱えます。子どもは走り続けられます。そのかわり、減った気力がたまります。',hl:'#qiBox'},
@@ -616,12 +616,11 @@ function draw(now){
     cx.fillStyle=g;cx.beginPath();cx.arc(dx,dy,ar,0,7);cx.fill();
     cx.textAlign='right';cx.fillStyle=lc;cx.font=`900 ${Math.max(10,dr*0.34)}px ${css('--ui')}`;cx.fillText('オーラ',dx-dr*1.2,dy-dr*0.25);
     cx.font=`900 ${Math.max(13,dr*0.5)}px ${css('--pop')}`;cx.fillText(LV_NAME[st.reward],dx-dr*1.2,dy+dr*0.35);
-    // 気力のゲージ（線より少ないと振り向けない）
+    // 気力のゲージ（振り向けないときは灰色で「気力が足りない」）
     const cost=Core.turnCostOf(P,st),bw=dr*2,bx=dx-dr,by=yT+6,bh=7;
     cx.fillStyle=SC.line;cx.fillRect(bx,by,bw,bh);
     cx.fillStyle=st.stamina>=cost?lc:muted;cx.fillRect(bx,by,bw*Math.min(1,st.stamina/st.staminaMax),bh);
-    cx.strokeStyle=ink;cx.lineWidth=1.5;const cxp=bx+bw*Math.min(1,cost/st.staminaMax);cx.beginPath();cx.moveTo(cxp,by-3);cx.lineTo(cxp,by+bh+3);cx.stroke();
-    cx.fillStyle=ink;cx.font=`700 ${Math.max(10,dr*0.32)}px ${css('--ui')}`;cx.fillText(st.stamina>=cost?'気力':'気力が足りない',dx,by+bh+14);
+        cx.fillStyle=ink;cx.font=`700 ${Math.max(10,dr*0.32)}px ${css('--ui')}`;cx.fillText(st.stamina>=cost?'気力':'気力が足りない',dx,by+bh+14);
   }
   cx.fillStyle=red;cx.beginPath();cx.ellipse(dx,dy,dr*0.95,dr*1.1,0,0,7);cx.fill();
   if(st&&cpu&&$('showMind').checked&&st.cpuThought&&(phase==='chant'||phase==='look')){
