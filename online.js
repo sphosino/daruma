@@ -23,7 +23,7 @@ if(!ROOM){
 // ---------- 部屋の中 ----------
 window.DARUMA_ONLINE=true;
 window.DarumaOnline={get RV(){return RV}};   // 確かめ用（部屋の様子を外から読む）
-let RV=null,game=-1,myId=null,lastWant=-1;
+let RV=null,game=-1,myId=null,lastWant=-1,lastBoost=false;
 const HUMAN_COL=['#e8743b','#ff6f9f','#43b2f5','#6cc94e'];
 $('roomBtn').hidden=true;$('pauseBtn').remove();$('helpBtn').hidden=true;
 document.title='だるまさんがころんだ（みんなで）';
@@ -42,7 +42,7 @@ function apply(v,ev){
   for(const e of ev)onEvent(e);
   if(v.phase!=='push'&&push&&gt-push.t0>(push.dur||0))push=null;   // 押し戻しの見せ方は、終わったら消す
   phase=v.phase==='lobby'?'setup':v.phase;
-  $('ctlDaruma').hidden=!(playing&&v.you===0);$('pad').hidden=!(playing&&v.you>0);$('pad').classList.add('noDash');   // ダッシュは、まだサーバーの決まりに入れていない（ひとりで遊ぶ版で試している）
+  $('ctlDaruma').hidden=!(playing&&v.you===0);$('pad').hidden=!(playing&&v.you>0);
   $('endBtn').hidden=false;
   if(playing){$('over').hidden=true;note(v.phase==='prep'?(v.you===0?'ひと休み。準備ができたら「唱える」':'ひと休み。動けない'):'')}
   else renderRoomCard();
@@ -108,9 +108,9 @@ $('arm').onclick=()=>{if(st&&role==='daruma')DR.send({t:'arm',on:!st.turnArmed})
 $('tempo').oninput=()=>{if(st&&role==='daruma')DR.send({t:'tempo',v:+$('tempo').value})};
 window.sendAura=r=>DR.send({t:'aura',r});
 $('endBtn').onclick=()=>{if(confirm('部屋を出ますか？（遊んでいる途中なら、あなたの席は CPU になります）')){DR.send({t:'leave'});setTimeout(()=>{location.href=location.pathname},200)}};
-// 子ども：押している場所の速さを、変わったときだけ送る
+// 子ども：押している場所の速さとダッシュ（パッドの上半分）を、変わったときだけ送る
 (function loop(){
-  if(RV&&RV.you>0&&!['lobby','over'].includes(RV.phase)){const v=pressed?want:0;if(Math.abs(v-lastWant)>0.01){lastWant=v;DR.send({t:'want',v:+v.toFixed(2)})}}
+  if(RV&&RV.you>0&&!['lobby','over'].includes(RV.phase)){const v=pressed?want:0;if(Math.abs(v-lastWant)>0.01||boost!==lastBoost){lastWant=v;lastBoost=boost;DR.send({t:'want',v:+v.toFixed(2),b:boost})}}
   requestAnimationFrame(loop);
 })();
 })();
