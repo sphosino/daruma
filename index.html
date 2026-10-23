@@ -658,7 +658,12 @@ function draw(now){
   cx.strokeStyle=muted;cx.setLineDash([4,4]);cx.beginPath();cx.moveTo(X(2),gy-6);cx.lineTo(X(2),H);cx.stroke();cx.setLineDash([]);
   // だるま
   // 足もとは子どもの列のまん中あたり（子どもから見て正面）
-  const yT=gy+(H-gy)*0.42,dx=W*0.91,dr=Math.min(H*0.17,W*0.07),dy=yT-dr*1.1;
+  // 2026-10-24：時計にかぶらないよう下げる。足もとの気力の字がボードに収まるところまで下げ、それでも時計にかかる小さい画面では、だるまを少し小さくする
+  const ck=$('clock'),ckB=ck?ck.offsetTop+ck.offsetHeight+6:0;
+  let dr=Math.min(H*0.17,W*0.07);
+  const yT=Math.min(gy+(H-gy)*0.62,H-10-Math.max(12,dr*0.26)-Math.max(13,dr*0.42));
+  dr=Math.max(14,Math.min(dr,(yT-ckB)/2.2));
+  const dx=W*0.91,dy=yT-dr*1.1;
   if(st){ // オーラ（光）（色・大きさ・脈の速さ）。予約は見えない
     const lc=TIER_COL[st.reward],li=LV_ORDER.indexOf(st.reward),beat=0.5+0.5*Math.sin(now/1000*Math.PI*2*PULSE[st.reward]),ar=dr*(1.35+0.15*li+0.12*beat);
     const g=cx.createRadialGradient(dx,dy,dr*0.6,dx,dy,ar);g.addColorStop(0,lc+'cc');g.addColorStop(1,lc+'00');
