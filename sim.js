@@ -71,7 +71,10 @@ const POLICIES = {
 // 耳でテンポを感じて「あと何秒で言い終わるか」を見積もり、止まるのにかかる時間（0.5 秒）＋反応（0.2 秒）＋
 // 気持ちの余裕 だけ前に指を離す。テンポの感じ取りは少し遅れる（終わりぎわに速められると遅れる）。
 // 余裕は毎回ばらつく。光（強気度）が強いと欲ばる。気力が足りないだるまなら最後まで走る。見送られたら走り続ける
-function humanKid(style) {
+// dash（2026-10-23）：'brake' は体力が足りれば上半分で離して急ブレーキ（そのぶんぎりぎりまで走る）、
+//   'both' は走り出しもダッシュ。体力が DASH_MIN より少ないときは、ふつうに走って止まる
+const DASH_MIN = +env("DASH_MIN", 40);
+function humanKid(style, dash) {
   const base = { careful: 4, normal: 2, bold: 0.5 }[style || "normal"];
   // 人は「あと何秒」を正確には読めない。毎回のずれ（ふつう分布・0.25 秒）
   const gauss = () => { let u = 0; for (let k = 0; k < 6; k++) u += Math.random(); return (u - 3) / Math.sqrt(0.5); };
@@ -88,8 +91,11 @@ function humanKid(style) {
     const ticksLeft = (100 - st.chantProgress) / pf;
     // 止まるのにかかる時間は、いまの速さから（体で覚えている）
     const me = st.children.find(c => c.human);
-    const stopTicks = Math.max(0, (me.vel - P.CATCH_VEL_THRESHOLD) / me.brake);
-    return ticksLeft > stopTicks + 2 + margin;
+    const useDash = !!dash && me.energy >= DASH_MIN;
+    const stopTicks = Math.max(0, (me.vel - P.CATCH_VEL_THRESHOLD) / (me.brake * (useDash ? P.BOOST_BRAKE_MULT : 1)));
+    const run = ticksLeft > stopTicks + 2 + margin;
+    me.boost = useDash && (!run || dash === "both");
+    return run;
   };
 }
 
@@ -191,9 +197,11 @@ if (MAIN && mode === "kid") {
   const clock = +env("CLOCK", GAME.clock), knock = knockArg(env("KNOCK", GAME.knock));
   R.LOOK.grace = Math.round(+env("GRACE", GAME.grace) * 10);
   console.log(`子ども役：人っぽい子 1人＋CPU の子 3人 対 ゲームの CPU のだるま。時計 ${clock}秒・捕まったら ${knock == null ? "スタートへ" : knock + " 下がる"}  各${N}局`);
-  for (const style of ["careful", "normal", "bold"]) {
-    const b = batch(style, POLICIES["ゲームの CPU のだるま"], { clock, knock, kid: () => humanKid(style) });
-    console.log(`  人っぽい子（${{ careful: "慎重", normal: "ふつう", bold: "強気" }[style]}） 子どもの勝ち ${pct(1 - b.daruma)}  うち人っぽい子がタッチ ${pct(b.meWin)}  捕まえた ${b.catches.toFixed(1)}`);
+  const dashes = env("DASH", "none,brake,both").split(","), styles = env("STYLES", "careful,normal,bold").split(",");
+  const pols = env("POLS", "ゲームの CPU のだるま").split(",");
+  for (const pol of pols) for (const d of dashes) for (const style of styles) {
+    const b = batch(style, POLICIES[pol], { clock, knock, kid: () => humanKid(style, d === "none" ? null : d) });
+    console.log(`  ${pol}／ダッシュ ${{ none: "なし", brake: "止まるだけ", both: "走り出しも" }[d]}／人っぽい子（${{ careful: "慎重", normal: "ふつう", bold: "強気" }[style]}） 子どもの勝ち ${pct(1 - b.daruma)}  うち人っぽい子がタッチ ${pct(b.meWin)}  捕まえた ${b.catches.toFixed(1)}`);
   }
 }
 if (MAIN && mode === "check") {
