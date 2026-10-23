@@ -62,6 +62,13 @@
     CHANGE_DRAIN_RATE: 0.5,
     BURST_ENERGY_COST: 35,
     WINDED_RECOVER_AT: 20,
+    // ダッシュ（2026-10-23）：人の子がパッドの上半分を押している（離したときは最後に上半分にいた）とき、
+    // 速さを変える力が強くなるかわりに体力を多く使う。全速まで accT×0.5、止まるまで 1/2.5。
+    // 体力は 0→全速で 20、全速→0 で 30（速さの変わった割合に比例）。同じ速さで走っている間は、ふつうと同じ
+    BOOST_ACC_MULT: 0.5,
+    BOOST_BRAKE_MULT: 2.5,
+    BOOST_ACC_COST: 20,
+    BOOST_STOP_COST: 30,
     WINDED_SPEED_MULT: 0.35,
     PACING_SCALE: 0.4,
     MOTOR_DEGRADE_SCALE: 0.5,
@@ -662,11 +669,12 @@
   //   速さ = 全速 ×（1 −（1 − 時間/accT）^1.5）。最初の一歩はすぐ出て、全速に近づくほどゆっくり伸びる
   //   （0.1秒で10%、0.5秒で46%、1秒で81%、1.5秒で100%）。いまの速さから「曲線のどこにいるか」を逆算して進める
   //   なければ前と同じで、いつも accel ずつ
-  function accelStep(c, top) {
-    if (!c.accT) return c.accel;
+  function accelStep(c, top, accT) {
+    accT = accT || c.accT;
+    if (!accT) return c.accel;
     var m = c.maxSpeed, r = Math.min(1, c.vel / m);
     var t = 1 - Math.pow(1 - r, 1 / 1.5);
-    var t2 = Math.min(1, t + 1 / c.accT);
+    var t2 = Math.min(1, t + 1 / accT);
     return Math.max(0, Math.min(top, m * (1 - Math.pow(1 - t2, 1.5))) - c.vel);
   }
 
@@ -770,11 +778,12 @@
         // 0 になると「ぜぇ」で遅くなる。疲れているほどブレーキも効きにくい
         var hTop = c.winded ? c.maxSpeed * P.WINDED_SPEED_MULT : c.maxSpeed;
         var hFat = (1 - c.energy / c.energyMax) * (1 - c.motorControl) * P.MOTOR_DEGRADE_SCALE;
-        var hBrake = c.brake * clamp(1 - hFat, 0.2, 1);
+        var hBoost = !!c.boost;
+        var hBrake = c.brake * clamp(1 - hFat, 0.2, 1) * (hBoost ? P.BOOST_BRAKE_MULT : 1);
         // input は目標の速さ（全速の何割か。true なら全速、false なら離している）。目標より速ければブレーキ
         var hWant = c.input === true ? 1 : (+c.input || 0);
         var hTgt = hTop * Math.max(0, Math.min(1, hWant));
-        if (hWant > 0 && c.vel <= hTgt) c.vel = Math.min(hTgt, c.vel + accelStep(c, hTgt));
+        if (hWant > 0 && c.vel <= hTgt) c.vel = Math.min(hTgt, c.vel + accelStep(c, hTgt, hBoost && c.accT ? Math.max(1, c.accT * P.BOOST_ACC_MULT) : 0));
         else if (hWant > 0) c.vel = Math.max(hTgt, c.vel - easeStep(c, hTgt, hBrake));   // 指を左へ：ゆるめる
         else c.vel = Math.max(0, c.vel - hBrake);                                          // 指を離す：ブレーキ
         var hEffort = P.RUN_DRAIN_EXPONENT === 1 ? 1
@@ -782,7 +791,9 @@
         var hSteady = (c.vel < c.maxSpeed * P.REGEN_VEL_RATIO)
           ? P.REST_REGEN_RATE * c.regenScale
           : -(c.vel * P.RUN_DRAIN_RATE * c.drainScale * hEffort);
-        c.energy = clamp(c.energy + hSteady - Math.abs(c.vel - oldVel) * P.CHANGE_DRAIN_RATE, 0, c.energyMax);
+        var hDv = c.vel - oldVel;
+        var hBoostCost = !hBoost ? 0 : (hDv > 0 ? P.BOOST_ACC_COST : P.BOOST_STOP_COST) * Math.abs(hDv) / c.maxSpeed;
+        c.energy = clamp(c.energy + hSteady - Math.abs(hDv) * P.CHANGE_DRAIN_RATE - hBoostCost, 0, c.energyMax);
         c.feltEnergy = c.energy;
       } else if (c.burstTicks > 0) {
         // mid-dash: committed, ignores nervousness entirely.

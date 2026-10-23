@@ -42,7 +42,7 @@ function apply(v,ev){
   for(const e of ev)onEvent(e);
   if(v.phase!=='push'&&push&&gt-push.t0>(push.dur||0))push=null;   // 押し戻しの見せ方は、終わったら消す
   phase=v.phase==='lobby'?'setup':v.phase;
-  $('ctlDaruma').hidden=!(playing&&v.you===0);$('pad').hidden=!(playing&&v.you>0);
+  $('ctlDaruma').hidden=!(playing&&v.you===0);$('pad').hidden=!(playing&&v.you>0);$('pad').classList.add('noDash');   // ダッシュは、まだサーバーの決まりに入れていない（ひとりで遊ぶ版で試している）
   $('endBtn').hidden=false;
   if(playing){$('over').hidden=true;note(v.phase==='prep'?(v.you===0?'ひと休み。準備ができたら「唱える」':'ひと休み。動けない'):'')}
   else renderRoomCard();

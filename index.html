@@ -77,12 +77,15 @@ canvas{display:block;width:100%;height:100%}
 .pill:active,.btn:active,.go:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
 .pill:focus-visible,.btn:focus-visible,.pad:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 /* 子ども役：大きなパッド */
-.pad{box-shadow:0 5px 0 color-mix(in srgb,var(--accent) 55%,var(--line));flex:0 0 auto;height:140px;border-radius:20px;border:3px solid var(--accent);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+.pad{box-shadow:0 5px 0 color-mix(in srgb,var(--accent) 55%,var(--line));flex:0 0 auto;height:200px;border-radius:20px;border:3px solid var(--accent);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;padding-bottom:36px;box-sizing:border-box;
   touch-action:none;cursor:pointer;font-family:var(--pop);font-size:1.3rem;color:var(--accent);position:relative;overflow:hidden}
-/* 速さは押した場所の左右だけで決まる（上下はどこでも同じ）ので、高さは指で押しやすいぶんだけ。指で遊ぶ画面では、親指の届く画面の下に寄せる */
+/* 速さは押した場所の左右で決まる。上半分はダッシュ（すばやく走り出せて、離すとすぐ止まれる。体力を多く使う）。指で遊ぶ画面では、親指の届く画面の下に寄せる */
+.padHi{position:absolute;left:0;right:0;top:0;height:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:color-mix(in srgb,var(--accent) 12%,var(--card));border-bottom:2px dashed color-mix(in srgb,var(--accent) 45%,transparent);pointer-events:none;font-size:1.05rem}
+.pad.hi .padHi{background:color-mix(in srgb,var(--accent) 30%,var(--card))}
+.pad.noDash .padHi{display:none}.pad.noDash{justify-content:center;padding-bottom:12px}
 @media (pointer:coarse){.pad{margin-top:auto;margin-bottom:calc(8px + env(safe-area-inset-bottom))}}
 /* 背の低い画面（iPhone SE の Safari・ノートパソコンなど）：パッドと吹き出しを小さくして、吹き出しがボードとパッドの間に入るように */
-@media (max-height:700px){.stage{height:clamp(150px,min(52vw,29vh),300px)}.pad{height:100px;gap:2px}.pad small{display:none}.tut{font-size:.8rem;line-height:1.45;padding:7px 10px}}
+@media (max-height:700px){.stage{height:clamp(150px,min(52vw,29vh),300px)}.pad{height:120px;gap:0;padding-bottom:30px}.padHi{font-size:.9rem}.pad small{display:none}body .tut{font-size:.78rem;line-height:1.4;padding:6px 10px}body .tutBtns{margin-top:2px}}
 .pad small{font-family:var(--ui);font-weight:700;font-size:.8rem;color:var(--muted)}
 .pad.down{background:var(--on)}
 .gauge{position:absolute;left:12px;bottom:0;height:12px;border-radius:6px 6px 0 0;background:var(--accent);width:0}
@@ -136,6 +139,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .tuneTop{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .tuneRows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px}
 @media (max-width:480px){.wide{display:none}h1{font-size:.95rem}}
+/* とても背の低い画面（iPhone SE の Safari）：すき間と唱える文字を詰めて、あそびかたの吹き出しがボードとパッドの間に入るように */
+@media (max-height:600px){.app{gap:4px}.chant{font-size:1.15rem}}
 @media (max-width:480px){.tuneRows{grid-template-columns:minmax(0,1fr)}}
 .tuneRows label{display:flex;flex-direction:column;gap:2px;font-size:.78rem;font-weight:700;color:var(--muted)}
 .tuneRows label span{display:flex;justify-content:space-between}.tuneRows label b{color:var(--ink);font-variant-numeric:tabular-nums}
@@ -226,7 +231,7 @@ body.tutRun #chant{position:relative;z-index:8}
     <div class="row" id="armRow"><button class="btn arm on" id="arm" type="button"></button><button class="btn primary" id="go" type="button">唱える</button></div>
   </div>
   <!-- 子ども役の操作 -->
-  <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る"><span class="padT">押した場所の速さで走る</span><small>右ほど速い・押したまま左右に動かせる・離すと止まる</small><div class="scale"><span>歩く</span><span>小走り</span><span>全力</span></div><div class="tapHere" aria-hidden="true"><span>👆</span>ここ</div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
+  <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る。上半分はダッシュ"><div class="padHi">⚡ ダッシュ<small>すばやく走り出す・離すとすぐ止まる（体力を多く使う）</small></div><span class="padT">押した場所の速さで走る</span><small>右ほど速い・押したまま左右に動かせる・離すと止まる</small><div class="scale"><span>歩く</span><span>小走り</span><span>全力</span></div><div class="tapHere" aria-hidden="true"><span>👆</span>ここ</div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
 </div>
 <script src="old/daruma-core.js"></script>
 <script src="rules.js"></script>
@@ -349,7 +354,7 @@ function toPrep(first){
 function toCue(){phase='cue';beep(260,0.5,'sine');renderCtl();renderChant();later(T.cue*1000,toChant)}
 function toChant(){phase='chant';acc=0;note('');renderCtl();renderChant();tutEv('chantStart')}
 function step(){ // 0.1秒ぶん世界を進める
-  if(me)me.input=pressed?want:0;
+  if(me){me.input=pressed?want:0;me.boost=boost}
   prev=snap();prevAt=gt;
   return Core.tick(P,st);
 }
@@ -370,7 +375,7 @@ function tick(){
   renderCtl();renderChant();
 }
 function lookTick(){
-  if(me)me.input=pressed?want:0;
+  if(me){me.input=pressed?want:0;me.boost=boost}
   prev=snap();prevAt=gt;
   const r=R.lookTick(st);
   if(r.reached){end(r.reached);return}
@@ -460,6 +465,7 @@ const TUT={
     {type:'stop',on:'lookEnd',t:'見つかると',x:e=>e.meCaught?'見つかったので、押し戻されます。':'止まれていたのでセーフ。動いていたら、見つかって押し戻されます。',hl:'#stage'},
     {type:'do',on:'carry',t:'見送り',x:'だるまは振り向かないこともあります。走ったまま、唱え終わるのを待ってみよう。',dm:'skip',hl:'#pad'},
     {type:'stop',on:'now',t:'見送り！',x:'だるまが振り向かずに見送ったので、止まらずに次が続きます。走り続けられます。だるまのオーラが弱いほど、見送りやすい。いまはオーラが「弱」でした。',hl:'#stage'},
+    {type:'stop',on:'now',t:'ダッシュ',x:'パッドの上半分はダッシュ。速く走り出せて、上で離すとすぐ止まれます。そのかわり体力をたくさん使います。',hl:'#pad'},
     {type:'stop',on:'now',t:'体力',x:'走ると、足もとの体力のバーが減ります。0になると「ぜぇ」で遅くなります。ずっと全力ではなく、ゆるめるところも作ろう。',dm:'normal',hl:'#stage'},
     {type:'stop',on:'now',t:'勝ち負け',x:'本番は CPU の子ども3人も一緒です。だれか1人でもだるまにタッチしたら子どもの勝ち。だるまの時計（唱えている時間だけ進む）が切れたら負けです。',hl:'#clock'},
     {type:'stop',on:'now',t:'まとめ',x:()=>TUT_END[role],end:true}],
@@ -544,7 +550,8 @@ function tutDaruma(){
 const TUT_END={
   kid:`・押した場所の速さで走り、離すと止まる（全力からは1秒かかる）
 ・唱え終わったときに動いていたら、見つかって押し戻される
-・オーラが弱いだるまほど、見送りやすい`,
+・オーラが弱いだるまほど、見送りやすい
+・パッドの上半分はダッシュ（すぐ止まれるが、体力を使う）`,
   daruma:`・唱え終わりで振り向いて、動いている子を見つける
 ・見送ると止まらずに続いて、気力がたまる
 ・オーラが強いほど振り向きやすい
@@ -575,15 +582,17 @@ $('tempo').oninput=()=>{if(!st||paused){renderCtl();return}const want=+$('tempo'
   if(phase==='chant'){const got=Core.applyTempoChange(P,st,want);if(got!==want)$('tempo').value=got;tutEv('tempo')}else st.tempoValue=want;renderCtl()};
 // 子ども役：押している間だけ走る
 // 押した場所（横）が目標の速さ：左はしで歩く（1割）、右はしで全力。押したまま左右に動かせる
-let pressed=false,want=0;const pad=$('pad');
+let pressed=false,want=0,boost=false;const pad=$('pad');
 function setWant(e){const r=pad.getBoundingClientRect(),f=((e.clientX??r.left)-r.left-12)/Math.max(1,r.width-24);
-  want=Math.max(0.1,Math.min(1,f));const t=$('target');t.hidden=false;t.style.left=(12+want*(r.width-24))+'px'}
+  want=Math.max(0.1,Math.min(1,f));
+  // 上半分ならダッシュ。離したときは、最後にいた場所のまま（上で離すと急ブレーキ）
+  boost=(e.clientY??r.bottom)-r.top<r.height/2;pad.classList.toggle('hi',boost);const t=$('target');t.hidden=false;t.style.left=(12+want*(r.width-24))+'px'}
 pad.addEventListener('pointerdown',e=>{e.preventDefault();ac();pressed=true;setWant(e);pad.classList.add('down');try{pad.setPointerCapture(e.pointerId)}catch(_){}});
 pad.addEventListener('pointermove',e=>{if(pressed)setWant(e)});
-const up=()=>{pressed=false;pad.classList.remove('down');$('target').hidden=true};
+const up=()=>{pressed=false;pad.classList.remove('down','hi');$('target').hidden=true};
 pad.addEventListener('pointerup',up);pad.addEventListener('pointercancel',up);
 // パソコン：スペースキーで全力
-addEventListener('keydown',e=>{if(e.code!=='Space'||e.repeat||role!=='kid'||!st)return;e.preventDefault();ac();pressed=true;want=1;pad.classList.add('down')});
+addEventListener('keydown',e=>{if(e.code!=='Space'||e.repeat||role!=='kid'||!st)return;e.preventDefault();ac();pressed=true;want=1;boost=e.shiftKey;pad.classList.add('down')});   // Shift＋スペースでダッシュ
 addEventListener('keyup',e=>{if(e.code==='Space')up()});
 // 調整
 // いまの走り方（ブレーキ・歩く・小走り・全力）。前の 0.1 秒より遅くなっていればブレーキ
@@ -697,7 +706,7 @@ function draw(now){
     if(g==='全力'){ // 土ぼこり（後ろに流れる）
       for(let k=0;k<3;k++){const t=((gt/260+k/3+i*0.17)%1),px=x-s*(0.5+t*1.6),py=y-s*(0.1+t*0.5);
         cx.globalAlpha=(1-t)*0.45;cx.fillStyle=muted;cx.beginPath();cx.arc(px,py,s*(0.15+t*0.25),0,7);cx.fill()}cx.globalAlpha=1}
-    if(g==='ブレーキ'){cx.strokeStyle=muted;cx.lineWidth=Math.max(1.5,s*0.1);cx.beginPath();cx.moveTo(x-s*1.2,y+1);cx.lineTo(x+s*0.3,y+1);cx.stroke()}
+    if(g==='ブレーキ'){const kk=!!c.boost;cx.strokeStyle=kk?red:muted;cx.lineWidth=Math.max(1.5,s*(kk?0.16:0.1));cx.beginPath();cx.moveTo(x-s*(kk?2.6:1.2),y+1);cx.lineTo(x+s*0.3,y+1);cx.stroke()}
     cx.save();cx.translate(x,y);cx.rotate(lean);cx.translate(-x,-y);
     drawPicto(x,y,s,col,pictoPose(g,hit,mv?pos*(g==='全力'?1.6:g==='小走り'?2.2:2.6):0));
     cx.restore();
@@ -705,6 +714,8 @@ function draw(now){
     const label=(c.human?'あなた':c.name.replace(/^.*の/,''))+(c.winded?' ぜぇ…':'');
     cx.fillStyle=c.human?ink:muted;cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.fillText(label,x,y-s*3.7);
     if(hit){cx.fillStyle=red;cx.font=`900 ${Math.max(14,s*1.1)}px ${css('--pop')}`;cx.fillText('！',x,y-s*3.7-Math.max(12,s*0.7))}
+    // ダッシュ中の急ブレーキ：長い跡と、名前の上に「キキッ！」（だるまから見て、走っていたのにセーフだった理由が分かるように）
+    else if(g==='ブレーキ'&&c.boost){cx.fillStyle=red;cx.font=`900 ${Math.max(12,s*0.8)}px ${css('--pop')}`;cx.fillText('キキッ！',x,y-s*3.7-Math.max(12,s*0.7))}
     if(mind||c.human){const bw=s*1.6,bx=x-bw/2,by=y+5;cx.fillStyle=SC.line;cx.fillRect(bx,by,bw,3);cx.fillStyle=c.winded?red:accent;cx.fillRect(bx,by,bw*c.energy/c.energyMax,3)}
     if(mind&&!c.human){const m=[gaitOf(c,i),c.intendsToStop===false?'賭け':''].filter(Boolean).join('・');if(m){cx.fillStyle=c.intendsToStop===false?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*3.7-Math.max(11,s*0.6))}}
   });
@@ -761,6 +772,6 @@ function frame(now){
 renderTune();resize();renderSetup();$('overP').textContent=HOW[role];renderChant();requestAnimationFrame(frame);
 </script>
 <script src="room.js"></script>
-<script src="online.js?v=2"></script>
+<script src="online.js?v=3"></script>
 </body>
 </html>
