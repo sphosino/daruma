@@ -388,7 +388,7 @@ function lookTick(){
   for(const c of r.newly){
     // 見つかった：その場で固まって「！」。自分なら、どれだけ間に合わなかったかを出す
     caughtAt[c.id]=gt;beep(150,0.25,'sawtooth');
-    if(c===me)showMsg('見つかった！',2200,c.caughtPressing?'まだ押していた':`あと${Math.max(0.1,c.caughtLate*0.1).toFixed(1)}秒早く離せば止まれた`);
+    if(c===me)showMsg('見つかった！',2200);
   }
   if(r.done)endLook();
 }
@@ -791,6 +791,6 @@ function frame(now){
 renderTune();resize();renderSetup();$('overP').textContent=HOW[role];renderChant();requestAnimationFrame(frame);
 </script>
 <script src="room.js"></script>
-<script src="online.js?v=4"></script>
+<script src="online.js?v=5"></script>
 </body>
 </html>

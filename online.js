@@ -69,7 +69,7 @@ function onEvent(e){
   if(e.cue)beep(260,0.5,'sine');
   if(e.look){faceAt=gt}
   if(e.caught){caughtAt[e.caught]=gt;beep(150,0.25,'sawtooth');
-    if(e.caught===myId)showMsg('見つかった！',2200,e.pressing?'まだ押していた':`あと${Math.max(0.1,e.late).toFixed(1)}秒早く離せば止まれた`)}
+    if(e.caught===myId)showMsg('見つかった！',2200)}
   if(e.pushed){const names=e.pushed.map(id=>(st.children.find(c=>c.id===id)||{}).name).filter(Boolean);
     if(!e.pushed.length)showMsg('セーフ…みんな止まってた',1000);else if(!e.pushed.includes(myId))showMsg((role==='kid'?'セーフ！ ':'見つけた！ ')+names.join('・'),1200);
     push={from:e.from,to:st.children.map(c=>c.pos),t0:gt,dur:e.pushed.length?700:0};}
