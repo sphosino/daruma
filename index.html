@@ -672,7 +672,8 @@ function draw(now){
     if(f>0){cx.save();cx.beginPath();cx.roundRect(bx,by,bw,bh,rr);cx.clip();cx.fillStyle=st.stamina>=cost?'#3fae4f':muted;cx.fillRect(bx,by,bw*f,bh);cx.restore()}
     cx.strokeStyle=ink;cx.lineWidth=2;cx.beginPath();cx.roundRect(bx,by,bw,bh,rr);cx.stroke();
     cx.textAlign='center';cx.fillStyle=ink;cx.font=`900 ${Math.max(11,dr*0.36)}px ${css('--ui')}`;
-    const qt=st.stamina>=cost?`気力 ${Math.round(st.stamina)}`:'気力が足りない',qw=cx.measureText(qt).width;   // ボードの右はしで切れないように
+    // 数字はだるまにだけ（子どもには、振り向きや見送りで増減する量が見えないので、数字だけあっても読めない）
+    const qt=st.stamina<cost?'気力が足りない':role==='daruma'?`気力 ${Math.round(st.stamina)}`:'気力',qw=cx.measureText(qt).width;   // ボードの右はしで切れないように
     cx.fillText(qt,Math.min(dx,W-6-qw/2),by+bh+Math.max(13,dr*0.42));
   }
   cx.fillStyle=red;cx.beginPath();cx.ellipse(dx,dy,dr*0.95,dr*1.1,0,0,7);cx.fill();
