@@ -479,7 +479,8 @@ const TUT={
     {type:'stop',on:'prep',t:'見送る',x:'次は見送ってみよう。「唱える」を押して、唱えている間に左のボタンで「🙈 見送る」に切り替えます。',hl:'#armRow'},
     {type:'do',on:'carry',t:'見送る',x:'「唱える」を押して、唱えている間に左のボタンを「🙈 見送る」に切り替えよう。',hl:'#armRow'},
     {type:'stop',on:'now',t:'見送った！',x:'見送ると、止まらずにそのまま次の「だるまさんがころんだ」を唱えます。子どもは走り続けられます。そのかわり、減った気力がたまります。',hl:'#qiBox'},
-    {type:'stop',on:'now',t:'オーラ',x:'だるまのオーラが強いほど、振り向く気力が安くなって、振り向きやすいだるまになります。そのかわり、見送ってもあまりたまりません。弱いと、振り向くのは高くつきますが、見送るとたくさんたまります。オーラは子どもにも見えていて、弱いと子どもは攻めてきます。唱えている間に押すと「予約」になって、唱え終わったときに変わります。',hl:'#lvRow'},
+    {type:'stop',on:'now',t:'オーラ',x:'オーラが強いほど、振り向くのに使う気力が少なくなります（ボタンの「振向−」）。そのかわり、見送ってもあまりたまりません（「見送り＋」）。',hl:'#lvRow'},
+    {type:'stop',on:'now',t:'オーラは見えている',x:'オーラは子どもにも見えていて、弱いと攻めてきます。唱えている間に押すと「予約」になり、唱え終わりで変わります。',hl:'#lvRow'},
     {type:'stop',on:'now',t:'テンポ',x:'速く唱えるほど（スライダーを右へ動かすほど）、気力をたくさん使います。',hl:'#tempo'},
     {type:'stop',on:'now',t:'勝ち負け',x:'子どもにタッチされずに、だるまの時計（唱えている時間だけ進む）が切れるまで耐えたら勝ちです。',hl:'#clock'},
     {type:'stop',on:'now',t:'まとめ',x:()=>TUT_END[role],end:true}]
@@ -494,13 +495,15 @@ function tutPlace(){
   const box=$('tut'),spot=$('spot'),pad=$('pad'),on=!!(tut&&!box.hidden),b=on&&tutCur();document.body.classList.toggle('tutRun',on);
   pad.classList.toggle('tapFull',!!(b&&b.mark==='full'));box.style.width='';if(!on){spot.hidden=true;return}
   const el=document.querySelector(tutSel||'#stage'),r=el.getBoundingClientRect(),vw=innerWidth,vh=innerHeight;let bw=box.offsetWidth,bh=box.offsetHeight;
-  // パッドの説明は、入ればパッドの下に出し、入らなければボードとパッドの間に出す（パッドの中にかぶせると、枠が何重にも重なって見えた）
-  const below=el===pad?r.bottom+bh+24<=vh:r.top+r.height/2<vh*0.45;
+  // ボードの外のもの（パッド・だるまのボタンなど）の説明は、入ればその下に出し、入らなければボードとの間に出す
+  //   （説明しているものにかぶせると、何を指しているか見えず、枠も何重にも重なって見えた）
+  const ctl=!!tutSel&&tutSel!=='#stage'&&!$('stage').contains(el);
+  const below=ctl?r.bottom+bh+24<=vh:r.top+r.height/2<vh*0.45;
   let top=below?r.bottom+16:r.top-bh-16;top=Math.max(8,Math.min(vh-bh-8,top));
   // 下のもの（パッドなど）の上に出すとボードにかぶるとき：そのものの中の上のほうに出す（小さい画面でボードが見えなくなっていた）
   const sr=$('stage').getBoundingClientRect();let inside=!below&&tutSel&&tutSel!=='#stage'&&top<sr.bottom-8;
-  // 横の広い画面（パソコン）で、パッドの下にもボードとの間にも入らないとき：パッドの右横に、空きに合わせた幅で出す
-  const side=inside&&el===pad&&vw-r.right-36>=220;
+  // 横の広い画面（パソコン）で、下にもボードとの間にも入らないとき：右横に、空きに合わせた幅で出す
+  const side=inside&&ctl&&vw-r.right-36>=220;
   if(side){inside=false;box.style.width=Math.min(bw,vw-r.right-36)+'px';bw=box.offsetWidth;bh=box.offsetHeight;top=Math.max(8,Math.min(vh-bh-8,r.top+r.height/2-bh/2))}
   else if(inside)top=Math.min(vh-bh-8,Math.max(sr.bottom+4,r.top+8));
   const cxp=r.left+r.width/2,left=side?r.right+24:Math.max(12,Math.min(vw-bw-12,cxp-bw/2));
