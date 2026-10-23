@@ -57,7 +57,7 @@
     // kids run on their own energy pool, mirroring daruma's stamina.
     CHILD_ENERGY_MAX: 100,
     RUN_DRAIN_RATE: 2,
-    REST_REGEN_RATE: 1.5,
+    REST_REGEN_RATE: 1.0,   // 2026-10-24：1.5 → 1.0（1秒に15 → 10）。止まるとすぐ満タンに戻り、ダッシュなしでは体力が効いていなかった。シミュレーターで、見てから振り向くだるま相手のダッシュの勝ち 82% → 66%
     REGEN_VEL_RATIO: 0.5,
     CHANGE_DRAIN_RATE: 0.5,
     BURST_ENERGY_COST: 35,
