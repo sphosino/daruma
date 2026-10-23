@@ -81,6 +81,7 @@ canvas{display:block;width:100%;height:100%}
   touch-action:none;cursor:pointer;font-family:var(--pop);font-size:1.3rem;color:var(--accent);position:relative;overflow:hidden}
 /* 速さは押した場所の左右で決まる。上半分はダッシュ（すばやく走り出せて、離すとすぐ止まれる。体力を多く使う）。指で遊ぶ画面では、親指の届く画面の下に寄せる */
 .padHi{position:absolute;left:0;right:0;top:0;height:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:color-mix(in srgb,var(--accent) 12%,var(--card));border-bottom:2px dashed color-mix(in srgb,var(--accent) 45%,transparent);pointer-events:none;font-size:1.05rem}
+.padT{font-size:1.05rem}
 .pad.hi .padHi{background:color-mix(in srgb,var(--accent) 30%,var(--card))}
 
 @media (pointer:coarse){.pad{margin-top:auto;margin-bottom:calc(8px + env(safe-area-inset-bottom))}}
@@ -231,7 +232,7 @@ body.tutRun #chant{position:relative;z-index:8}
     <div class="row" id="armRow"><button class="btn arm on" id="arm" type="button"></button><button class="btn primary" id="go" type="button">唱える</button></div>
   </div>
   <!-- 子ども役の操作 -->
-  <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る。上半分はダッシュ"><div class="padHi">⚡ ダッシュ<small>すばやく走り出す・離すとすぐ止まる（体力を多く使う）</small></div><span class="padT">押した場所の速さで走る</span><small>右ほど速い・押したまま左右に動かせる・離すと止まる</small><div class="scale"><span>歩く</span><span>小走り</span><span>全力</span></div><div class="tapHere" aria-hidden="true"><span>👆</span>ここ</div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
+  <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る。上半分はダッシュ"><div class="padHi">⚡ ダッシュ<small>すばやく走り出す・離すとすぐ止まる（体力を多く使う）</small></div><span class="padT">🏃 走る</span><small>右ほど速い・離すと止まる</small><div class="scale"><span>歩く</span><span>小走り</span><span>全力</span></div><div class="tapHere" aria-hidden="true"><span>👆</span>ここ</div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
 </div>
 <script src="old/daruma-core.js?v=3"></script>
 <script src="rules.js?v=2"></script>
