@@ -82,11 +82,15 @@ canvas{display:block;width:100%;height:100%}
 /* 速さは押した場所の左右で決まる。上半分はダッシュ（すばやく走り出せて、離すとすぐ止まれる。体力を多く使う）。指で遊ぶ画面では、親指の届く画面の下に寄せる */
 .padHi{position:absolute;left:0;right:0;top:0;height:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:color-mix(in srgb,var(--accent) 12%,var(--card));border-bottom:2px dashed color-mix(in srgb,var(--accent) 45%,transparent);pointer-events:none;font-size:1.05rem}
 .padT{font-size:1.05rem}
+/* パッドの説明は、パッドの中ではなく真上に小さく（2026-10-24）。パッドが出ていないときと、あそびかたの間（吹き出しの場所を空ける）は出さない */
+.padNote{display:flex;flex-direction:column;gap:1px;font-size:.72rem;font-weight:700;color:var(--muted);line-height:1.35}
+.padNote b{color:var(--accent);margin-right:6px}
+.padNote:has(+ .pad[hidden]),body.tutRun .padNote{display:none}
 .pad.hi .padHi{background:color-mix(in srgb,var(--accent) 30%,var(--card))}
 
-@media (pointer:coarse){.pad{margin-top:auto;margin-bottom:calc(8px + env(safe-area-inset-bottom))}}
+@media (pointer:coarse){.padNote{margin-top:auto}body:not(.tutRun) .padNote:not(:has(+ .pad[hidden])) + .pad{margin-top:0}.pad{margin-top:auto;margin-bottom:calc(8px + env(safe-area-inset-bottom))}}
 /* 背の低い画面（iPhone SE の Safari・ノートパソコンなど）：パッドと吹き出しを小さくして、吹き出しがボードとパッドの間に入るように */
-@media (max-height:700px){.stage{height:clamp(150px,min(52vw,29vh),300px)}.pad{height:120px;gap:0;padding-bottom:30px}.padHi{font-size:.9rem}.pad small{display:none}body .tut{font-size:.78rem;line-height:1.4;padding:6px 10px}body .tutBtns{margin-top:2px}}
+@media (max-height:700px){.stage{height:clamp(150px,min(52vw,29vh),300px)}.pad{height:120px;gap:0;padding-bottom:30px}.padHi{font-size:.9rem}body .tut{font-size:.78rem;line-height:1.4;padding:6px 10px}body .tutBtns{margin-top:2px}}
 .pad small{font-family:var(--ui);font-weight:700;font-size:.8rem;color:var(--muted)}
 .pad.down{background:var(--on)}.pad.down.hi{background:var(--card)}   /* 押している半分だけに色をつける（ダッシュのときは上半分だけ） */
 .gauge{position:absolute;left:12px;bottom:0;height:12px;border-radius:6px 6px 0 0;background:var(--accent);width:0}
@@ -232,7 +236,8 @@ body.tutRun #chant{position:relative;z-index:8}
     <div class="row" id="armRow"><button class="btn arm on" id="arm" type="button"></button><button class="btn primary" id="go" type="button">唱える</button></div>
   </div>
   <!-- 子ども役の操作 -->
-  <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る。上半分はダッシュ"><div class="padHi">⚡ ダッシュ<small>すばやく走り出す・離すとすぐ止まる（体力を多く使う）</small></div><span class="padT">🏃 走る</span><small>右ほど速い・離すと止まる</small><div class="scale"><span>歩く</span><span>小走り</span><span>全力</span></div><div class="tapHere" aria-hidden="true"><span>👆</span>ここ</div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
+  <div class="padNote" aria-hidden="true"><span><b>⚡ ダッシュ</b>すぐ走り出せて、すぐ止まれる（体力を多く使う）</span><span><b>🏃 走る</b>右ほど速い・離すと止まる</span></div>
+  <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る。上半分はダッシュ（すばやく走り出す・離すとすぐ止まる。体力を多く使う）"><div class="padHi">⚡ ダッシュ</div><span class="padT">🏃 走る</span><div class="scale"><span>歩く</span><span>小走り</span><span>全力</span></div><div class="tapHere" aria-hidden="true"><span>👆</span>ここ</div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
 </div>
 <script src="old/daruma-core.js?v=3"></script>
 <script src="rules.js?v=2"></script>
