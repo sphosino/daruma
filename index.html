@@ -88,7 +88,7 @@ canvas{display:block;width:100%;height:100%}
 /* 背の低い画面（iPhone SE の Safari・ノートパソコンなど）：パッドと吹き出しを小さくして、吹き出しがボードとパッドの間に入るように */
 @media (max-height:700px){.stage{height:clamp(150px,min(52vw,29vh),300px)}.pad{height:120px;gap:0;padding-bottom:30px}.padHi{font-size:.9rem}.pad small{display:none}body .tut{font-size:.78rem;line-height:1.4;padding:6px 10px}body .tutBtns{margin-top:2px}}
 .pad small{font-family:var(--ui);font-weight:700;font-size:.8rem;color:var(--muted)}
-.pad.down{background:var(--on)}
+.pad.down{background:var(--on)}.pad.down.hi{background:var(--card)}   /* 押している半分だけに色をつける（ダッシュのときは上半分だけ） */
 .gauge{position:absolute;left:12px;bottom:0;height:12px;border-radius:6px 6px 0 0;background:var(--accent);width:0}
 /* 速さのバー：押した場所（横）が目標の速さ。▼が目標、下の帯がいまの速さ */
 .scale{position:absolute;left:12px;right:12px;bottom:16px;display:flex;justify-content:space-between;font-family:var(--ui);font-size:.72rem;font-weight:700;color:var(--muted);pointer-events:none}
