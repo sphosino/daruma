@@ -56,7 +56,7 @@ h1 span:nth-child(4n+1){color:var(--p0)}h1 span:nth-child(4n+2){color:var(--p1)}
 .chant span.said{text-shadow:0 3px 0 var(--card)}.chant.look span.said{color:var(--red)}
 .stage{position:relative;flex:0 0 auto;box-shadow:0 5px 0 var(--line);height:clamp(160px,52vw,300px);border-radius:16px;overflow:hidden;background:var(--sky);border:2px solid var(--line)}
 canvas{display:block;width:100%;height:100%}
-.msg{position:absolute;left:8px;right:138px;top:12%;width:auto;text-align:center;font-family:var(--pop);font-size:clamp(1.3rem,6.5vw,2.2rem);line-height:1.2;color:#e0402c;text-shadow:0 2px 0 #fffdf9;pointer-events:none}
+.msg{white-space:pre-line;position:absolute;left:8px;right:138px;top:12%;width:auto;text-align:center;font-family:var(--pop);font-size:clamp(1.3rem,6.5vw,2.2rem);line-height:1.2;color:#e0402c;text-shadow:0 2px 0 #fffdf9;pointer-events:none}
 .msg small{display:block;font-size:.55em;color:#4a2f22}
 .paused{position:absolute;left:8px;right:140px;top:6px;text-align:center;font-size:.8rem;font-weight:700;color:#8f6b58;pointer-events:none}
 /* だるまの時計（2026-10-20）：道の絵の左上に大きく。唱えている間だけ進む。止まっている間は薄く、残り10秒から赤く、5秒から脈打つ */
@@ -84,6 +84,10 @@ canvas{display:block;width:100%;height:100%}
 .gauge{position:absolute;left:12px;bottom:0;height:12px;border-radius:6px 6px 0 0;background:var(--accent);width:0}
 /* 速さのバー：押した場所（横）が目標の速さ。▼が目標、下の帯がいまの速さ */
 .scale{position:absolute;left:12px;right:12px;bottom:16px;display:flex;justify-content:space-between;font-family:var(--ui);font-size:.72rem;font-weight:700;color:var(--muted);pointer-events:none}
+.tapHere{display:none;position:absolute;right:4px;bottom:30px;width:52px;height:52px;border-radius:50%;border:3px dashed var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);align-items:center;justify-content:center;flex-direction:column;font-family:var(--ui);font-size:.72rem;font-weight:900;line-height:1.1;color:var(--accent);pointer-events:none;animation:tap 1.1s ease-in-out infinite}
+/* あそびかたの「全力で走ってみよう」：押す場所（右はし）に印 */
+.pad.tapFull .tapHere{display:flex}.pad.tapFull small{visibility:hidden}
+@keyframes tap{50%{transform:scale(.86);opacity:.6}}
 .target{position:absolute;bottom:0;top:0;width:3px;margin-left:-1.5px;background:var(--accent);opacity:.55;pointer-events:none}
 .target::after{content:'';position:absolute;top:6px;left:50%;transform:translateX(-50%);border:8px solid transparent;border-top-color:var(--accent)}
 /* だるま役：操作のカード */
@@ -144,6 +148,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 /* 説明している場所だけ明るく、まわりを少し暗く */
 /* 道の絵（ボード）はチュートリアル中もいつも明るく（暗い影より上に出す） */
 body.tutRun #stage{z-index:8}
+/* 唱えている文字も、遊ぶのに見ているものなので暗くしない */
+body.tutRun #chant{position:relative;z-index:8}
 .spot{position:fixed;z-index:7;pointer-events:none;border-radius:20px;box-shadow:0 0 0 9999px rgba(40,24,12,.36);transition:left .2s,top .2s,width .2s,height .2s}
 .hl{outline:3px solid var(--accent)!important;outline-offset:3px;animation:hl 1s ease-in-out infinite}
 @keyframes hl{50%{outline-color:transparent}}
@@ -213,7 +219,7 @@ body.tutRun #stage{z-index:8}
     <div class="row" id="armRow"><button class="btn arm on" id="arm" type="button"></button><button class="btn primary" id="go" type="button">唱える</button></div>
   </div>
   <!-- 子ども役の操作 -->
-  <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る">押した場所の速さで走る<small>右ほど速い・押したまま左右に動かせる・離すと止まる</small><div class="scale"><span>歩く</span><span>小走り</span><span>全力</span></div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
+  <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る">押した場所の速さで走る<small>右ほど速い・押したまま左右に動かせる・離すと止まる</small><div class="scale"><span>歩く</span><span>小走り</span><span>全力</span></div><div class="tapHere" aria-hidden="true"><span>👆</span>ここ</div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
 </div>
 <script src="old/daruma-core.js"></script>
 <script src="rules.js"></script>
@@ -385,8 +391,9 @@ function resolve(){
   const out=R.resolve(st);
   if(out.carry){
     // 見送り：止まらずに続ける。最後の「だ」が次の「だ」
-    log(`${cyc}回目：${out.autoSkip?'気力が足りず、見送った':'見送った'}`+(role==='daruma'?`（気力+${Math.round(out.gained)}）`:''));showMsg(out.autoSkip&&role==='daruma'?'気力が足りない…見送り':'見送り！',out.autoSkip?1100:800);
+    log(`${cyc}回目：${out.autoSkip?'気力が足りず、見送った':'見送った'}`+(role==='daruma'?`（気力+${Math.round(out.gained)}）`:''));showMsg(role==='daruma'?(out.autoSkip?'気力が足りない…見送り':'見送り！'):'だるまが\n見送り！',out.autoSkip?1100:800);
     if(cpu)cpu.onCarry(st);else st.turnArmed=false;
+    tutDaruma();   // 練習中は、CPU が選び直したオーラを手順のものに戻す（「いまはオーラが弱でした」の説明の前に変わっていた）
     phase='chant';renderCtl();renderChant();tutEv('carry');return}
   phase='watch';
   if(out.turned){
@@ -433,20 +440,20 @@ const STOPPED=()=>me.vel<=P.CATCH_VEL_THRESHOLD;
 const TUT={
   kid:[
     {type:'stop',on:'now',t:'あなた',x:'あなたはオレンジの子。だるまが「だるまさんがころんだ」と唱えている間だけ進めます。',hl:'#stage',dm:'never'},
-    {type:'stop',on:'now',t:'走る',x:'パッドを押すと走ります。押した場所が速さで、右ほど速い（右はしが全力）。押したまま左右に動かせて、離すと止まります。',hl:'#pad'},
+    {type:'stop',on:'now',t:'走る',x:'パッドを押すと走ります。押した場所が速さで、右ほど速い。押したまま左右に動かせて、離すと止まります。',hl:'#pad'},
     // 本当に全力（全速の 99%）になったら。右はしより手前を押していると全力にならないので、そのときはひとこと
-    {type:'do',on:'tick',if:()=>want>=0.9&&me.vel>=me.maxSpeed*want*0.99,t:'やってみよう',x:'右のはしを押して、全力で走ってみよう。',hl:'#pad',
-      nudge:()=>pressed&&want<0.9&&me.vel>=me.maxSpeed*want*0.95,nudgeMsg:'もっと右のはしを押そう'},
-    {type:'stop',on:'now',t:'全力',x:'全力になりました。止まっているところから全力になるまで、2秒かかります。'},
-    {type:'do',on:'chantEnd',if:STOPPED,fail:['まだ動いてた','もう少し早く離そう'],t:'止まる',x:'こんどは止まる練習。全力からは止まるまで1秒かかります。「ころんだ」と唱え終わる前に指を離して、唱え終わったときに止まっていよう。',
+    {type:'do',on:'tick',if:()=>want>=0.9&&me.vel>=me.maxSpeed*want*0.99,t:'やってみよう',x:'パッドの右はし（「全力」のところ）を押したままにして、全力で走ってみよう。',hl:'#pad',mark:'full',
+      nudge:()=>pressed&&want<0.9&&me.vel>=me.maxSpeed*want*0.95,nudgeMsg:'もっと右の「全力」のところを押そう'},
+    {type:'stop',on:'now',t:'全力',x:'全力になりました。止まっているところから全力になるまで、2秒かかります。',hl:'#stage'},
+    {type:'do',on:'chantEnd',if:STOPPED,fail:['まだ動いてた','もう少し早く離そう'],t:'止まる',x:'こんどは止まる練習。全力からは止まるまで1秒かかります。「ころんだ」と唱え終わる前に指を離して、唱え終わったときに止まっていよう。',hl:'#pad',
       nudge:()=>pressed&&R.said(st)>=7},
-    {type:'stop',on:'now',t:'止まれた！',x:'唱え終わったときに止まっていれば、だるまが振り向いてもセーフです。'},
+    {type:'stop',on:'now',t:'止まれた！',x:'唱え終わったときに止まっていれば、だるまが振り向いてもセーフです。',hl:'#stage'},
     {type:'do',on:'lookStart',t:'見つかる',x:'こんどは、だるまが必ず振り向きます。走ったまま、唱え終わるのを待ってみよう。',dm:'always',hl:'#pad'},
     {type:'stop',on:'now',t:'振り向いた！',x:'だるまが振り向きました。少し見ている間に、まだ動いている子は「！」で見つかります。',hl:'#stage'},
-    {type:'stop',on:'lookEnd',t:'見つかると',x:e=>e.meCaught?'見つかったので、押し戻されます。':'止まれていたのでセーフ。動いていたら、見つかって押し戻されます。'},
-    {type:'do',on:'carry',t:'見送り',x:'だるまは振り向かないこともあります。走ったまま、唱え終わるのを待ってみよう。',dm:'skip'},
+    {type:'stop',on:'lookEnd',t:'見つかると',x:e=>e.meCaught?'見つかったので、押し戻されます。':'止まれていたのでセーフ。動いていたら、見つかって押し戻されます。',hl:'#stage'},
+    {type:'do',on:'carry',t:'見送り',x:'だるまは振り向かないこともあります。走ったまま、唱え終わるのを待ってみよう。',dm:'skip',hl:'#pad'},
     {type:'stop',on:'now',t:'見送り！',x:'だるまが振り向かずに見送ったので、止まらずに次が続きます。走り続けられます。だるまのオーラが弱いほど、見送りやすい。いまはオーラが「弱」でした。',hl:'#stage'},
-    {type:'stop',on:'now',t:'体力',x:'走ると、足もとの体力のバーが減ります。0になると「ぜぇ」で遅くなります。ずっと全力ではなく、ゆるめるところも作ろう。',dm:'normal'},
+    {type:'stop',on:'now',t:'体力',x:'走ると、足もとの体力のバーが減ります。0になると「ぜぇ」で遅くなります。ずっと全力ではなく、ゆるめるところも作ろう。',dm:'normal',hl:'#stage'},
     {type:'stop',on:'now',t:'勝ち負け',x:'本番は CPU の子ども3人も一緒です。だれか1人でもだるまにタッチしたら子どもの勝ち。だるまの時計（唱えている時間だけ進む）が切れたら負けです。',hl:'#clock'},
     {type:'stop',on:'now',t:'まとめ',x:()=>TUT_END[role],end:true}],
   daruma:[
@@ -471,9 +478,12 @@ function tutHl(sel){document.querySelectorAll('.hl').forEach(e=>e.classList.remo
 // 吹き出しを、説明している場所のそばに置く。画面の上のほうなら下に、下のほうなら上に出して、矢印でさす
 let tutSel=null;
 function tutPlace(){
-  const box=$('tut'),spot=$('spot');document.body.classList.toggle('tutRun',!!(tut&&!box.hidden));if(!tut||box.hidden){spot.hidden=true;return}
-  const el=document.querySelector(tutSel||'#stage'),r=el.getBoundingClientRect(),bw=box.offsetWidth,bh=box.offsetHeight,vw=innerWidth,vh=innerHeight;
-  const below=r.top+r.height/2<vh*0.45;
+  const box=$('tut'),spot=$('spot'),pad=$('pad'),on=!!(tut&&!box.hidden),b=on&&tutCur();document.body.classList.toggle('tutRun',on);
+  pad.classList.toggle('tapFull',!!(b&&b.mark==='full'));pad.style.maxHeight=pad.style.minHeight='';if(!on){spot.hidden=true;return}
+  const el=document.querySelector(tutSel||'#stage'),bw=box.offsetWidth,bh=box.offsetHeight,vw=innerWidth,vh=innerHeight;let r=el.getBoundingClientRect();
+  // パッドの説明は、吹き出しをパッドの下に出す（パッドの中にかぶせると、枠が何重にも重なって見えた）。入らなければ、練習の間だけパッドを低くする
+  if(el===pad&&r.bottom+bh+24>vh&&vh-r.top-bh-24>=100){pad.style.maxHeight=pad.style.minHeight=(vh-r.top-bh-24)+'px';r=el.getBoundingClientRect()}
+  const below=el===pad?r.bottom+bh+24<=vh:r.top+r.height/2<vh*0.45;
   let top=below?r.bottom+16:r.top-bh-16;top=Math.max(8,Math.min(vh-bh-8,top));
   // 下のもの（パッドなど）の上に出すとボードにかぶるとき：そのものの中の上のほうに出す（小さい画面でボードが見えなくなっていた）
   const sr=$('stage').getBoundingClientRect(),inside=!below&&tutSel&&tutSel!=='#stage'&&top<sr.bottom-8;
@@ -655,12 +665,15 @@ function draw(now){
   if(!st)return;
   // 子ども（奥から順に。奥ほど上で小さく、手前ほど下で大きい）
   const moving=phase==='chant'||phase==='look',u=moving?Math.min(1,(gt-prevAt)/P.TICK_MS):1,n=st.children.length,mind=$('showMind').checked;
-  st.children.forEach((c,i)=>{
+  // 「あなた」はいつも一番手前の列に描く（奥にいると、上に出る「見送り！」などが自分のことに見えた）。並びは絵だけで、中身の順は変えない
+  //   1人だけ（あそびかた）のときも手前に
+  const order=st.children.map((c,i)=>i).sort((a,b)=>(st.children[a].human?1:0)-(st.children[b].human?1:0));
+  order.forEach((i,li)=>{const c=st.children[i],L=n===1?1:li;
     let pos=(prev?prev[i]:c.pos)+(c.pos-(prev?prev[i]:c.pos))*u;
     const hit=caughtAt[c.id]!=null&&(phase==='look'||phase==='push')&&caughtAt[c.id]>=faceAt;
     if(push&&push.dur){const k=Math.min(1,(gt-push.t0)/push.dur),e=1-Math.pow(1-k,3);pos=push.from[i]+(push.to[i]-push.from[i])*e}
     // 前の子ども役と同じ：足は地面の帯の上。奥（i=0）ほど上で小さく、手前ほど下で大きい
-    const s=Math.min(H*0.075,W*0.05)*(0.8+0.15*i*2/Math.max(1,n-1)),y=gy+6+i*(H-gy-12)/(Math.max(1,n-1)*1.1),col=c.human?accent:c.col;
+    const s=Math.min(H*0.075,W*0.05)*(0.8+0.15*L*2/Math.max(1,n-1)),y=gy+6+L*(H-gy-12)/(Math.max(1,n-1)*1.1),col=c.human?accent:c.col;
     // 見つかった直後はビクッと震える
     const x=X(pos)+(hit&&gt-caughtAt[c.id]<350?Math.sin((gt-caughtAt[c.id])/18)*s*0.15:0);
     // すべった跡：振り向いたところから、見つかったところまで（押し戻されている間も残す）
