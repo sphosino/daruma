@@ -25,7 +25,7 @@ if(!ROOM){
   const draw=()=>{
     const list=rooms==null?`<p class="rnone">${L('部屋を探しています…','Looking for rooms…')}</p>`:rooms.length?rooms.map(r=>{
       const people=r.seats.filter(x=>x&&x.online),host=(people[0]||{}).name||'';
-      const st=r.phase==='lobby'?L('人を待っています','Waiting for players'):r.phase==='over'?L('ひと休み中','Between rounds'):L('遊んでいます（終わったら入れます）','Playing (join after this round)');
+      const st=r.phase==='lobby'?L('人を待っています','Waiting for players'):r.phase==='over'?L('ひと休み中','Between rounds'):L('試合中（観戦・飛び入りできます）','In a game (watch or jump in)');
       return `<a class="rrow" href="?room=${encodeURIComponent(r.id)}"><b>${esc(host)}${L('の部屋',"'s room")}</b><span>${EN?people.length+(people.length===1?' player':' players'):people.length+'人'} ・ ${st}</span></a>`}).join('')
       :`<p class="rnone">${L('いま開いている部屋はありません。作って待ってみよう','No open rooms right now. Make one and wait for others')}</p>`;
     box.innerHTML=`<p class="rlistH">${L('入れる部屋','Rooms you can join')}</p>${list}<button class="pill rmake" type="button">${L('新しく部屋を作る','Make a new room')}</button>`;
@@ -61,7 +61,8 @@ function showSay(m){const t=SAY[m.k];if(!t)return;const d=document.createElement
 document.title=L('だるまさんがころんだ（みんなで）','Red Light, Green Light (with friends)');
 // サーバーからのお知らせは日本語で届くので、英語のときはここで置きかえる
 const ERR_EN={'もう始まっています。終わるまで待ってね':'The game has already started. Please wait until it ends','満員です':'The room is full','まだ部屋に入っていません':"You haven't joined the room yet",'いまは席を移れません':"You can't change seats right now",'その席はありません':"That seat doesn't exist",'その席にはもう人がいます':'Someone is already in that seat','部屋に入っていません':"You're not in the room",'部屋を作った人だけが始められます':'Only the host can start','もう始まっています':'Already started','いまは唱えられません':"You can't chant right now",
-  'いまは変えられません':"You can't change it right now",'そのだるまはありません':"That Daruma doesn't exist",'だるまの人だけが選べます':'Only the Daruma player can choose','部屋を作った人だけが選べます':'Only the host can choose','みんなの準備OKを待っています':'Waiting for everyone to be ready'};
+  'いまは変えられません':"You can't change it right now",'そのだるまはありません':"That Daruma doesn't exist",'だるまの人だけが選べます':'Only the Daruma player can choose','部屋を作った人だけが選べます':'Only the host can choose','みんなの準備OKを待っています':'Waiting for everyone to be ready',
+  '観戦している人だけが飛び入りできます':'Only spectators can jump in','ひと休みの間だけ交代できます':'You can only swap in during the break','その子とは交代できません':"You can't swap with that runner",'部屋を作った人は観戦にまわれません':"The host can't switch to watching"};
 
 DR.connect(ROOM,m=>{
   if(m.t==='open'){DR.send({t:'join',name:myName()||L('ゲスト','Guest')});return}
@@ -82,7 +83,7 @@ function autoGo(v){
 function apply(v,ev){
   const was=RV;RV=v;const playing=!['lobby','over'].includes(v.phase);
   renderBadge(v,was);
-  role=v.you===0?'daruma':'kid';
+  role=v.you===0?'daruma':'kid';myId=v.you>0?'h'+(v.you-1):null;   // 飛び入りで試合の途中から席がつくこともある
   if(v.st)syncState(v);
   for(const e of ev)onEvent(e);
   if(v.phase!=='push'&&push&&gt-push.t0>(push.dur||0))push=null;   // 押し戻しの見せ方は、終わったら消す
@@ -93,21 +94,22 @@ function apply(v,ev){
   prepEnd=v.phase==='prep'&&v.prepLeft!=null?performance.now()+v.prepLeft:null;prepS=-1;
   if(playing){$('over').hidden=true;note(v.phase==='prep'||v.you<0?prepNote(v.prepLeft):'')}
   else renderRoomCard();
+  renderJump(v,playing);
   renderCtl();renderChant();
 }
 // サーバーの様子を、描く部品が使う形（st）にする
 function syncState(v){
   const s=v.st;
   if(!st||game!==v.game){
-    game=v.game;myId=v.you>0?'h'+(v.you-1):null;
+    game=v.game;
     // 子どもには、今回のだるまの種類を知らせる（色でも分かるが、名前とクセも）
     if(v.you>0){const k=CPU_STYLES[CPU_OF[s.type]||'normal'];if(k)showMsg(k.n,2400,k.sub)}
     let ci=0,hi=1;
-    st={children:s.kids.map(k=>({...k,col:k.id===myId?null:(/^h/.test(k.id)?HUMAN_COL[hi++%4]:KID_COL[ci++%4])}))};
+    st={children:s.kids.map(k=>({...k,col0:/^h/.test(k.id)?HUMAN_COL[hi++%4]:KID_COL[ci++%4]}))};
     prev=null;Object.keys(caughtAt).forEach(k=>delete caughtAt[k]);
   }
   prev=st.children.map(c=>c.pos);prevVel=st.children.map(c=>c.vel);prevAt=gt;
-  s.kids.forEach((k,i)=>Object.assign(st.children[i],k,{human:k.id===myId,caughtNow:k.caught}));
+  s.kids.forEach((k,i)=>Object.assign(st.children[i],k,{human:k.id===myId,caughtNow:k.caught,col:k.id===myId?null:st.children[i].col0}));
   me=st.children.find(c=>c.id===myId)||null;
   Object.assign(st,{chantProgress:s.cp,elapsedTicks:s.el,stamina:s.stamina,staminaMax:s.staminaMax,reward:s.reward,tempoValue:s.tempo,cycle:s.cycle,catches:s.catches,
     type:P.DARUMA_TYPES[s.type]||P.DARUMA_TYPES.normal,turnArmed:s.turnArmed,nextReward:s.nextReward||null,looking:!!s.look,look:s.look||st.look});
@@ -115,6 +117,7 @@ function syncState(v){
 }
 function onEvent(e){
   if(e.say){showSay(e.say);return}
+  if(e.joined){const mine=e.joined.i===(RV&&RV.you);showMsg(mine?L('飛び入り！','You jumped in!'):L(`${e.joined.n}が飛び入り！`,`${e.joined.n} jumped in!`),2000,mine?L('下のパッドで走ろう','Use the pad below to run'):'');return}
   const n=e.syl;if(n){if(n<10)beep(520+n*18,0.06);else beep(330,0.18)}
   if(e.cue)beep(260,0.5,'sine');
   if(e.look){faceAt=gt}
@@ -127,17 +130,17 @@ function onEvent(e){
   if(e.outOfGas&&role==='daruma')showMsg(L('気力切れ！','Out of spirit!'),1400,L('テンポが半分に落ちた','Tempo dropped by half'));
   if(e.over&&RV&&RV.winner){const w=RV.winner;beep(880,0.15);}
 }
-// 部屋にいる人（つながっている人と、途中に来て待っている人）。左上にいつも出し、来た人は知らせる
-const present=v=>v.seats.filter(s=>!s.empty&&s.online).map(s=>s.name).concat(v.waiting||[]);
+// 部屋にいる人（席にいてつながっている人と、観戦している人）。左上にいつも出し、来た人は知らせる
+const present=v=>v.seats.filter(s=>!s.empty&&s.online).map(s=>s.name).concat(v.watchers||[]);
 function renderBadge(v,was){
-  const n=present(v).length,w=(v.waiting||[]).length;
-  badge.innerHTML=`<i></i>${L('部屋','Room')} ${EN?n+(n===1?' player':' players'):n+'人'}${w?L(`・${w}人待ち`,` · ${w} waiting`):n<=1?L('・待っています',' · waiting'):''}`;
+  const n=present(v).length,w=(v.watchers||[]).length;
+  badge.innerHTML=`<i></i>${L('部屋','Room')} ${EN?n+(n===1?' player':' players'):n+'人'}${w?L(`・観戦${w}人`,` · ${w} watching`):n<=1?L('・待っています',' · waiting'):''}`;
   badge.title=L('みんなで遊ぶ部屋の中にいます','You are in a room with friends');
   if(!was)return;
   const before=present(was);
   for(const nmx of present(v)){const k=before.indexOf(nmx);if(k>=0){before.splice(k,1);continue}
     const playing=!['lobby','over'].includes(v.phase);
-    showMsg(L(`${nmx}が来た！`,`${nmx} joined!`),2200,playing?L('この回が終わったら入ります','Joins after this round'):'')}
+    showMsg(playing?L(`${nmx}が観戦に来た！`,`${nmx} is watching!`):L(`${nmx}が来た！`,`${nmx} joined!`),2200)}
 }
 // 集まっているとき・終わったときのカード
 function renderRoomCard(){
@@ -149,7 +152,7 @@ function renderRoomCard(){
     sub=(mine?L('やった！ ','Nice! '):'')+L(`これまで だるま ${v.wins[0]}勝・子ども ${v.wins[1]}勝`,`So far: Daruma ${v.wins[0]} · Runners ${v.wins[1]}`);}
   $('overH').textContent=head;$('overP').textContent=sub;
   const seat=(s,i)=>{const label=i===0?L('だるま','Daruma'):L('子ども','Runner ')+i,mine=v.you===i;
-    return `<div class="rseat${mine?' mine':''}"><b>${label}</b><span>${s.empty?'CPU':esc(s.name)+(s.online?'':L('（るす）',' (away)'))}</span>${!s.empty&&s.online?`<em class="rready${s.ready?' on':''}">${s.host?L('作った人','Host'):s.ready?L('準備OK','Ready'):L('準備中…','Not ready')}</em>`:''}${s.empty&&v.you>=0?`<button class="pill" data-seat="${i}" type="button">${L('ここに座る','Sit here')}</button>`:''}</div>`};
+    return `<div class="rseat${mine?' mine':''}"><b>${label}</b><span>${s.empty?'CPU':esc(s.name)+(s.online?'':L('（るす）',' (away)'))}</span>${!s.empty&&s.online?`<em class="rready${s.ready?' on':''}">${s.host?L('作った人','Host'):s.ready?L('準備OK','Ready'):L('準備中…','Not ready')}</em>`:''}${s.empty&&(v.you>=0||v.watching)?`<button class="pill" data-seat="${i}" type="button">${L('ここに座る','Sit here')}</button>`:''}</div>`};
   $('roomCard').hidden=false;
   // だるまの種類（2026-10-25）：だるまの席に人がいればその人、CPU のだるまなら部屋を作った人が選ぶ。ほかの人には見えるだけ
   const canPick=v.dtypeBy===0?v.you===0:v.host,dt=v.dtype||'random';
@@ -158,12 +161,14 @@ function renderRoomCard(){
     `<p class="typeNote">${typeNote(dt)}</p></div>`;
   // ほかに人がいるか。ひとりのときは、待っていることと、待たずに始めてもいいことを書く
   const n=present(v).length;
-  const wHTML=`<p class="rwait">${n<=1?L('ほかの人を待っています… 待たずに始めても、あとから来た人は次の回から入れます','Waiting for others… You can start now; anyone who joins later plays from the next round'):L(`いま、この部屋に${n}人`,`${n} players in this room`)}</p>`;
-  $('roomCard').innerHTML=wHTML+`<div class="rseats">${v.seats.map(seat).join('')}</div>${dHTML}
+  const wHTML=`<p class="rwait">${n<=1?L('ほかの人を待っています… 待たずに始めても、あとから来た人は観戦や飛び入りで加われます','Waiting for others… You can start now; anyone who comes later can watch or jump in'):L(`いま、この部屋に${n}人`,`${n} players in this room`)}</p>`;
+  const watchHTML=(v.watchers||[]).length?`<p class="rwatch">${L('観戦：','Watching: ')}${v.watchers.map(esc).join(L('・',', '))}</p>`:'';
+  $('roomCard').innerHTML=wHTML+`<div class="rseats">${v.seats.map(seat).join('')}</div>${watchHTML}${v.you>=0&&!v.host?`<button class="pill rtowatch" id="rWatch" type="button">${L('観戦にまわる','Switch to watching')}</button>`:''}${dHTML}
     <div class="rinv"><input id="rUrl" readonly value="${esc(url)}"><button class="pill" id="rCopy" type="button">${L('コピー','Copy')}</button>
     ${EN?'':`<a class="pill" href="https://line.me/R/share?text=${encodeURIComponent('だるまさんがころんだで遊ぼ！ '+url)}" target="_blank" rel="noopener">LINE</a>`}${navigator.share?`<button class="pill" id="rShare" type="button">${L('送る','Share')}</button>`:''}</div>
     <label class="rname">${L('あなたの名前','Your name')} <input id="rName" maxlength="8" value="${esc(myName())}"></label>`;
   $('roomCard').querySelectorAll('[data-seat]').forEach(b=>b.onclick=()=>DR.send({t:'seat',i:+b.dataset.seat}));
+  if($('rWatch'))$('rWatch').onclick=()=>DR.send({t:'watch'});
   $('roomCard').querySelectorAll('canvas[data-k]').forEach(c=>{c.style.width=c.style.height='48px';drawDarumaThumb(c,c.dataset.k)});
   $('roomCard').querySelectorAll('[data-dt]').forEach(b=>b.onclick=()=>DR.send({t:'dtype',k:b.dataset.dt}));
   $('rCopy').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(url).then(()=>showMsg(L('コピーしました','Copied'),900))};
@@ -178,7 +183,18 @@ function renderRoomCard(){
   else if(mine){sb.hidden=false;sb.disabled=false;sb.classList.toggle('sub',mine.ready);sb.textContent=mine.ready?L('準備OK ✓（取り消す）','Ready ✓ (undo)'):L('準備OK！','Ready!');
     sb.onclick=()=>DR.send({t:'ready',on:!mine.ready});
     wh.hidden=!mine.ready;wh.textContent=L('部屋を作った人が始めるのを待っています',"Waiting for the room's host to start")}
-  else{sb.hidden=true;wh.hidden=false;wh.textContent=L('満員なので、見ているだけです','The room is full, so you are watching')}
+  else{sb.hidden=true;wh.hidden=false;wh.textContent=v.seats.some(s=>s.empty)?L('観戦中。空いている席の「ここに座る」で、次の試合から加われます','Watching. Tap "Sit here" on an empty seat to play in the next game'):L('観戦中（席がいっぱいです）','Watching (all seats are taken)')}
+}
+
+// 飛び入り（2026-10-25）：観戦している人は、ひと休みの間に CPU の子と交代して入れる。位置はそのまま引き継ぐ。だるまとは交代できない
+const jump=document.createElement('div');jump.className='jump';jump.hidden=true;(document.querySelector('.padNote')||$('pad')).after(jump);
+function renderJump(v,playing){
+  jump.hidden=!(playing&&v.watching&&st&&v.st);if(jump.hidden)return;
+  const kids=[1,2,3,4].filter(i=>v.seats[i]&&v.seats[i].empty&&v.st.kids[i-1]&&!v.st.kids[i-1].human);
+  const can=v.phase==='prep';
+  jump.innerHTML=`<p>${!kids.length?L('観戦中','Watching'):can?L('ひと休み中：CPU の子と交代して飛び入りできます','Break: swap in for a CPU runner'):L('観戦中。ひと休みの間に、CPU の子と交代して飛び入りできます','Watching. During the break you can swap in for a CPU runner')}</p>`+
+    (kids.length?`<div>${kids.map(i=>`<button class="pill" type="button" data-jump="${i}"${can?'':' disabled'}>${esc(nm(st.children[i-1]))}${L('と交代',' → you')}</button>`).join('')}</div>`:'');
+  jump.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>{ac();DR.send({t:'takeover',i:+b.dataset.jump})});
 }
 
 // ---------- 押したことをサーバーに送る ----------
@@ -187,7 +203,7 @@ $('arm').onclick=()=>{if(st&&role==='daruma')DR.send({t:'arm',on:!st.turnArmed})
 $('tempo').oninput=()=>{if(st&&role==='daruma')DR.send({t:'tempo',v:+$('tempo').value})};
 window.sendAura=r=>DR.send({t:'aura',r});
 $('endBtn').onclick=()=>{if(confirm(L('部屋を出ますか？（遊んでいる途中なら、あなたの席は CPU になります）','Leave the room? (If a game is in progress, the CPU takes your seat)'))){DR.send({t:'leave'});setTimeout(()=>{location.href=location.pathname},200)}};
-function prepNote(ms){if(RV&&RV.you<0&&!RV.queued)return L('見ているだけです','You are watching');if(RV&&RV.queued)return L('この回が終わったら、席に入ります。見て待っててね',"You'll get a seat after this round. Watch for now");const n=ms!=null?Math.max(0,Math.ceil(ms/1000)):null;const s=n!=null?L(`　あと${n}秒`,` · ${n}s left`):'';return role==='daruma'?L('「唱える」を押そう','Press "Chant"')+s:L('だるまの準備中','The Daruma is getting ready')+s}
+function prepNote(ms){if(RV&&RV.you<0)return L('観戦中','Watching');const n=ms!=null?Math.max(0,Math.ceil(ms/1000)):null;const s=n!=null?L(`　あと${n}秒`,` · ${n}s left`):'';return role==='daruma'?L('「唱える」を押そう','Press "Chant"')+s:L('だるまの準備中','The Daruma is getting ready')+s}
 // 子ども：押している場所の速さとダッシュ（パッドの上半分）を、変わったときだけ送る
 (function loop(){
   if(prepEnd&&phase==='prep'){const left=prepEnd-performance.now(),sec=Math.max(0,Math.ceil(left/1000));if(sec!==prepS){prepS=sec;note(prepNote(left))}}

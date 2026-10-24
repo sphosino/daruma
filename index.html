@@ -157,6 +157,9 @@ header:has(#roomBadge) h1{visibility:hidden;flex:1 1 0}
 .rrow b{font-size:.95rem}.rrow span{font-size:.78rem;color:var(--muted);font-weight:700}.rrow:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
 .rmake{align-self:center;margin-top:4px}
 .rnone{margin:0;font-size:.8rem;color:var(--muted);text-align:left}
+.rwatch{margin:0;font-size:.82rem;font-weight:700;color:var(--muted)}.rtowatch{align-self:flex-end;font-size:.75rem;padding:3px 10px}
+.jump{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px;border:2px dashed var(--accent);border-radius:16px;background:var(--card)}
+.jump p{margin:0;font-weight:700;font-size:.85rem;text-align:center}.jump div{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}.jump .pill:disabled{opacity:.45}
 /* 定型文：選ぶ箱（💬 の下）と、届いた言葉の吹き出し（上に数秒） */
 .sayBox{position:fixed;z-index:30;top:58px;right:max(16px,calc(50% - 344px));width:min(320px,calc(100% - 32px));display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:var(--card);border:2px solid var(--accent);border-radius:16px;box-shadow:0 6px 0 var(--line)}
 .sayBox .pill{font-size:.85rem;padding:6px 12px}
@@ -1104,6 +1107,6 @@ function frame(now){
 renderTune();resize();renderSetup();$('overP').textContent=HOW[role];renderChant();requestAnimationFrame(frame);
 </script>
 <script src="room.js"></script>
-<script src="online.js?v=18"></script>
+<script src="online.js?v=19"></script>
 </body>
 </html>
