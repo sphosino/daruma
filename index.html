@@ -292,9 +292,9 @@ const CPU_STYLES={normal:{n:L('ノーマル','Normal Daruma'),sub:L('クセの�
   gold:{n:L('金だるま','Gold Daruma'),sub:L('気力たっぷりで粘ってくる！','Plenty of spirit to spare!')}};
 const TYPE_NOTE={normal:'クセなし。まずはこれで。',red:'気力の器が大きいぶん、見送っても実入りが細い。',oni:'振り向きが安い。そのかわりテンポを上げるのが高い。',attack:'テンポが安い。そのかわり振り向きが高い。'};
 const HOW=EN?{
-  kid:"You're the orange runner. You can only move while the Daruma is chanting. If you're moving when it turns around, you get pushed back. If any runner touches the Daruma, the runners win. If the Daruma's clock (it only ticks while chanting) runs out, the Daruma wins. The stronger the Daruma's aura, the more likely it is to turn.",
+  kid:"You're a runner. You can only move while the Daruma is chanting. If you're moving when it turns around, you get pushed back. If any runner touches the Daruma, the runners win. If the Daruma's clock (it only ticks while chanting) runs out, the Daruma wins. The stronger the Daruma's aura, the more likely it is to turn.",
   daruma:"You're the Daruma. 4 CPU runners are racing to touch you. Push back anyone still moving when your chant ends, and hold out until your clock runs out to win. If you let a chant pass, you go straight into the next one without stopping."}:{
-  kid:'あなたはオレンジの子。だるまが唱えている間だけ進めます。振り向いたときに動いていたら少し下がる。だれか1人でもだるまにタッチしたら子どもの勝ち、だるまの時計（唱えている時間だけ進む）が切れたらだるまの勝ち。だるまのオーラが強いほど、だるまは振り向きやすい。',
+  kid:'あなたは子ども役。だるまが唱えている間だけ進めます。振り向いたときに動いていたら少し下がる。だれか1人でもだるまにタッチしたら子どもの勝ち、だるまの時計（唱えている時間だけ進む）が切れたらだるまの勝ち。だるまのオーラが強いほど、だるまは振り向きやすい。',
   daruma:'あなたはだるま。CPU の子ども4人がタッチしようと走ってきます。唱え終わったときに動いていた子を下がらせて、時計が切れるまで耐えたら勝ち。見送ると止まらずに、そのまま次の「だるまさんがころんだ」に続きます。'};
 
 // ---------- 調整の数字（⚙ 調整で変えられる。変えた値はこのブラウザに覚える） ----------
@@ -551,7 +551,7 @@ function renderPause(){const t=paused?L('▶ 再開','▶ Resume'):L('⏸ 中断
 const STOPPED=()=>me.vel<=P.CATCH_VEL_THRESHOLD;
 const TUT={
   kid:[
-    {type:'stop',on:'now',t:'あなた',x:'あなたはオレンジの子。だるまが「だるまさんがころんだ」と唱えている間だけ進めます。',hl:'#stage',dm:'never'},
+    {type:'stop',on:'now',t:'あなた',x:'あなたは子ども役。だるまが「だるまさんがころんだ」と唱えている間だけ進めます。',hl:'#stage',dm:'never'},
     {type:'stop',on:'now',t:'走る',x:'パッドを押すと走ります。押した場所が速さで、右ほど速い。押したまま左右に動かせて、離すと止まります。',hl:'#pad'},
     // 本当に全力（全速の 99%）になったら。右はしより手前を押していると全力にならないので、そのときはひとこと
     {type:'do',on:'tick',if:()=>want>=0.9&&me.vel>=me.maxSpeed*want*0.99,t:'やってみよう',x:'パッドの右はし（「全力」のところ）を押したままにして、全力で走ってみよう。',hl:'#pad',mark:'full',
@@ -588,7 +588,7 @@ const TUT={
 // 英語の手順（上と同じ順番。t・x・fail・nudgeMsg を置きかえる）
 const TUT_EN={
   kid:[
-    {t:'You',x:"You're the orange runner. You can only move while the Daruma is chanting \"Da-ru-ma-sa-n-ga-ko-ro-n-da\"."},
+    {t:'You',x:"You're a runner. You can only move while the Daruma is chanting \"Da-ru-ma-sa-n-ga-ko-ro-n-da\"."},
     {t:'Run',x:'Press the pad to run. Where you press sets your speed: further right is faster. You can slide left and right while holding. Let go to stop.'},
     {t:'Try it',x:'Hold the right end of the pad ("Sprint") and run at full speed.',nudgeMsg:'Press further right, on "Sprint"'},
     {t:'Full speed',x:'You reached full speed. Getting from standing still to full speed takes 2 seconds.'},
