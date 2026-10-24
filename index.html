@@ -802,6 +802,7 @@ function draw(now){
   // 「あなた」はいつも一番手前の列に描く（奥にいると、上に出る「見送り！」などが自分のことに見えた）。並びは絵だけで、中身の順は変えない
   //   1人だけ（あそびかた）のときも手前に
   const order=st.children.map((c,i)=>i).sort((a,b)=>(st.children[a].human?1:0)-(st.children[b].human?1:0));
+  const tags=[];
   order.forEach((i,li)=>{const c=st.children[i],row=n===1?1:li;
     let pos=(prev?prev[i]:c.pos)+(c.pos-(prev?prev[i]:c.pos))*u;
     const hit=caughtAt[c.id]!=null&&(phase==='look'||phase==='push')&&caughtAt[c.id]>=faceAt;
@@ -827,16 +828,21 @@ function draw(now){
       if(kk){for(let k=0;k<4;k++){const t=(gt/170+k/4)%1,px=x+s*(0.35+t*1.2),py=y-s*(0.1+t*(1-t)*1.6);
         cx.globalAlpha=(1-t)*0.7;cx.fillStyle=k%2?muted:'#b98a5e';cx.beginPath();cx.arc(px,py,s*(0.1+t*0.14),0,7);cx.fill()}cx.globalAlpha=1}}
     cx.save();cx.translate(x,y);cx.rotate(lean);cx.translate(-x,-y);
-    drawPicto(x,y,s,col,pictoPose(g,hit,mv?pos*(g==='全力'?1.6:g==='小走り'?2.2:2.6):0));
+    drawPicto(x,y,s,col,pictoPose(g,hit,mv?pos*(g==="全力"?1.6:g==="小走り"?2.2:2.6):0),hit);
     cx.restore();
-    cx.globalAlpha=1;cx.textAlign='center';
+    cx.globalAlpha=1;
+    // 名前と「！」は、みんなを描いたあとにいちばん上へ（頭が大きいので、後ろの列の子の頭にかくれないように）。白いふちで読めるように
     const label=(c.human?L('あなた','You'):EN?nm(c):c.name.replace(/^.*の/,''))+(c.winded?L(' ぜぇ…',' pant…'):'');
-    cx.fillStyle=c.human?ink:muted;cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.fillText(label,x,y-s*3.7);
-    if(hit){cx.fillStyle=red;cx.font=`900 ${Math.max(14,s*1.1)}px ${css('--pop')}`;cx.fillText('！',x,y-s*3.7-Math.max(12,s*0.7))}
+    //   名前は頭の上ではなく、頭の後ろ（左）に右寄せで置く（列の間がせまく、上に置くと後ろの列の子の頭にかかる）
+    tags.push(()=>{cx.textAlign='right';cx.lineJoin='round';cx.strokeStyle=SC.card;
+      cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.lineWidth=3;const lx=x-s*0.75,ly=y-s*2.55;cx.strokeText(label,lx,ly);
+      cx.fillStyle=c.human?ink:muted;cx.fillText(label,lx,ly);cx.textAlign='center';
+      if(hit){cx.font=`900 ${Math.max(14,s*1.1)}px ${css('--pop')}`;cx.lineWidth=4;cx.strokeText('！',x,y-s*3.7-Math.max(12,s*0.7));cx.fillStyle=red;cx.fillText('！',x,y-s*3.7-Math.max(12,s*0.7))}});
 
     if(mind||c.human){const bw=s*1.6,bx=x-bw/2,by=y+5;cx.fillStyle=SC.line;cx.fillRect(bx,by,bw,3);cx.fillStyle=c.winded?red:accent;cx.fillRect(bx,by,bw*c.energy/c.energyMax,3)}
-    if(mind&&!c.human){const m=[gaitOf(c,i),c.intendsToStop===false?'賭け':''].filter(Boolean).join('・');if(m){cx.fillStyle=c.intendsToStop===false?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*3.7-Math.max(11,s*0.6))}}
+    if(mind&&!c.human){const m=[gaitOf(c,i),c.intendsToStop===false?'賭け':''].filter(Boolean).join('・');if(m)tags.push(()=>{cx.textAlign='center';cx.fillStyle=c.intendsToStop===false?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*3.7-Math.max(11,s*0.6))})}
   });
+  tags.forEach(f=>f());
   $('gauge').style.width=`calc((100% - 24px) * ${me?Math.min(1,me.vel/me.maxSpeed):0})`;
 }
 
@@ -910,7 +916,7 @@ function drawDaruma(x,y,r){
 // 角度は、まっすぐ下が 0、走る向き（右）がプラス（度）。ももとすね、二の腕と前腕で、ひざとひじが曲がる
 const D2R=Math.PI/180;
 function pictoPose(g,hit,ph){
-  if(hit)return{legs:[[4,4],[-4,-4]],arms:[[150,165],[-150,-165]],bob:0};                 // 見つかった：両手を上げる
+  if(hit)return{legs:[[6,6],[-6,-6]],arms:[[115,150],[-115,-150]],bob:0};                 // 見つかった：両手を上げる（大きい頭にかくれないよう、横に広げてバンザイ）
   if(g==='ブレーキ')return{legs:[[38,30],[-8,-14]],arms:[[95,70],[60,40]],bob:0};          // 前の足をつっぱって踏んばる
   const A={全力:[55,105,70,95],小走り:[32,65,42,80],歩く:[18,28,20,30]}[g];
   if(!A)return{legs:[[5,5],[-5,-5]],arms:[[12,12],[-12,-12]],bob:0};                        // 止まっている
@@ -919,27 +925,43 @@ function pictoPose(g,hit,ph){
   return{legs:[leg(ph),leg(ph+Math.PI)],arms:[arm(ph),arm(ph+Math.PI)],bob:Math.abs(Math.sin(ph))*(At/55)*0.12};
 }
 let PICTO_GAP='#fff';const PICTO_EDGE=0.11;   // 白い縁の太さ（両側あわせて、体の太さの単位で）
-function drawPicto(x,y,u,col,pose){PICTO_GAP=SC.card;
-  // 子どもらしく少し低め（2026-10-19）：手足と胴を短く、頭を少し大きく
-  const LEG=0.74,TOR=0.86,UA=0.54,FA=0.52,HR=0.46;
-  const hipY=y-u*(1.42+pose.bob),hip=[x,hipY],neck=[x+u*0.02,hipY-u*TOR];
+// 色を暗く（f は 0〜1、大きいほど暗い）。ズボンや髪の影に使う
+function shade(hex,f){const n=parseInt(hex.slice(1),16),c=k=>Math.round(((n>>k)&255)*(1-f));return `rgb(${c(16)},${c(8)},${c(0)})`}
+// 子ども（2026-10-25）：頭の大きいちびキャラ。手足の動き（pose）は前のピクトグラムと同じ。
+//   シャツは子どもの色、ズボンはその暗い色、手と顔は肌色。目は走る向き（右）を見る。見つかったときは目を丸くして口を「お」に
+function drawPicto(x,y,u,col,pose,hit){PICTO_GAP=SC.card;
+  const LEG=0.66,TOR=0.72,UA=0.46,FA=0.44,HR=0.62,SKIN='#ffd8b5',HAIR='#4a2f22',pants=shade(col,0.35);
+  const hipY=y-u*(1.3+pose.bob),hip=[x,hipY],neck=[x+u*0.03,hipY-u*TOR];
   const seg=(p,a,L)=>[p[0]+Math.sin(a*D2R)*L,p[1]+Math.cos(a*D2R)*L];
-  cx.strokeStyle=col;cx.fillStyle=col;cx.lineCap='round';cx.lineJoin='round';
-  // gap：手前の手足のまわりに明るいすき間（非常口のマークの白い境目のように。重なっても腕と胴が分かれて見える）
-  const limb=(p,[a1,a2],L1,L2,w,gap)=>{const k=seg(p,a1,L1),e=seg(k,a2,L2),path=()=>{cx.beginPath();cx.moveTo(p[0],p[1]);cx.lineTo(k[0],k[1]);cx.lineTo(e[0],e[1])};
-    if(gap){cx.strokeStyle=PICTO_GAP;cx.lineWidth=u*(w+PICTO_EDGE);path();cx.stroke();cx.strokeStyle=col}
-    cx.lineWidth=u*w;path();cx.stroke()};
-  // まずキャラ全体を、ひとまわり太く白で描いて縁にする
-  const armP=[neck[0],neck[1]+u*0.12],head=[neck[0]+u*0.05,neck[1]-u*(HR+0.2)];
-  limb(hip,pose.legs[1],u*LEG,u*LEG,0.36,true);limb(armP,pose.arms[1],u*UA,u*FA,0.3,true);
-  limb(hip,pose.legs[0],u*LEG,u*LEG,0.36,true);limb(armP,pose.arms[0],u*UA,u*FA,0.3,true);
-  cx.strokeStyle=PICTO_GAP;cx.lineWidth=u*(0.62+PICTO_EDGE);cx.beginPath();cx.moveTo(hip[0],hip[1]);cx.lineTo(neck[0],neck[1]);cx.stroke();
-  cx.fillStyle=PICTO_GAP;cx.beginPath();cx.arc(head[0],head[1],u*(HR+PICTO_EDGE/2),0,7);cx.fill();cx.strokeStyle=col;cx.fillStyle=col;
-  // 奥の手足 → 胴 → 手前の手足（手前は白いすき間つき）→ 頭（頭は首から少し離した丸）
-  limb(hip,pose.legs[1],u*LEG,u*LEG,0.36);limb([neck[0],neck[1]+u*0.12],pose.arms[1],u*UA,u*FA,0.3);
-  cx.lineWidth=u*0.62;cx.beginPath();cx.moveTo(hip[0],hip[1]);cx.lineTo(neck[0],neck[1]);cx.stroke();
-  limb(hip,pose.legs[0],u*LEG,u*LEG,0.36,true);limb([neck[0],neck[1]+u*0.12],pose.arms[0],u*UA,u*FA,0.3,true);
-  cx.beginPath();cx.arc(head[0],head[1],u*HR,0,7);cx.fill();
+  cx.lineCap='round';cx.lineJoin='round';
+  // gap：手前の手足のまわりに明るいすき間（重なっても腕と胴が分かれて見える）
+  const limb=(p,[a1,a2],L1,L2,w,c,gap,hand)=>{const k=seg(p,a1,L1),e=seg(k,a2,L2),path=()=>{cx.beginPath();cx.moveTo(p[0],p[1]);cx.lineTo(k[0],k[1]);cx.lineTo(e[0],e[1])};
+    if(gap){cx.strokeStyle=PICTO_GAP;cx.lineWidth=u*(w+PICTO_EDGE);path();cx.stroke()}
+    cx.strokeStyle=c;cx.lineWidth=u*w;path();cx.stroke();
+    if(hand){cx.fillStyle=SKIN;cx.beginPath();cx.arc(e[0],e[1],u*w*0.62,0,7);cx.fill()}};
+  const armP=[neck[0],neck[1]+u*0.14],head=[neck[0]+u*0.06,neck[1]-u*(HR-0.04)];
+  // まず全体のふちを白で（奥の手足 → 胴 → 頭）
+  limb(hip,pose.legs[1],u*LEG,u*LEG,0.34,PICTO_GAP,true);limb(armP,pose.arms[1],u*UA,u*FA,0.28,PICTO_GAP,true);
+  cx.strokeStyle=PICTO_GAP;cx.lineWidth=u*(0.7+PICTO_EDGE);cx.beginPath();cx.moveTo(hip[0],hip[1]);cx.lineTo(neck[0],neck[1]);cx.stroke();
+  cx.fillStyle=PICTO_GAP;cx.beginPath();cx.arc(head[0],head[1],u*(HR+PICTO_EDGE/2),0,7);cx.fill();
+  // 奥の手足（少し暗く）→ 胴（シャツ）→ 手前の手足 → 頭
+  limb(hip,pose.legs[1],u*LEG,u*LEG,0.34,shade(col,0.48));limb(armP,pose.arms[1],u*UA,u*FA,0.28,shade(col,0.15),false,true);
+  cx.strokeStyle=pants;cx.lineWidth=u*0.66;cx.beginPath();cx.moveTo(hip[0],hip[1]);cx.lineTo(hip[0],hip[1]-u*0.12);cx.stroke();
+  cx.strokeStyle=col;cx.lineWidth=u*0.7;cx.beginPath();cx.moveTo(hip[0],hip[1]-u*0.14);cx.lineTo(neck[0],neck[1]);cx.stroke();
+  limb(hip,pose.legs[0],u*LEG,u*LEG,0.34,pants,true);limb(armP,pose.arms[0],u*UA,u*FA,0.28,col,true,true);
+  // 頭：肌色の丸に、後ろから上をおおう髪
+  const [hx,hy]=head,R=u*HR;
+  cx.fillStyle=SKIN;cx.beginPath();cx.arc(hx,hy,R,0,7);cx.fill();
+  cx.fillStyle=HAIR;cx.beginPath();cx.arc(hx,hy,R,Math.PI*0.62,Math.PI*1.93);cx.quadraticCurveTo(hx+R*0.25,hy-R*0.35,hx-R*0.15,hy-R*0.1);cx.closePath();cx.fill();
+  // 顔：右を見る。ほっぺ
+  const ex=hx+R*0.42,ey=hy+R*0.08;
+  cx.fillStyle='rgba(255,120,120,.45)';cx.beginPath();cx.arc(hx+R*0.3,hy+R*0.42,R*0.16,0,7);cx.fill();
+  cx.fillStyle=HAIR;
+  if(hit){cx.strokeStyle=HAIR;cx.lineWidth=R*0.09;cx.fillStyle='#fff';cx.beginPath();cx.arc(ex,ey,R*0.2,0,7);cx.fill();cx.stroke();
+    cx.fillStyle=HAIR;cx.beginPath();cx.arc(ex+R*0.04,ey,R*0.08,0,7);cx.fill();
+    cx.beginPath();cx.ellipse(hx+R*0.5,hy+R*0.5,R*0.1,R*0.13,0,0,7);cx.fill()}
+  else{cx.beginPath();cx.ellipse(ex,ey,R*0.1,R*0.15,0,0,7);cx.fill();
+    cx.strokeStyle=HAIR;cx.lineWidth=R*0.08;cx.beginPath();cx.arc(hx+R*0.5,hy+R*0.42,R*0.14,0.1,Math.PI*0.8);cx.stroke()}
 }
 
 // ---------- まわす ----------
