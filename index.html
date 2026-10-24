@@ -151,6 +151,12 @@ header:has(#roomBadge) h1{visibility:hidden;flex:1 1 0}
 .rwait{margin:0;text-align:center;font-weight:700;color:var(--accent)}
 .rready{flex:0 0 auto;font-style:normal;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--bg);color:var(--muted);border:1.5px solid var(--line)}
 .rready.on{background:#e3f5dc;color:#2f8a3c;border-color:#8fd07e}
+/* 定型文：選ぶ箱（💬 の下）と、届いた言葉の吹き出し（上に数秒） */
+.sayBox{position:fixed;z-index:30;top:58px;right:max(16px,calc(50% - 344px));width:min(320px,calc(100% - 32px));display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:var(--card);border:2px solid var(--accent);border-radius:16px;box-shadow:0 6px 0 var(--line)}
+.sayBox .pill{font-size:.85rem;padding:6px 12px}
+.sayFeed{position:fixed;z-index:29;top:60px;left:max(16px,calc(50% - 344px));display:flex;flex-direction:column;gap:5px;pointer-events:none;max-width:calc(100% - 32px)}
+.say{align-self:flex-start;background:var(--card);border:2px solid var(--line);border-radius:14px 14px 14px 4px;padding:5px 12px;font-weight:700;font-size:.9rem;box-shadow:0 3px 0 var(--line);transition:opacity .4s}
+.say b{color:var(--accent);margin-right:8px}.say.me{border-color:var(--accent)}.say.out{opacity:0}
 .go:disabled{opacity:.45;cursor:default;transform:none}.go.sub{background:var(--card);color:var(--accent);box-shadow:0 4px 0 var(--line);border:2px solid var(--accent)}
 .choices{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 .typeQ{flex-basis:100%;font-size:.82rem;font-weight:700;color:var(--muted)}.pill.t_attack.on{background:#dfe8ff;border-color:#2f5bd0}.pill.t_oni.on{background:#e6e3ea;border-color:#33303a}.pill.t_red.on{background:#fff4cc;border-color:#c99a14}
@@ -1092,6 +1098,6 @@ function frame(now){
 renderTune();resize();renderSetup();$('overP').textContent=HOW[role];renderChant();requestAnimationFrame(frame);
 </script>
 <script src="room.js"></script>
-<script src="online.js?v=14"></script>
+<script src="online.js?v=15"></script>
 </body>
 </html>

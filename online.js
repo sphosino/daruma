@@ -27,6 +27,20 @@ let RV=null,game=-1,myId=null,lastWant=-1,lastBoost=false,prepEnd=null,prepS=-1;
 const HUMAN_COL=['#e8743b','#ff6f9f','#43b2f5','#6cc94e'];
 $('roomBtn').hidden=true;$('pauseBtn').remove();$('helpBtn').hidden=true;
 const badge=document.createElement('span');badge.id='roomBadge';badge.className='rbadge';document.querySelector('header').prepend(badge);
+// 定型文（2026-10-25）：💬 で言葉を選んで送る。届いた言葉は上に吹き出しで数秒出る。自由に書けるチャットはなし（荒らし対策）
+const SAY={hi:['よろしく！','Hi!'],ready:['準備OK押して！','Press Ready!'],wait:['ちょっと待って','One sec'],go:['はじめよう！',"Let's go!"],nice:['ナイス！','Nice!'],
+  close:['おしい！','So close!'],again:['もう一回！','Again!'],lol:['ｗｗｗ','LOL'],thx:['ありがとう！','Thanks!'],bye:['またね','Bye!']};
+const sayBtn=document.createElement('button');sayBtn.type='button';sayBtn.className='pill';sayBtn.id='sayBtn';sayBtn.textContent='💬';sayBtn.setAttribute('aria-label',L('ひとこと送る','Send a message'));
+$('endBtn').before(sayBtn);
+const sayBox=document.createElement('div');sayBox.className='sayBox';sayBox.hidden=true;
+sayBox.innerHTML=Object.entries(SAY).map(([k,t])=>`<button class="pill" type="button" data-say="${k}">${L(t[0],t[1])}</button>`).join('');document.body.append(sayBox);
+const feed=document.createElement('div');feed.className='sayFeed';feed.setAttribute('aria-live','polite');document.body.append(feed);
+sayBtn.onclick=e=>{e.stopPropagation();sayBox.hidden=!sayBox.hidden};
+sayBox.onclick=e=>{const b=e.target.closest('[data-say]');if(!b)return;DR.send({t:'say',k:b.dataset.say});sayBox.hidden=true};
+document.addEventListener('pointerdown',e=>{if(!sayBox.hidden&&!sayBox.contains(e.target)&&e.target!==sayBtn)sayBox.hidden=true});
+function showSay(m){const t=SAY[m.k];if(!t)return;const d=document.createElement('div');d.className='say'+(m.s===(RV&&RV.you)&&m.s>=0?' me':'');
+  d.innerHTML=`<b>${esc(m.n)}</b>${esc(L(t[0],t[1]))}`;feed.append(d);while(feed.children.length>3)feed.firstChild.remove();
+  setTimeout(()=>{d.classList.add('out');setTimeout(()=>d.remove(),400)},4000)}
 document.title=L('だるまさんがころんだ（みんなで）','Red Light, Green Light (with friends)');
 // サーバーからのお知らせは日本語で届くので、英語のときはここで置きかえる
 const ERR_EN={'もう始まっています。終わるまで待ってね':'The game has already started. Please wait until it ends','満員です':'The room is full','まだ部屋に入っていません':"You haven't joined the room yet",'いまは席を移れません':"You can't change seats right now",'その席はありません':"That seat doesn't exist",'その席にはもう人がいます':'Someone is already in that seat','部屋に入っていません':"You're not in the room",'部屋を作った人だけが始められます':'Only the host can start','もう始まっています':'Already started','いまは唱えられません':"You can't chant right now",
@@ -74,6 +88,7 @@ function syncState(v){
   P.GOAL_TICKS=s.goal;
 }
 function onEvent(e){
+  if(e.say){showSay(e.say);return}
   const n=e.syl;if(n){if(n<10)beep(520+n*18,0.06);else beep(330,0.18)}
   if(e.cue)beep(260,0.5,'sine');
   if(e.look){faceAt=gt}
@@ -90,7 +105,7 @@ function onEvent(e){
 const present=v=>v.seats.filter(s=>!s.empty&&s.online).map(s=>s.name).concat(v.waiting||[]);
 function renderBadge(v,was){
   const n=present(v).length,w=(v.waiting||[]).length;
-  badge.innerHTML=`<i></i>${L('部屋','Room')} ・ ${EN?n+(n===1?' player':' players'):n+'人'}${w?L(`（${w}人 待ち）`,` (${w} waiting)`):''}`;
+  badge.innerHTML=`<i></i>${L('部屋','Room')} ${EN?n+(n===1?' player':' players'):n+'人'}${w?L(`・${w}人待ち`,` · ${w} waiting`):''}`;
   badge.title=L('みんなで遊ぶ部屋の中にいます','You are in a room with friends');
   if(!was)return;
   const before=present(was);
