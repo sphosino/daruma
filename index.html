@@ -793,19 +793,9 @@ function draw(now){
     const qt=st.stamina<cost?L('気力が足りない','Low spirit'):role==='daruma'?`${L('気力','Spirit')} ${Math.round(st.stamina)}`:L('気力','Spirit'),qw=cx.measureText(qt).width;   // ボードの右はしで切れないように
     cx.fillText(qt,Math.min(dx,W-6-qw/2),by+bh+Math.max(13,dr*0.42));
   }
-  cx.fillStyle=red;cx.beginPath();cx.ellipse(dx,dy,dr*0.95,dr*1.1,0,0,7);cx.fill();
+  drawDaruma(dx,dy,dr);
   if(st&&cpu&&$('showMind').checked&&st.cpuThought&&(phase==='chant'||phase==='look')){
     cx.font=`900 ${Math.max(10,dr*0.34)}px ${css('--ui')}`;cx.textAlign='right';cx.fillStyle=ink;cx.fillText(st.cpuThought,dx-dr*1.2,dy+dr*0.95)}
-  const faceOn=phase==='look'||phase==='push';
-  if(faceOn){ // 顔（振り向いている）。振り向く動き：顔が横から回ってくる（0.2 秒）
-    const f=Math.min(1,(gt-faceAt)/200),fx=dx+dr*0.6*(1-f)-dr*0.12*f,sx=0.25+0.75*f;
-    cx.save();cx.translate(fx,0);cx.scale(sx,1);cx.translate(-fx,0);
-    cx.fillStyle=card;cx.beginPath();cx.ellipse(fx,dy-dr*0.2,dr*0.55,dr*0.5,0,0,7);cx.fill();
-    // 見ている間は、目が子どもを見回す
-    const look=phase==='look'?Math.sin((gt-faceAt)/180)*dr*0.06:0;
-    cx.fillStyle=ink;cx.strokeStyle=ink;cx.lineWidth=1.5;for(const s of[-1,1]){cx.beginPath();cx.arc(fx+s*dr*0.22-dr*0.04+look,dy-dr*0.25,dr*0.11,0,7);cx.fill()}
-    cx.beginPath();cx.arc(fx,dy-dr*0.02,dr*0.12,0,Math.PI);cx.stroke();cx.restore();
-  }
   if(!st)return;
   // 子ども（奥から順に。奥ほど上で小さく、手前ほど下で大きい）
   const moving=phase==='chant'||phase==='look',u=moving?Math.min(1,(gt-prevAt)/P.TICK_MS):1,n=st.children.length,mind=$('showMind').checked;
@@ -848,6 +838,72 @@ function draw(now){
     if(mind&&!c.human){const m=[gaitOf(c,i),c.intendsToStop===false?'賭け':''].filter(Boolean).join('・');if(m){cx.fillStyle=c.intendsToStop===false?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*3.7-Math.max(11,s*0.6))}}
   });
   $('gauge').style.width=`calc((100% - 24px) * ${me?Math.min(1,me.vel/me.maxSpeed):0})`;
+}
+
+// ---------- だるま（2026-10-25） ----------
+// 下がふくらんだ形。唱えている間は背中（金の「福」）を向けて小さく揺れ、振り向くと顔が横から回ってくる（0.2 秒）。
+// 顔は白地に太い眉・ぎょろ目・ひげ、まわりを金でふちどる。見つけた直後は目が赤く光る
+function darumaPath(x,y,w,h){
+  cx.beginPath();cx.moveTo(x,y-h);
+  cx.bezierCurveTo(x+w*0.6,y-h,x+w*0.92,y-h*0.42,x+w,y+h*0.32);
+  cx.bezierCurveTo(x+w*1.04,y+h*0.86,x+w*0.6,y+h,x,y+h);
+  cx.bezierCurveTo(x-w*0.6,y+h,x-w*1.04,y+h*0.86,x-w,y+h*0.32);
+  cx.bezierCurveTo(x-w*0.92,y-h*0.42,x-w*0.6,y-h,x,y-h);cx.closePath();
+}
+function drawDaruma(x,y,r){
+  const w=r*0.98,h=r*1.1,ink='#2a1610',gold='#f2b632',gold2='#c98a12';
+  const faceOn=phase==='look'||phase==='push';
+  // 足もとの影
+  cx.fillStyle='rgba(74,47,34,.22)';cx.beginPath();cx.ellipse(x,y+h*0.98,w*0.85,h*0.12,0,0,7);cx.fill();
+  cx.save();
+  // 唱えている間は、ゆらゆら（だるまらしく、下を支点に）
+  if(phase==='chant'){const a=Math.sin(gt/260)*0.045;cx.translate(x,y+h);cx.rotate(a);cx.translate(-x,-(y+h))}
+  // 胴：左上が明るい赤
+  darumaPath(x,y,w,h);
+  const g=cx.createRadialGradient(x-w*0.35,y-h*0.45,r*0.1,x,y,r*1.35);g.addColorStop(0,'#ff6b4f');g.addColorStop(0.55,'#dd3322');g.addColorStop(1,'#9c1d10');
+  cx.fillStyle=g;cx.fill();cx.lineWidth=Math.max(1.5,r*0.05);cx.strokeStyle='#7a150b';cx.stroke();
+  cx.save();darumaPath(x,y,w,h);cx.clip();
+  // すそを金の帯で
+  cx.strokeStyle=gold;cx.lineWidth=r*0.09;cx.beginPath();cx.ellipse(x,y+h*1.02,w*0.95,h*0.32,0,Math.PI*1.05,Math.PI*1.95);cx.stroke();
+  // つやの光
+  cx.fillStyle='rgba(255,255,255,.28)';cx.beginPath();cx.ellipse(x-w*0.45,y-h*0.42,w*0.16,h*0.3,0.5,0,7);cx.fill();
+  if(!faceOn){
+    // 背中：金の丸に「福」
+    const ey=y+h*0.18,er=r*0.36;
+    cx.fillStyle=gold;cx.beginPath();cx.arc(x,ey,er,0,7);cx.fill();
+    cx.strokeStyle=gold2;cx.lineWidth=r*0.04;cx.stroke();
+    cx.fillStyle='#b8231a';cx.font=`900 ${er*1.25}px ${css('--pop')}`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('福',x,ey+er*0.06);cx.textBaseline='alphabetic';
+  }else{
+    // 顔（横から回ってくる）。子どもは左にいるので、顔は少し左寄り
+    const f=Math.min(1,(gt-faceAt)/200),fx=x+w*0.65*(1-f)-w*0.1*f,sx=0.2+0.8*f,fy=y-h*0.3;
+    cx.translate(fx,0);cx.scale(sx,1);cx.translate(-fx,0);
+    // おなかに金の「福」
+    cx.fillStyle=gold;cx.font=`900 ${r*0.42}px ${css('--pop')}`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('福',fx,y+h*0.5);cx.textBaseline='alphabetic';
+    // 白い顔と金のふち
+    const fw=w*0.62,fh=h*0.46;
+    cx.fillStyle='#fff8ec';cx.beginPath();cx.ellipse(fx,fy,fw,fh,0,0,7);cx.fill();
+    cx.strokeStyle=gold;cx.lineWidth=r*0.07;cx.stroke();
+    // 見ている間は、目が子どもを見回す。見つけた直後は赤く光る
+    const look=phase==='look'?Math.sin((gt-faceAt)/180)*r*0.05:0;
+    const angry=Object.values(caughtAt).some(t=>t>=faceAt&&gt-t<800);
+    for(const s of[-1,1]){
+      const ex=fx+s*fw*0.42,eyy=fy-fh*0.05;
+      cx.fillStyle='#fff';cx.strokeStyle=ink;cx.lineWidth=r*0.035;cx.beginPath();cx.ellipse(ex,eyy,r*0.17,r*0.15,0,0,7);cx.fill();cx.stroke();
+      cx.fillStyle=angry?'#e0402c':ink;cx.beginPath();cx.arc(ex-r*0.04+look,eyy,r*0.085,0,7);cx.fill();
+      if(angry){cx.save();cx.shadowColor='#ff3b1f';cx.shadowBlur=r*0.4;cx.beginPath();cx.arc(ex-r*0.04+look,eyy,r*0.06,0,7);cx.fill();cx.restore()}
+      cx.fillStyle='#fff';cx.beginPath();cx.arc(ex-r*0.07+look,eyy-r*0.04,r*0.025,0,7);cx.fill();
+      // 太い眉（鶴）：外へはね上がる
+      cx.strokeStyle=ink;cx.lineWidth=r*0.09;cx.lineCap='round';cx.beginPath();
+      cx.moveTo(ex-s*r*0.14,eyy-r*0.2);cx.quadraticCurveTo(ex,eyy-r*(angry?0.22:0.34),ex+s*r*0.24,eyy-r*0.36);cx.stroke();
+    }
+    // 鼻と、くるっと巻いたひげ（亀）
+    cx.fillStyle='#e9b7a0';cx.beginPath();cx.ellipse(fx,fy+fh*0.22,r*0.07,r*0.05,0,0,7);cx.fill();
+    cx.strokeStyle=ink;cx.lineWidth=r*0.06;
+    for(const s of[-1,1]){cx.beginPath();cx.moveTo(fx,fy+fh*0.36);cx.quadraticCurveTo(fx+s*r*0.18,fy+fh*0.3,fx+s*r*0.3,fy+fh*0.48);cx.quadraticCurveTo(fx+s*r*0.36,fy+fh*0.6,fx+s*r*0.26,fy+fh*0.6);cx.stroke()}
+    // あごひげ
+    cx.lineWidth=r*0.04;for(const k of[-1,0,1]){cx.beginPath();cx.moveTo(fx+k*r*0.1,fy+fh*0.7);cx.lineTo(fx+k*r*0.12,fy+fh*0.88);cx.stroke()}
+  }
+  cx.restore();cx.restore();
 }
 
 // ---------- ピクトグラムの人（2026-10-19、非常口のマークのような） ----------
