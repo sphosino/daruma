@@ -763,6 +763,7 @@ function draw(now){
      cx.beginPath();cx.arc(cxp,cyp,r,0,7);cx.arc(cxp+r*1.1,cyp-r*0.35,r*1.2,0,7);cx.arc(cxp+r*2.2,cyp,r*0.95,0,7);cx.rect(cxp,cyp-r*0.1,r*2.2,r*0.95);cx.fill()}
    cx.globalAlpha=1}
   const gy=H*0.56,left=W*0.06,right=W*0.84,X=x=>left+(right-left)*(x-2)/(P.GOAL_POS-2);
+  drawBackdrop(gy);
   cx.fillStyle=ground;cx.fillRect(0,gy,W,H-gy);
   // 地面の横じま（ならした土の公園）
   cx.strokeStyle=SC.ground2;cx.lineWidth=2;for(let k=1;k<4;k++){const yy=gy+(H-gy)*k/4;cx.beginPath();cx.moveTo(0,yy);cx.lineTo(W,yy);cx.stroke()}
@@ -844,6 +845,38 @@ function draw(now){
   });
   tags.forEach(f=>f());
   $('gauge').style.width=`calc((100% - 24px) * ${me?Math.min(1,me.vel/me.maxSpeed):0})`;
+}
+
+// ---------- 背景：神社の境内（2026-10-25） ----------
+// 遠くの山・地平線の森・奥の鳥居と石灯籠。遊ぶ場所（地面）より奥なので、色は淡く、子どもやだるまより目立たないように
+function drawBackdrop(gy){
+  // 遠くの山
+  cx.fillStyle='#cfe8dc';
+  for(const [k,w,h] of [[0.12,0.34,0.3],[0.58,0.4,0.22],[0.97,0.3,0.34]]){cx.beginPath();cx.ellipse(W*k,gy,W*w,gy*h,0,Math.PI,0);cx.fill()}
+  // 鳥居（まん中の奥）
+  const th=Math.min(gy*0.5,W*0.2),tw=th*0.95,tx=W*0.5,   // 縦長のスマホでは鳥居が大きくなりすぎないよう、横幅でもおさえる
+tb=gy+2,pil=tw*0.075,red='#e0553e',dark='#3b2a22';
+  cx.fillStyle=red;
+  for(const s of[-1,1])cx.fillRect(tx+s*tw*0.33-pil/2,tb-th*0.86,pil,th*0.86);       // 柱
+  cx.fillRect(tx-tw*0.46,tb-th*0.66,tw*0.92,th*0.06);                                 // 貫（下の横木）
+  cx.fillRect(tx-pil*0.4,tb-th*0.86,pil*0.8,th*0.2);                                  // 額束
+  cx.beginPath();cx.moveTo(tx-tw*0.56,tb-th*0.96);cx.quadraticCurveTo(tx,tb-th*0.88,tx+tw*0.56,tb-th*0.96);  // 笠木（上の横木。両はしが反る）
+  cx.lineTo(tx+tw*0.53,tb-th*0.86);cx.quadraticCurveTo(tx,tb-th*0.8,tx-tw*0.53,tb-th*0.86);cx.closePath();cx.fill();
+  cx.fillStyle=dark;cx.beginPath();cx.moveTo(tx-tw*0.6,tb-th*1.0);cx.quadraticCurveTo(tx,tb-th*0.92,tx+tw*0.6,tb-th*1.0);
+  cx.lineTo(tx+tw*0.56,tb-th*0.95);cx.quadraticCurveTo(tx,tb-th*0.875,tx-tw*0.56,tb-th*0.95);cx.closePath();cx.fill();
+  // 石灯籠（鳥居の両わき）
+  const lh=th*0.36,lw=lh*0.42;
+  for(const s of[-1,1]){const lx=tx+s*tw*0.82,b=tb;
+    cx.fillStyle='#b9b2a6';cx.fillRect(lx-lw*0.5,b-lh*0.12,lw,lh*0.12);cx.fillRect(lx-lw*0.14,b-lh*0.55,lw*0.28,lh*0.45);
+    cx.fillRect(lx-lw*0.38,b-lh*0.78,lw*0.76,lh*0.24);
+    cx.fillStyle='#fff2c4';cx.fillRect(lx-lw*0.16,b-lh*0.74,lw*0.32,lh*0.16);
+    cx.fillStyle='#a39b8e';cx.beginPath();cx.moveTo(lx-lw*0.62,b-lh*0.78);cx.lineTo(lx,b-lh*1.0);cx.lineTo(lx+lw*0.62,b-lh*0.78);cx.closePath();cx.fill()}
+  // 地平線の森（いつも同じ形。sin でばらつかせる）
+  const step=Math.max(18,W*0.045);
+  for(const [c,dy,sc] of [['#9fd09a',0.06,1],['#7dbb79',0,0.8]]){cx.fillStyle=c;
+    for(let x=-step;x<W+step;x+=step){const k=x/step,r=gy*(0.06+0.03*Math.abs(Math.sin(k*1.9+sc*3)))*sc;
+      if(Math.abs(x-tx)<tw*0.75)continue;   // 鳥居の前はあける
+      cx.beginPath();cx.arc(x,gy-r*0.5-gy*dy,r,0,7);cx.fill()}}
 }
 
 // ---------- だるま（2026-10-25） ----------
