@@ -215,6 +215,7 @@ body.tutRun #chant{position:relative;z-index:8}
       <h2 id="overH">だるまさんがころんだ</h2>
       <div class="choices" id="roles"></div>
       <p id="overP"></p>
+      <button class="pill on" id="shareBtn" type="button" hidden>🎉 結果をXでシェア</button>
       <div class="choices" id="types"></div>
       <div class="roomCard" id="roomCard" hidden></div>
       <button class="go" id="startBtn" type="button">はじめる</button>
@@ -284,6 +285,7 @@ let st=null,me=null,cpu=null,phase='setup',paused=false;
 // 時間はゲームの中の時計（gt, ミリ秒）で進める。中断している間は止まる
 let gt=0,acc=0,lastNow=performance.now(),timers=[],prev=null,prevAt=0,faceAt=-1e9,push=null;
 const caughtAt={};
+let meCaughtN=0;   // このゲームで自分（人の子）が見つかった回数。結果のシェアに使う
 function later(ms,fn){timers.push({at:gt+ms,fn})}
 
 // ---------- 画面の部品 ----------
@@ -346,7 +348,7 @@ function start(){
   me=st.children.find(c=>c.human)||null;cpu=role==='kid'?R.cpuDaruma():null;
   applyTune();if(tut)P.GOAL_TICKS=1e7;
   $('ctlDaruma').hidden=role!=='daruma';$('pad').hidden=role!=='kid';$('pauseBtn').hidden=false;$('endBtn').hidden=false;
-  $('over').hidden=true;$('log').innerHTML='';prev=snap();prevAt=gt;
+  $('over').hidden=true;$('shareBtn').hidden=true;meCaughtN=0;$('log').innerHTML='';prev=snap();prevAt=gt;
   log(role==='kid'?`子ども：${st.children.map(c=>c.name).join('・')}`:`${st.type.label}で始めた。子ども：${st.children.map(c=>c.name).join('・')}`);
   renderPause();toPrep(true);
   if(tut&&tut.i<0)tutNextBeat();
@@ -398,7 +400,7 @@ function lookTick(){
 function endLook(){
   const cyc=st.cycle,cost=Math.round(Core.turnCostOf(P,st));
   const out=R.endLook(st);
-  const names=out.caughtList.map(c=>c.name),meCaught=me&&out.caughtList.includes(me);
+  const names=out.caughtList.map(c=>c.name),meCaught=me&&out.caughtList.includes(me);if(meCaught)meCaughtN++;
   if(!out.caughtList.length)showMsg('セーフ…みんな止まってた',1000);
   else if(!meCaught)showMsg((me?'セーフ！ ':'見つけた！ ')+names.join('・')+(me?'が見つかった':''),1200);
   log(`${cyc}回目：振り向いた`+(role==='daruma'?`（気力-${cost}）`:'')+(names.length?` → ${names.join('・')} が見つかって下がった`:' → 誰も動いてなかった'));
@@ -420,7 +422,7 @@ function resolve(){
   if(out.turned){
     const names=out.caught.map(c=>c.name);
     out.caught.forEach(c=>caughtAt[c.id]=gt);if(out.caught.length)beep(150,0.25,'sawtooth');
-    const meCaught=me&&out.caught.includes(me);
+    const meCaught=me&&out.caught.includes(me);if(meCaught)meCaughtN++;
     showMsg(meCaught?'見つかった！下がる':out.caught.length?'見た！ '+names.join('・'):'見た！ …みんな止まってた',T.watch*1000);
     log(`${cyc}回目：振り向いた`+(role==='daruma'?`（気力-${cost}）`:'')+(out.caught.length?` → ${names.join('・')} を下がらせた`:' → 誰も動いてなかった'))}
   else{showMsg('力が足りない…',1000);log(`${cyc}回目：振り向こうとしたが、気力が足りなかった`)}
@@ -437,7 +439,25 @@ function end(kid){
   else{h=!kid?'時間切れ…だるまの勝ち':kid===me?'タッチ！あなたの勝ち':`${kid.name}がタッチ！子どもの勝ち`;
     p=kid?`だるまの時計は、のこり${left}秒だった。`:`あなたはあと${Math.max(0,P.GOAL_POS-me.pos).toFixed(0)}だった。`}
   if(kid)beep(880,0.15);
-  $('overH').textContent=h;$('overP').textContent=p;$('startBtn').textContent='もう一回';$('over').hidden=false;renderSetup();showFb()}
+  $('overH').textContent=h;$('overP').textContent=p;$('startBtn').textContent='もう一回';$('over').hidden=false;renderSetup();showFb();
+  const txt=shareText(kid,left);$('shareBtn').onclick=()=>sharePost(txt+' #だるまさんがころんだ','https://mataasobo.com/daruma/');$('shareBtn').hidden=false}
+// ---------- 結果を X にシェア（三人将棋の share.js と同じ形） ----------
+function shareText(kid,left){
+  const c=st.cycle,caught=meCaughtN?`見つかった${meCaughtN}回`:'一度も見つからず';
+  if(role==='daruma')return kid?`だるまさんがころんだ、だるまで遊んで${kid.name}にタッチされた…（時計のこり${left}秒・捕まえたのは${st.catches}回）`
+    :`だるまさんがころんだ、だるまで耐えきった！（${c}回唱えて、捕まえたのは${st.catches}回）`;
+  if(kid===me)return `だるまさんがころんだで、だるまにタッチ！（時計のこり${left}秒・${caught}）`;
+  if(kid)return `だるまさんがころんだ、${kid.name}に先にタッチされた…子どもの勝ち（${caught}）`;
+  return `だるまさんがころんだ、時間切れで負けた…ゴールまであと${Math.max(0,Math.round((P.GOAL_POS-me.pos)/(P.GOAL_POS-2)*100))}%（${caught}）`}
+// スマホでは道の絵つきの共有を開く。できなければ X の投稿画面（文とリンクだけ）
+async function sharePost(text,url){
+  try{gtag('event','share_result',{where:'daruma_'+role})}catch(e){}
+  try{
+    const cv=$('cv'),blob=await new Promise(r=>cv.toBlob(r,'image/png')),file=blob&&new File([blob],'daruma.png',{type:'image/png'});
+    const phone=window.matchMedia&&matchMedia('(pointer: coarse)').matches;
+    if(phone&&file&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({text:text+'\n'+url,files:[file]});return}
+  }catch(e){if(e&&e.name==='AbortError')return}   // 共有の画面を閉じただけ
+  window.open('https://x.com/intent/post?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(url),'_blank','noopener')}
 // ---------- ワンタップの感想（終わりの画面） ----------
 const FB=[['fun','おもしろい'],['hard','むずかしい'],['easy','かんたん'],['confused','よくわからない']];
 let fbSent=false;
@@ -449,7 +469,7 @@ function showFb(){fbSent=false;$('fb').hidden=false;$('fbThanks').hidden=true;
     $('fbBtns').querySelectorAll('button').forEach(x=>{if(x!==b)x.disabled=true});$('fbThanks').hidden=false})}
 function quit(){$('roles').hidden=false;if(tut){tut=null;$('tut').hidden=true;tutHl(null)}$('tune').hidden=true;tunePaused=false;phase='setup';timers=[];paused=false;st=null;me=null;note('');$('pauseBtn').hidden=true;$('endBtn').hidden=true;renderPause();
   $('ctlDaruma').hidden=true;$('pad').hidden=true;
-  $('fb').hidden=true;$('overH').textContent='だるまさんがころんだ';$('overP').textContent=HOW[role];$('startBtn').textContent='はじめる';$('over').hidden=false;renderSetup();renderChant()}
+  $('fb').hidden=true;$('shareBtn').hidden=true;$('overH').textContent='だるまさんがころんだ';$('overP').textContent=HOW[role];$('startBtn').textContent='はじめる';$('over').hidden=false;renderSetup();renderChant()}
 function togglePause(){if(!st||phase==='over'||phase==='setup')return;paused=!paused;renderPause();note(pausedNote);renderCtl()}
 function renderPause(){const t=paused?'▶ 再開':'⏸ 中断';$('pauseBtn').textContent=t;$('pause2').textContent=t;$('pauseBtn').classList.toggle('on',paused);$('pause2').classList.toggle('on',paused)}
 
@@ -796,6 +816,6 @@ function frame(now){
 renderTune();resize();renderSetup();$('overP').textContent=HOW[role];renderChant();requestAnimationFrame(frame);
 </script>
 <script src="room.js"></script>
-<script src="online.js?v=7"></script>
+<script src="online.js?v=8"></script>
 </body>
 </html>

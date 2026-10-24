@@ -82,7 +82,7 @@ function onEvent(e){
 // 集まっているとき・終わったときのカード
 function renderRoomCard(){
   const v=RV,url=location.origin+location.pathname+'?room='+v.id,w=v.winner;
-  $('over').hidden=false;$('roles').hidden=true;$('types').hidden=true;$('fb').hidden=true;
+  $('over').hidden=false;$('roles').hidden=true;$('types').hidden=true;$('fb').hidden=true;$('shareBtn').hidden=true;
   let head='みんなで遊ぶ',sub='リンクを送って、友だちを呼ぼう。空いた席には CPU が入ります。';
   if(v.phase==='over'&&w){const mine=w.side==='kids'?v.you>0:v.you===0;
     head=w.side==='kids'?(w.id===myId?'タッチ！あなたの勝ち':`${esc(w.name)}がタッチ！子どもの勝ち`):'時間切れ…だるまの勝ち';
