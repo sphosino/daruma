@@ -227,7 +227,7 @@
     DARUMA_TYPES: {
       normal: { label: "ふつう",     staminaScale: 1.00, turnCostScale: 1.00, tempoScale: 1.00, skipRewardScale: 1.00, expectTurn: 0.50 },
       // 器は大きいが実入りが細い。貯めるのではなく最初から持っている。
-      red:    { label: "赤だるま",   staminaScale: 1.45, turnCostScale: 1.00, tempoScale: 1.00, skipRewardScale: 0.55, expectTurn: 0.50 },
+      red:    { label: "金だるま",   staminaScale: 1.45, turnCostScale: 1.00, tempoScale: 1.00, skipRewardScale: 0.55, expectTurn: 0.50 },
       // 振り向きは安いが詠唱で押せない。そして安いことは見抜かれている。
       oni:    { label: "鬼だるま",   staminaScale: 1.00, turnCostScale: 0.62, tempoScale: 1.45, skipRewardScale: 1.00, expectTurn: 0.88 },
       // テンポは安いが振り向きが高い。舐められる分、たまの一発が刺さる。

@@ -141,7 +141,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .rname{font-size:.82rem;font-weight:700;color:var(--muted);display:flex;gap:8px;align-items:center}.rname input{font:inherit;width:9em;padding:5px 8px;border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
 #waitHost{font-weight:700;color:var(--accent)}
 .choices{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
-.typeQ{flex-basis:100%;font-size:.82rem;font-weight:700;color:var(--muted)}.pill.blueT.on{background:#dfe8ff;border-color:#2f5bd0}
+.typeQ{flex-basis:100%;font-size:.82rem;font-weight:700;color:var(--muted)}.pill.t_attack.on{background:#dfe8ff;border-color:#2f5bd0}.pill.t_oni.on{background:#e6e3ea;border-color:#33303a}.pill.t_red.on{background:#fff4cc;border-color:#c99a14}
 .typeNote{flex-basis:100%;margin:2px 0 0;font-size:.8rem;color:var(--muted);line-height:1.5}
 .dCard{display:flex;flex-direction:column;align-items:center;gap:0;padding:4px 12px 6px;border-radius:16px;min-width:88px}.dCard canvas{display:block}
 .go{box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 60%,var(--ink));font:inherit;font-family:var(--pop);font-size:1.25rem;border:0;border-radius:16px;background:var(--accent);color:var(--card);padding:12px 26px;cursor:pointer}
@@ -251,7 +251,7 @@ body.tutRun #chant{position:relative;z-index:8}
   <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る。上半分はダッシュ（すばやく走り出す・離すとすぐ止まる。体力を多く使う）" data-en-label="Run at the speed where you press. The top half is Dash (fast start, stops instantly when released, uses lots of energy)"><div class="padHi" data-en="⚡ Dash">⚡ ダッシュ</div><span class="padT" data-en="🏃 Run">🏃 走る</span><div class="scale"><span data-en="Walk">歩く</span><span data-en="Jog">小走り</span><span data-en="Sprint">全力</span></div><div class="tapHere" aria-hidden="true" data-en="<span>👆</span>here"><span>👆</span>ここ</div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
   <div class="padNote" aria-hidden="true"><span><b data-en="⚡ Dash">⚡ ダッシュ</b><i data-en="Quick start, quick stop (uses lots of energy)">すぐ走り出せて、すぐ止まれる（体力を多く使う）</i></span><span><b data-en="🏃 Run">🏃 走る</b><i data-en="Further right is faster · let go to stop">右ほど速い・離すと止まる</i></span></div>
 </div>
-<script src="old/daruma-core.js?v=5"></script>
+<script src="old/daruma-core.js?v=6"></script>
 <script src="rules.js?v=3"></script>
 <script>
 'use strict';
@@ -324,7 +324,7 @@ const typeNote=k=>k==='random'?L('ノーマルか攻めだるまか、試合ご�
   :k==='normal'?L('クセのない、ふつうのだるま。まずはこれで。','A plain Daruma with no quirks. Start here.')
   :k==='attack'?L('唱える速さを変えるのが得意（速くするのに使う気力が約半分）。そのかわり振り向くのは苦手（振り向くのに使う気力が約1.5倍）。急な早口に注意！','Good at changing its chanting speed (speeding up costs about half the spirit). But turning around costs about 1.5× the spirit. Watch out for sudden speed-ups!')
   :EN?'':TYPE_NOTE[k]||'';
-const typeName=k=>k==='random'?L('おまかせ','Random'):k==='normal'?L('ノーマル','Normal'):k==='attack'?L('攻めだるま','Attack Daruma'):P.DARUMA_TYPES[k].label;
+const typeName=k=>k==='random'?L('おまかせ','Random'):k==='normal'?L('ノーマル','Normal'):k==='attack'?L('攻めだるま','Attack Daruma'):k==='oni'?L('鬼だるま','Oni Daruma'):k==='red'?L('金だるま','Gold Daruma'):P.DARUMA_TYPES[k].label;
 let st=null,me=null,cpu=null,phase='setup',paused=false;
 // 時間はゲームの中の時計（gt, ミリ秒）で進める。中断している間は止まる
 let gt=0,acc=0,lastNow=performance.now(),timers=[],prev=null,prevAt=0,faceAt=-1e9,push=null;
@@ -338,7 +338,7 @@ function renderSetup(){
   $('roles').querySelectorAll('button').forEach(b=>b.onclick=()=>{role=b.dataset.r;store.set('dk-role',role);renderSetup();if(phase==='setup')$('overP').textContent=HOW[role]});
   $('types').hidden=false;
   $('types').innerHTML=`<span class="typeQ">${phase==='over'?L('だるまの種類','Daruma type'):role==='kid'?L('どのだるまと戦う？','Which Daruma will you face?'):L('どのだるまになる？','Which Daruma will you be?')}</span>`+
-    typeChoices().map(k=>`<button class="pill dCard${k===pickedType?' on':''}${k==='attack'?' blueT':''}" data-t="${k}" type="button" title="${k==='random'?L('試合ごとにくじで決まる','Picked at random each game'):EN?'':TYPE_NOTE[k]||''}"><canvas data-k="${k}"></canvas><span>${typeName(k)}</span></button>`).join('');
+    typeChoices().map(k=>`<button class="pill dCard${k===pickedType?' on':''}${k!=='random'&&k!=='normal'?' t_'+k:''}" data-t="${k}" type="button" title="${k==='random'?L('試合ごとにくじで決まる','Picked at random each game'):EN?'':TYPE_NOTE[k]||''}"><canvas data-k="${k}"></canvas><span>${typeName(k)}</span></button>`).join('');
   $('types').querySelectorAll('canvas').forEach(c=>{c.style.width=c.style.height='56px';drawDarumaThumb(c,c.dataset.k)});
   $('types').insertAdjacentHTML('beforeend',`<p class="typeNote">${typeNote(pickedType)}</p>`);
   $('types').querySelectorAll('button').forEach(b=>b.onclick=()=>{pickedType=b.dataset.t;store.set('dk-daruma',pickedType);renderSetup()});
@@ -920,41 +920,53 @@ function darumaPath(x,y,w,h){
   cx.bezierCurveTo(x-w*0.92,y-h*0.42,x-w*0.6,y-h,x,y-h);cx.closePath();
 }
 // o（見本を描くとき）：kind は 'normal'・'attack'・'random'（灰色で背中に「？」）、face は顔を向けるか。o がなければゲームの今の様子で描く
+// だるまの色（種類ごと）。trim はすその帯・顔のふち・おなかの字、emb は背中の丸
+const DARUMA_COL={
+  normal:{hi:'#ff6b4f',mid:'#dd3322',lo:'#9c1d10',edge:'#7a150b',trim:'#f2b632',emb:'#f2b632',embEdge:'#c98a12',kanji:'#b8231a'},
+  attack:{hi:'#6f9bff',mid:'#2f5bd0',lo:'#18307e',edge:'#132a6b',trim:'#f2b632',emb:'#f2b632',embEdge:'#c98a12',kanji:'#1d3a8f'},
+  oni:{hi:'#6d6675',mid:'#33303a',lo:'#141218',edge:'#000000',trim:'#f2b632',emb:'#f2b632',embEdge:'#c98a12',kanji:'#2a2630'},
+  red:{hi:'#fff1a8',mid:'#e8b830',lo:'#a8780e',edge:'#7a540a',trim:'#d23a26',emb:'#d23a26',embEdge:'#a32617',kanji:'#ffe58a'},
+  random:{hi:'#c9c2d6',mid:'#8f86a3',lo:'#5d5570',edge:'#463f57',trim:'#f2b632',emb:'#f2b632',embEdge:'#c98a12',kanji:'#3d3650'}};
+// ゲーム中のだるまの種類（P.DARUMA_TYPES のキー）
+const typeKey=()=>st&&Object.keys(P.DARUMA_TYPES).find(k=>P.DARUMA_TYPES[k]===st.type)||'normal';
 function drawDaruma(x,y,r,o){
-  const w=r*0.98,h=r*1.1,ink='#2a1610',gold='#f2b632',gold2='#c98a12';
-  // 色：ふつうは赤、攻めだるまは青（ひと目で分かるように。だるま役で攻めを選んだときも青）
-  const kind=o?o.kind:st&&st.type===P.DARUMA_TYPES.attack?'attack':'normal',blue=kind==='attack',C=kind==='random'?{hi:'#c9c2d6',mid:'#8f86a3',lo:'#5d5570',edge:'#463f57',kanji:'#3d3650'}:blue?{hi:'#6f9bff',mid:'#2f5bd0',lo:'#18307e',edge:'#132a6b',kanji:'#1d3a8f'}:{hi:'#ff6b4f',mid:'#dd3322',lo:'#9c1d10',edge:'#7a150b',kanji:'#b8231a'};
+  const w=r*0.98,h=r*1.1,ink='#2a1610';
+  // 色は種類ごと（ひと目で分かるように。だるま役で選んだときも同じ色）：ノーマルは赤、攻めは青、鬼は黒に角、金は金（帯・ふちは赤）
+  const kind=o?o.kind:typeKey(),C=DARUMA_COL[kind]||DARUMA_COL.normal;
   const faceOn=o?!!o.face:phase==='look'||phase==='push';
   // 足もとの影
   cx.fillStyle='rgba(74,47,34,.22)';cx.beginPath();cx.ellipse(x,y+h*0.98,w*0.85,h*0.12,0,0,7);cx.fill();
   cx.save();
   // 唱えている間は、ゆらゆら（だるまらしく、下を支点に）
   if(!o&&phase==='chant'){const a=Math.sin(gt/260)*0.045;cx.translate(x,y+h);cx.rotate(a);cx.translate(-x,-(y+h))}
+  // 鬼だるまの角（胴の後ろから生えているように、胴より先に描く）
+  if(kind==='oni')for(const s of[-1,1]){cx.beginPath();cx.moveTo(x+s*w*0.22,y-h*0.7);cx.quadraticCurveTo(x+s*w*0.45,y-h*1.05,x+s*w*0.62,y-h*1.32);
+    cx.quadraticCurveTo(x+s*w*0.66,y-h*0.98,x+s*w*0.55,y-h*0.6);cx.closePath();cx.fillStyle='#f4e2a8';cx.fill();cx.lineWidth=Math.max(1,r*0.04);cx.strokeStyle='#8a6a2a';cx.stroke()}
   // 胴：左上が明るい
   darumaPath(x,y,w,h);
   const g=cx.createRadialGradient(x-w*0.35,y-h*0.45,r*0.1,x,y,r*1.35);g.addColorStop(0,C.hi);g.addColorStop(0.55,C.mid);g.addColorStop(1,C.lo);
   cx.fillStyle=g;cx.fill();cx.lineWidth=Math.max(1.5,r*0.05);cx.strokeStyle=C.edge;cx.stroke();
   cx.save();darumaPath(x,y,w,h);cx.clip();
-  // すそを金の帯で
-  cx.strokeStyle=gold;cx.lineWidth=r*0.09;cx.beginPath();cx.ellipse(x,y+h*1.02,w*0.95,h*0.32,0,Math.PI*1.05,Math.PI*1.95);cx.stroke();
+  // すその帯
+  cx.strokeStyle=C.trim;cx.lineWidth=r*0.09;cx.beginPath();cx.ellipse(x,y+h*1.02,w*0.95,h*0.32,0,Math.PI*1.05,Math.PI*1.95);cx.stroke();
   // つやの光
   cx.fillStyle='rgba(255,255,255,.28)';cx.beginPath();cx.ellipse(x-w*0.45,y-h*0.42,w*0.16,h*0.3,0.5,0,7);cx.fill();
   if(!faceOn){
     // 背中：金の丸に「福」
     const ey=y+h*0.18,er=r*0.36;
-    cx.fillStyle=gold;cx.beginPath();cx.arc(x,ey,er,0,7);cx.fill();
-    cx.strokeStyle=gold2;cx.lineWidth=r*0.04;cx.stroke();
+    cx.fillStyle=C.emb;cx.beginPath();cx.arc(x,ey,er,0,7);cx.fill();
+    cx.strokeStyle=C.embEdge;cx.lineWidth=r*0.04;cx.stroke();
     cx.fillStyle=C.kanji;cx.font=`900 ${er*1.25}px ${css('--pop')}`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText(kind==='random'?'？':'福',x,ey+er*0.06);cx.textBaseline='alphabetic';
   }else{
     // 顔（横から回ってくる）。子どもは左にいるので、顔は少し左寄り
     const f=o?1:Math.min(1,(gt-faceAt)/200),fx=x+w*0.65*(1-f)-w*0.1*f,sx=0.2+0.8*f,fy=y-h*0.3;
     cx.translate(fx,0);cx.scale(sx,1);cx.translate(-fx,0);
     // おなかに金の「福」
-    cx.fillStyle=gold;cx.font=`900 ${r*0.42}px ${css('--pop')}`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('福',fx,y+h*0.5);cx.textBaseline='alphabetic';
+    cx.fillStyle=C.trim;cx.font=`900 ${r*0.42}px ${css('--pop')}`;cx.textAlign='center';cx.textBaseline='middle';cx.fillText('福',fx,y+h*0.5);cx.textBaseline='alphabetic';
     // 白い顔と金のふち
     const fw=w*0.62,fh=h*0.46;
     cx.fillStyle='#fff8ec';cx.beginPath();cx.ellipse(fx,fy,fw,fh,0,0,7);cx.fill();
-    cx.strokeStyle=gold;cx.lineWidth=r*0.07;cx.stroke();
+    cx.strokeStyle=C.trim;cx.lineWidth=r*0.07;cx.stroke();
     // 見ている間は、目が子どもを見回す。見つけた直後は赤く光る
     const look=!o&&phase==='look'?Math.sin((gt-faceAt)/180)*r*0.05:0;
     const angry=!o&&Object.values(caughtAt).some(t=>t>=faceAt&&gt-t<800);
