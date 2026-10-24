@@ -30,7 +30,7 @@ const badge=document.createElement('span');badge.id='roomBadge';badge.className=
 document.title=L('だるまさんがころんだ（みんなで）','Red Light, Green Light (with friends)');
 // サーバーからのお知らせは日本語で届くので、英語のときはここで置きかえる
 const ERR_EN={'もう始まっています。終わるまで待ってね':'The game has already started. Please wait until it ends','満員です':'The room is full','まだ部屋に入っていません':"You haven't joined the room yet",'いまは席を移れません':"You can't change seats right now",'その席はありません':"That seat doesn't exist",'その席にはもう人がいます':'Someone is already in that seat','部屋に入っていません':"You're not in the room",'部屋を作った人だけが始められます':'Only the host can start','もう始まっています':'Already started','いまは唱えられません':"You can't chant right now",
-  'いまは変えられません':"You can't change it right now",'そのだるまはありません':"That Daruma doesn't exist",'だるまの人だけが選べます':'Only the Daruma player can choose','部屋を作った人だけが選べます':'Only the host can choose'};
+  'いまは変えられません':"You can't change it right now",'そのだるまはありません':"That Daruma doesn't exist",'だるまの人だけが選べます':'Only the Daruma player can choose','部屋を作った人だけが選べます':'Only the host can choose','みんなの準備OKを待っています':'Waiting for everyone to be ready'};
 
 DR.connect(ROOM,m=>{
   if(m.t==='open'){DR.send({t:'join',name:myName()||L('ゲスト','Guest')});return}
@@ -51,7 +51,7 @@ function apply(v,ev){
   $('endBtn').hidden=false;
   // だるまの準備は30秒まで（過ぎたらサーバーが自動で唱え始める）。残りの秒は下の loop で数える
   prepEnd=v.phase==='prep'&&v.prepLeft!=null?performance.now()+v.prepLeft:null;prepS=-1;
-  if(playing){$('over').hidden=true;note(v.phase==='prep'||v.queued?prepNote(v.prepLeft):'')}
+  if(playing){$('over').hidden=true;note(v.phase==='prep'||v.you<0?prepNote(v.prepLeft):'')}
   else renderRoomCard();
   renderCtl();renderChant();
 }
@@ -108,7 +108,7 @@ function renderRoomCard(){
     sub=(mine?L('やった！ ','Nice! '):'')+L(`これまで だるま ${v.wins[0]}勝・子ども ${v.wins[1]}勝`,`So far: Daruma ${v.wins[0]} · Runners ${v.wins[1]}`);}
   $('overH').textContent=head;$('overP').textContent=sub;
   const seat=(s,i)=>{const label=i===0?L('だるま','Daruma'):L('子ども','Runner ')+i,mine=v.you===i;
-    return `<div class="rseat${mine?' mine':''}"><b>${label}</b><span>${s.empty?'CPU':esc(s.name)+(s.online?'':L('（るす）',' (away)'))}</span>${s.empty&&v.you>=0?`<button class="pill" data-seat="${i}" type="button">${L('ここに座る','Sit here')}</button>`:''}</div>`};
+    return `<div class="rseat${mine?' mine':''}"><b>${label}</b><span>${s.empty?'CPU':esc(s.name)+(s.online?'':L('（るす）',' (away)'))}</span>${!s.empty&&s.online?`<em class="rready${s.ready?' on':''}">${s.host?L('作った人','Host'):s.ready?L('準備OK','Ready'):L('準備中…','Not ready')}</em>`:''}${s.empty&&v.you>=0?`<button class="pill" data-seat="${i}" type="button">${L('ここに座る','Sit here')}</button>`:''}</div>`};
   $('roomCard').hidden=false;
   // だるまの種類（2026-10-25）：だるまの席に人がいればその人、CPU のだるまなら部屋を作った人が選ぶ。ほかの人には見えるだけ
   const canPick=v.dtypeBy===0?v.you===0:v.host,dt=v.dtype||'random';
@@ -128,9 +128,16 @@ function renderRoomCard(){
   $('rCopy').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(url).then(()=>showMsg(L('コピーしました','Copied'),900))};
   const sh=$('rShare');if(sh)sh.onclick=()=>navigator.share({title:L('だるまさんがころんだ','Red Light, Green Light'),text:L('だるまさんがころんだで遊ぼ！',"Let's play Red Light, Green Light!"),url}).catch(()=>{});
   $('rName').onchange=()=>{const n=$('rName').value.trim().slice(0,8)||L('ゲスト','Guest');saveName(n);DR.send({t:'join',name:n})};
-  const sb=$('startBtn');sb.hidden=!v.host;sb.textContent=v.phase==='over'?L('もう一回','Play again'):L('はじめる','Start');
-  sb.onclick=()=>DR.send({t:v.phase==='over'?'again':'start'});
-  $('waitHost').hidden=v.host;
+  // 始める：作った人は、つながっているほかの人が全員「準備OK」を押してから（2026-10-25。入ったとたんに始められてしまっていた）
+  //   ほかの人は、同じ場所のボタンで「準備OK」を押す（もう一度押すと取り消し）。満員で入れなかった人は見ているだけ
+  const sb=$('startBtn'),mine=v.you>=0?v.seats[v.you]:null,wait=v.seats.filter(s=>!s.empty&&s.online&&!s.ready).length,wh=$('waitHost');
+  if(v.host){sb.hidden=false;sb.disabled=wait>0;sb.classList.remove('sub');sb.textContent=v.phase==='over'?L('もう一回','Play again'):L('はじめる','Start');
+    sb.onclick=()=>DR.send({t:v.phase==='over'?'again':'start'});
+    wh.hidden=!wait;wh.textContent=L(`みんなの「準備OK」を待っています（あと${wait}人）`,`Waiting for everyone to be ready (${wait} left)`)}
+  else if(mine){sb.hidden=false;sb.disabled=false;sb.classList.toggle('sub',mine.ready);sb.textContent=mine.ready?L('準備OK ✓（取り消す）','Ready ✓ (undo)'):L('準備OK！','Ready!');
+    sb.onclick=()=>DR.send({t:'ready',on:!mine.ready});
+    wh.hidden=!mine.ready;wh.textContent=L('部屋を作った人が始めるのを待っています',"Waiting for the room's host to start")}
+  else{sb.hidden=true;wh.hidden=false;wh.textContent=L('満員なので、見ているだけです','The room is full, so you are watching')}
 }
 
 // ---------- 押したことをサーバーに送る ----------
@@ -139,7 +146,7 @@ $('arm').onclick=()=>{if(st&&role==='daruma')DR.send({t:'arm',on:!st.turnArmed})
 $('tempo').oninput=()=>{if(st&&role==='daruma')DR.send({t:'tempo',v:+$('tempo').value})};
 window.sendAura=r=>DR.send({t:'aura',r});
 $('endBtn').onclick=()=>{if(confirm(L('部屋を出ますか？（遊んでいる途中なら、あなたの席は CPU になります）','Leave the room? (If a game is in progress, the CPU takes your seat)'))){DR.send({t:'leave'});setTimeout(()=>{location.href=location.pathname},200)}};
-function prepNote(ms){if(RV&&RV.queued)return L('この回が終わったら、席に入ります。見て待っててね',"You'll get a seat after this round. Watch for now");const n=ms!=null?Math.max(0,Math.ceil(ms/1000)):null;const s=n!=null?L(`　あと${n}秒`,` · ${n}s left`):'';return role==='daruma'?L('「唱える」を押そう','Press "Chant"')+s:L('だるまの準備中','The Daruma is getting ready')+s}
+function prepNote(ms){if(RV&&RV.you<0&&!RV.queued)return L('見ているだけです','You are watching');if(RV&&RV.queued)return L('この回が終わったら、席に入ります。見て待っててね',"You'll get a seat after this round. Watch for now");const n=ms!=null?Math.max(0,Math.ceil(ms/1000)):null;const s=n!=null?L(`　あと${n}秒`,` · ${n}s left`):'';return role==='daruma'?L('「唱える」を押そう','Press "Chant"')+s:L('だるまの準備中','The Daruma is getting ready')+s}
 // 子ども：押している場所の速さとダッシュ（パッドの上半分）を、変わったときだけ送る
 (function loop(){
   if(prepEnd&&phase==='prep'){const left=prepEnd-performance.now(),sec=Math.max(0,Math.ceil(left/1000));if(sec!==prepS){prepS=sec;note(prepNote(left))}}
