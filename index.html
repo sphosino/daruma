@@ -89,6 +89,9 @@ canvas{display:block;width:100%;height:100%}
 .pad[hidden] + .padNote,body.tutRun .padNote{display:none}
 .pad.hi .padHi{background:color-mix(in srgb,var(--accent) 30%,var(--card))}
 
+/* 縦に長いスマホ：ボードとパッドの間が空かないよう、空いたぶんボードを縦に大きくする（2026-10-24）。
+   あそびかたの間は吹き出しをボードとパッドの間に出すので、もとの高さのまま */
+@media (pointer:coarse) and (min-height:701px){body:not(.tutRun) .stage{flex:1 0 auto;max-height:min(110vw,520px)}}
 @media (pointer:coarse){.pad{margin-top:auto;margin-bottom:calc(8px + env(safe-area-inset-bottom))}body:not(.tutRun) .pad:not([hidden]){margin-bottom:0}.padNote{margin-bottom:calc(8px + env(safe-area-inset-bottom))}}
 /* 背の低い画面（iPhone SE の Safari・ノートパソコンなど）：パッドと吹き出しを小さくして、吹き出しがボードとパッドの間に入るように */
 @media (max-height:700px){.stage{height:clamp(150px,min(52vw,29vh),300px)}.pad{height:120px;gap:0;padding-bottom:30px}.padHi{font-size:.9rem}body .tut{font-size:.78rem;line-height:1.4;padding:6px 10px}body .tutBtns{margin-top:2px}}
