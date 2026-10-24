@@ -252,7 +252,7 @@ body.tutRun #chant{position:relative;z-index:8}
   <div class="padNote" aria-hidden="true"><span><b data-en="⚡ Dash">⚡ ダッシュ</b><i data-en="Quick start, quick stop (uses lots of energy)">すぐ走り出せて、すぐ止まれる（体力を多く使う）</i></span><span><b data-en="🏃 Run">🏃 走る</b><i data-en="Further right is faster · let go to stop">右ほど速い・離すと止まる</i></span></div>
 </div>
 <script src="old/daruma-core.js?v=6"></script>
-<script src="rules.js?v=3"></script>
+<script src="rules.js?v=4"></script>
 <script>
 'use strict';
 const R=window.DarumaRules,Core=R.Core,P=R.P,TIERS=R.TIERS;
@@ -287,7 +287,9 @@ const TIER_COL={low:'#e0402c',mid:'#ef8a2c',high:'#e5b830',max:'#4f8fd8'},PULSE=
 const KID_COL=['#4f8fd8','#3aa65a','#b45cc8','#e0457b'];
 // 子ども役の相手のだるま（rules.js の cpuDaruma の style）
 const CPU_STYLES={normal:{n:L('ノーマル','Normal Daruma'),sub:L('クセのない、ふつうのだるま','No tricks')},
-  tempo:{n:L('攻めだるま','Attack Daruma'),sub:L('唱える速さを変えてくる！','Changes its chanting speed!')}};
+  tempo:{n:L('攻めだるま','Attack Daruma'),sub:L('唱える速さを変えてくる！','Changes its chanting speed!')},
+  oni:{n:L('鬼だるま','Oni Daruma'),sub:L('何度も振り向いてくる！','Turns around a lot!')},
+  gold:{n:L('金だるま','Gold Daruma'),sub:L('気力たっぷりで粘ってくる！','Plenty of spirit to spare!')}};
 const TYPE_NOTE={normal:'クセなし。まずはこれで。',red:'気力の器が大きいぶん、見送っても実入りが細い。',oni:'振り向きが安い。そのかわりテンポを上げるのが高い。',attack:'テンポが安い。そのかわり振り向きが高い。'};
 const HOW=EN?{
   kid:"You're the orange runner. You can only move while the Daruma is chanting. If you're moving when it turns around, you get pushed back. If any runner touches the Daruma, the runners win. If the Daruma's clock (it only ticks while chanting) runs out, the Daruma wins. The stronger the Daruma's aura, the more likely it is to turn.",
@@ -314,15 +316,18 @@ const q=new URLSearchParams(location.search);
 // 「⚙ 調整」は ?debug をつけたときだけ（遊ぶ人には出さない）
 if(q.has('debug'))$('tuneBtn').hidden=false;
 let role=q.get('role')||store.get('dk-role','kid');if(role!=='daruma')role='kid';
-// だるまの種類（2026-10-25）：子ども役は「どのだるまと戦う？」、だるま役は「どのだるまになる？」。おまかせ（random）は試合ごとにくじ。
-//   ふだんはふつうと攻めの2つ。?debug のときは全部の種類。選んだものは覚える
+// だるまの種類（2026-10-25）：子ども役は「どのだるまと戦う？」、だるま役は「どのだるまになる？」。おまかせ（random）は試合ごとに4種類からくじ。
+//   選んだものは覚える。CPU のだるまは、種類ごとに特徴を生かして動く（rules.js の cpuDaruma の style）
 let pickedType=store.get('dk-daruma','random');
-const typeChoices=()=>(q.has('debug')?Object.keys(P.DARUMA_TYPES):['normal','attack']).concat('random');
+const DTYPES=['normal','attack','oni','red'],CPU_OF={normal:'normal',attack:'tempo',oni:'oni',red:'gold'};
+const typeChoices=()=>DTYPES.concat('random');
 if(!typeChoices().includes(pickedType))pickedType='random';
 // 選んでいるだるまの特徴（カードの下に出す）
-const typeNote=k=>k==='random'?L('ノーマルか攻めだるまか、試合ごとにくじで決まる。','Normal or Attack Daruma, picked at random each game.')
+const typeNote=k=>k==='random'?L('4種類のどれかが、試合ごとにくじで決まる。','One of the 4, picked at random each game.')
   :k==='normal'?L('クセのない、ふつうのだるま。まずはこれで。','A plain Daruma with no quirks. Start here.')
   :k==='attack'?L('唱える速さを変えるのが得意（速くするのに使う気力が約半分）。そのかわり振り向くのは苦手（振り向くのに使う気力が約1.5倍）。急な早口に注意！','Good at changing its chanting speed (speeding up costs about half the spirit). But turning around costs about 1.5× the spirit. Watch out for sudden speed-ups!')
+  :k==='oni'?L('振り向くのが得意（振り向くのに使う気力が約6割）。そのかわり速さを変えるのは苦手（約1.5倍）。一定のリズムで、何度も振り向いてくる！','Good at turning around (costs about 60% of the spirit). But changing speed costs about 1.5×. Steady rhythm, lots of turns!')
+  :k==='red'?L('気力がとても多い（約1.5倍）。そのかわり見送っても気力があまりたまらない（約半分）。たっぷりの気力で、どっしり振り向いてくる！','Huge spirit pool (about 1.5×). But letting a chant pass recovers only about half. It turns with plenty in reserve!')
   :EN?'':TYPE_NOTE[k]||'';
 const typeName=k=>k==='random'?L('おまかせ','Random'):k==='normal'?L('ノーマル','Normal'):k==='attack'?L('攻めだるま','Attack Daruma'):k==='oni'?L('鬼だるま','Oni Daruma'):k==='red'?L('金だるま','Gold Daruma'):P.DARUMA_TYPES[k].label;
 let st=null,me=null,cpu=null,phase='setup',paused=false;
@@ -393,8 +398,8 @@ function start(){
   $('overP').classList.remove('lines');$('roles').hidden=false;ac();timers=[];acc=0;paused=false;
   const nk=tut?(role==='kid'?1:3):P.ACTIVE_CHILDREN;
   // 選んだ種類（おまかせなら、ふつうか攻めをくじで）。あそびかたはいつもふつう。攻めだるまの CPU はテンポを武器にする
-  const dType=tut?'normal':pickedType==='random'?(Math.random()<0.5?'attack':'normal'):pickedType;
-  const cpuStyle=dType==='attack'?'tempo':'normal';
+  const dType=tut?'normal':pickedType==='random'?DTYPES[Math.floor(Math.random()*DTYPES.length)]:pickedType;
+  const cpuStyle=CPU_OF[dType]||'normal';
   st=R.newGame({withMe:role==='kid',kids:nk,lane:nk-1,type:dType,accT:T.accT,stopT:T.stopT,cpuStop:[T.cpuStopMin,Math.max(T.cpuStopMin,T.cpuStopMax)],cpuAccT:T.cpuAccT});
   let ci=0;st.children.forEach((c,i)=>{c.lane=i;c.col=c.human?null:KID_COL[ci++]});
   st.cpuStyle=cpuStyle;

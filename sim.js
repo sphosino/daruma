@@ -59,6 +59,8 @@ const POLICIES = {
   "読み＋見送る回に加速": () => reader({ feint: true }),
   "ゲームの CPU のだるま": () => R.cpuDaruma(),
   "攻めだるま": () => R.cpuDaruma(null, "tempo"),
+  "鬼だるま": () => R.cpuDaruma(null, "oni"),
+  "金だるま": () => R.cpuDaruma(null, "gold"),
   "毎回振り向く": () => ({ onPrep(st) { st.reward = "low"; Core.applyTempoChange(P, st, 50); }, onCarry() {}, onTick(st) { st.turnArmed = true; } }),
   "絶対振り向かない": () => ({ onPrep(st) { st.reward = "max"; Core.applyTempoChange(P, st, 50); }, onCarry() {}, onTick(st) { st.turnArmed = false; } }),
   "でたらめ": () => ({

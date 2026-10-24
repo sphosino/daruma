@@ -153,14 +153,21 @@
   //   ふつう 平均72%・攻め 平均74%（子ども6通り、各400局）。人は急な早口にあわてるので、実際は少し手ごわいはず
   //   line：振り向く気になる線にかける数。振り向くのが高いだるまなので、大きめ（ここぞのときだけ振り向く）。小さくすると気力が切れて弱くなる
   var TEMPO = { start: [40, 90], slow: 15, rushAt: [55, 85], bluff: 0.2, line: 1.15 };
+  // 'oni'（鬼だるま：振り向くのが安い・テンポを上げるのが高い）：テンポは上げず、一定のリズムで唱える。振り向くのが安いので、
+  //   同じ判断でも振り向ける回数が多い。line を下げて振り向きすぎると、安くても気力が切れて弱くなる（0.8 で子ども 84%）ので 1
+  var ONI = { line: 1, tempo: [45, 60] };
+  // 'gold'（金だるま：気力が多い・見送ってもたまりにくい）：オーラは両はし（全開か弱）に寄せる（aura の重み：全開・強・中・弱）。
+  //   全開に寄せすぎると強すぎる（[6,2,1,1] で子ども 53%）。気力が多いうちは惜しまず振り向き（rich）、少なくなったら、ここぞのときだけ（poor）
+  //   数字はシミュレーター（子ども6通り、各400局）で、ノーマル 73%・鬼 72%・金 73% にそろえた（2026-10-25）
+  var GOLD = { aura: [3, 2, 2, 3], rich: 0.8, poor: 1.2 };
   function cpuDaruma(rand, style) {
     rand = rand || Math.random;
-    var tempoStyle = style === 'tempo';
+    var tempoStyle = style === 'tempo', oni = style === 'oni', gold = style === 'gold';
     var SEE_LAG = 3;
     var seen = [], ramp = false, willRamp = false, line = 0.5, rushAt = Infinity, bluff = false;
     function pickReward(st) {
       var q = st.stamina / st.staminaMax;
-      var w = q < 0.3 ? [1, 2, 4, 3] : q > 0.7 ? [3, 3, 3, 1] : [2, 3, 3, 2];
+      var w = gold ? GOLD.aura : q < 0.3 ? [1, 2, 4, 3] : q > 0.7 ? [3, 3, 3, 1] : [2, 3, 3, 2];
       var r = rand() * 10, i = 0;
       while ((r -= w[i]) > 0 && i < 3) i++;
       return TIERS[i];
@@ -178,6 +185,8 @@
         bluff = rand() < TEMPO.bluff;
         line *= TEMPO.line;
       }
+      if (oni) { st.tempoValue = ONI.tempo[0] + rand() * (ONI.tempo[1] - ONI.tempo[0]); willRamp = false; line *= ONI.line; }
+      if (gold) line *= st.stamina > st.staminaMax * 0.5 ? GOLD.rich : GOLD.poor;
     }
     return {
       // ひと休みのあと、言い始める前
@@ -214,6 +223,6 @@
     Core: Core, P: P, TIERS: TIERS, ME: ME,
     humanStop: humanStop, setMe: setMe, newGame: newGame, newGameSeats: newGameSeats,
     LOOK: LOOK, wantsTurn: wantsTurn, startLook: startLook, lookTick: lookTick, endLook: endLook, resolve: resolve, applyReserved: applyReserved,
-    said: said, cpuDaruma: cpuDaruma, TEMPO: TEMPO
+    said: said, cpuDaruma: cpuDaruma, TEMPO: TEMPO, ONI: ONI, GOLD: GOLD
   };
 });
