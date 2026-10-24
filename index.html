@@ -49,13 +49,15 @@ body{margin:0;background-color:var(--bg);background-image:radial-gradient(var(--
   overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .app{height:100%;max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
 header{display:flex;align-items:center;gap:8px;position:relative;z-index:6}
-h1{font-family:var(--pop);font-size:1.15rem;margin:0;font-weight:400;flex:1 1 auto;min-width:0;letter-spacing:.02em;text-shadow:0 2px 0 var(--card)}
+h1{font-family:var(--pop);font-size:1.15rem;white-space:nowrap;overflow:hidden;margin:0;font-weight:400;flex:1 1 auto;min-width:0;letter-spacing:.02em;text-shadow:0 2px 0 var(--card)}
 h1 span:nth-child(4n+1){color:var(--p0)}h1 span:nth-child(4n+2){color:var(--p1)}h1 span:nth-child(4n+3){color:var(--p2)}h1 span:nth-child(4n){color:var(--p3)}
 .chant{font-family:var(--pop);font-size:clamp(1.3rem,6vw,2rem);text-align:center;letter-spacing:.06em;min-height:1.4em;white-space:nowrap}
 .chant span{color:var(--line)}.chant span.said:nth-child(4n+1){color:var(--p0)}.chant span.said:nth-child(4n+2){color:var(--p1)}.chant span.said:nth-child(4n+3){color:var(--p2)}.chant span.said:nth-child(4n){color:var(--p3)}
 .chant span.said{text-shadow:0 3px 0 var(--card)}.chant.look span.said{color:var(--red)}
 /* 英語のとき：唱える言葉はローマ字の音（DA RU MA …）。1つずつが長いので小さめに、すき間をあける */
 html[lang=en] h1{line-height:1.1}
+/* 遊んでいる間は、上の題名を出さない（すぐ下で同じ言葉を唱えている。スマホでは中断・終了のボタンと重なって折れていた。2026-10-25） */
+header:has(#pauseBtn:not([hidden])) h1{visibility:hidden}
 .chant.en{font-size:clamp(1.05rem,5vw,1.7rem);letter-spacing:0}.chant.en span{margin:0 .12em}
 .stage{position:relative;flex:0 0 auto;box-shadow:0 5px 0 var(--line);height:clamp(160px,52vw,300px);border-radius:16px;overflow:hidden;background:var(--sky);border:2px solid var(--line)}
 canvas{display:block;width:100%;height:100%}
@@ -95,6 +97,7 @@ canvas{display:block;width:100%;height:100%}
 /* 縦に長いスマホ：ボードとパッドの間が空かないよう、空いたぶんボードを縦に大きくする（2026-10-24）。
    あそびかたの間は吹き出しをボードとパッドの間に出すので、もとの高さのまま */
 @media (pointer:coarse) and (min-height:701px){body:not(.tutRun) .stage{flex:1 0 auto;max-height:min(110vw,520px)}}
+@media (pointer:coarse) and (max-height:700px){body:not(.tutRun) .stage{flex:1 0 auto;max-height:min(80vw,400px)}}   /* 背の低いスマホも、空いたぶんボードを大きく */
 @media (pointer:coarse){.pad{margin-top:auto;margin-bottom:calc(8px + env(safe-area-inset-bottom))}body:not(.tutRun) .pad:not([hidden]){margin-bottom:0}.padNote{margin-bottom:calc(8px + env(safe-area-inset-bottom))}}
 /* 背の低い画面（iPhone SE の Safari・ノートパソコンなど）：パッドと吹き出しを小さくして、吹き出しがボードとパッドの間に入るように */
 @media (max-height:700px){.stage{height:clamp(150px,min(52vw,29vh),300px)}.pad{height:120px;gap:0;padding-bottom:30px}.padHi{font-size:.9rem}body .tut{font-size:.78rem;line-height:1.4;padding:6px 10px}body .tutBtns{margin-top:2px}}
@@ -815,8 +818,10 @@ function draw(now){
     const lc=TIER_COL[st.reward],li=LV_ORDER.indexOf(st.reward),beat=0.5+0.5*Math.sin(now/1000*Math.PI*2*PULSE[st.reward]),ar=dr*(1.35+0.15*li+0.12*beat);
     const g=cx.createRadialGradient(dx,dy,dr*0.6,dx,dy,ar);g.addColorStop(0,lc+'cc');g.addColorStop(1,lc+'00');
     cx.fillStyle=g;cx.beginPath();cx.arc(dx,dy,ar,0,7);cx.fill();
-    cx.textAlign='right';cx.fillStyle=lc;cx.font=`900 ${Math.max(10,dr*0.34)}px ${css('--ui')}`;cx.fillText(L('オーラ','AURA'),dx-dr*1.2,dy-dr*0.25);
-    cx.font=`900 ${Math.max(13,dr*0.5)}px ${css('--pop')}`;cx.fillText(LV_NAME[st.reward],dx-dr*1.2,dy+dr*0.35);
+    // 2026-10-25：光と同じ色の字が光に溶けて読めなかったので、白いふちどりをつけて大きく（子どもが止まるかを決めるいちばん大事な手がかり）
+    cx.textAlign='right';cx.lineJoin='round';cx.strokeStyle=SC.card;cx.fillStyle=lc;
+    cx.font=`900 ${Math.max(11,dr*0.36)}px ${css('--ui')}`;cx.lineWidth=4;cx.strokeText(L('オーラ','AURA'),dx-dr*1.2,dy-dr*0.3);cx.fillText(L('オーラ','AURA'),dx-dr*1.2,dy-dr*0.3);
+    cx.font=`400 ${Math.max(18,dr*0.66)}px ${css('--pop')}`;cx.lineWidth=5;cx.strokeText(LV_NAME[st.reward],dx-dr*1.2,dy+dr*0.45);cx.fillText(LV_NAME[st.reward],dx-dr*1.2,dy+dr*0.45);
     // 気力のゲージ（2026-10-24：オーラの色はやめて、いつも同じ緑。太く・ふちどりで目立たせる。振り向けないときは灰色で「気力が足りない」）
     const cost=Core.turnCostOf(P,st),bw=dr*2.2,bx=dx-bw/2,by=yT+6,bh=Math.max(12,dr*0.26),rr=bh/2;
     cx.fillStyle=SC.card;cx.beginPath();cx.roundRect(bx,by,bw,bh,rr);cx.fill();
@@ -837,7 +842,7 @@ function draw(now){
   // 「あなた」はいつも一番手前の列に描く（奥にいると、上に出る「見送り！」などが自分のことに見えた）。並びは絵だけで、中身の順は変えない
   //   1人だけ（あそびかた）のときも手前に
   const order=st.children.map((c,i)=>i).sort((a,b)=>(st.children[a].human?1:0)-(st.children[b].human?1:0));
-  const tags=[];
+  const tags=[],heads=[];
   order.forEach((i,li)=>{const c=st.children[i],row=n===1?1:li;
     let pos=(prev?prev[i]:c.pos)+(c.pos-(prev?prev[i]:c.pos))*u;
     const hit=caughtAt[c.id]!=null&&(phase==='look'||phase==='push')&&caughtAt[c.id]>=faceAt;
@@ -869,17 +874,26 @@ function draw(now){
     // 名前と「！」は、みんなを描いたあとにいちばん上へ（頭が大きいので、後ろの列の子の頭にかくれないように）。白いふちで読めるように
     const label=(c.human?L('あなた','You'):EN?nm(c):c.name.replace(/^.*の/,''))+(c.winded?L(' ぜぇ…',' pant…'):'');
     //   名前は頭の上ではなく、頭の後ろ（左）に右寄せで置く（列の間がせまく、上に置くと後ろの列の子の頭にかかる）
-    tags.push(()=>{cx.textAlign='right';cx.lineJoin='round';cx.strokeStyle=SC.card;
-      cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.lineWidth=3;let lx=x-s*0.75;const ly=y-s*2.55;
-      if(lx-cx.measureText(label).width<4){cx.textAlign='left';lx=x+s*0.75}   // 左はし（スタートのあたり）で入らないときは、頭の前に
-      cx.strokeText(label,lx,ly);
-      cx.fillStyle=c.human?ink:muted;cx.fillText(label,lx,ly);cx.textAlign='center';
-      if(hit){cx.font=`900 ${Math.max(14,s*1.1)}px ${css('--pop')}`;cx.lineWidth=4;cx.strokeText('！',x,y-s*3.7-Math.max(12,s*0.7));cx.fillStyle=red;cx.fillText('！',x,y-s*3.7-Math.max(12,s*0.7))}});
+    heads.push({x,y:y-s*2.55,r:s*0.8,c});
+    tags.push({c,label,x,y,s,hit});
 
     if(mind||c.human){const bw=s*1.6,bx=x-bw/2,by=y+5;cx.fillStyle=SC.line;cx.fillRect(bx,by,bw,3);cx.fillStyle=c.winded?red:accent;cx.fillRect(bx,by,bw*c.energy/c.energyMax,3)}
     if(mind&&!c.human){const m=[gaitOf(c,i),c.intendsToStop===false?'賭け':''].filter(Boolean).join('・');if(m)tags.push(()=>{cx.textAlign='center';cx.fillStyle=c.intendsToStop===false?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*3.7-Math.max(11,s*0.6))})}
   });
-  tags.forEach(f=>f());
+  // 名前を置く（2026-10-25）：あなたを先に。頭の後ろ（左）→ 前（右）の順にためし、ほかの名前やほかの子の頭にかかるなら、
+  //   CPU の子の名前は出さない（スタートのあたりで固まっていると、名前が重なって読めなかった）。あなたはいつも出す
+  const placed=[],hitsAny=(r)=>placed.some(q=>r.l<q.r&&q.l<r.r&&r.t<q.b&&q.t<r.b);
+  const onHead=(r,c)=>heads.some(h=>h.c!==c&&r.l<h.x+h.r&&h.x-h.r<r.r&&r.t<h.y+h.r&&h.y-h.r<r.b);
+  tags.filter(o=>o).sort((a,b)=>(b.c&&b.c.human?1:0)-(a.c&&a.c.human?1:0)).forEach(o=>{const {c,label,x,y,s,hit}=o;
+    if(typeof o==='function'){o();return}
+    cx.lineJoin='round';cx.strokeStyle=SC.card;const fs=Math.max(c.human?11:10,s*(c.human?0.6:0.5));
+    cx.font=`700 ${fs}px ${css('--ui')}`;cx.lineWidth=3;const tw=cx.measureText(label).width,ly=y-s*2.55;
+    const cand=[{al:'right',lx:x-s*0.75,l:x-s*0.75-tw,r:x-s*0.75},{al:'left',lx:x+s*0.75,l:x+s*0.75,r:x+s*0.75+tw}].filter(k=>k.l>=4&&k.r<=W-4);
+    const box=k=>({l:k.l-2,r:k.r+2,t:ly-fs*0.85,b:ly+fs*0.25});
+    let pick=cand.find(k=>!hitsAny(box(k))&&!onHead(box(k),c))||(c.human?cand.find(k=>!hitsAny(box(k)))||cand[0]:null);
+    if(pick){placed.push(box(pick));cx.textAlign=pick.al;cx.strokeText(label,pick.lx,ly);cx.fillStyle=c.human?ink:muted;cx.fillText(label,pick.lx,ly)}
+    cx.textAlign='center';
+    if(hit){cx.font=`900 ${Math.max(14,s*1.1)}px ${css('--pop')}`;cx.lineWidth=4;cx.strokeText('！',x,y-s*3.7-Math.max(12,s*0.7));cx.fillStyle=red;cx.fillText('！',x,y-s*3.7-Math.max(12,s*0.7))}});
   $('gauge').style.width=`calc((100% - 24px) * ${me?Math.min(1,me.vel/me.maxSpeed):0})`;
 }
 
