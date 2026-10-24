@@ -890,7 +890,8 @@ function draw(now){
     if(g==='全力'){ // 土ぼこり（後ろに流れる）
       for(let k=0;k<3;k++){const t=((gt/260+k/3+i*0.17)%1),px=x-s*(0.5+t*1.6),py=y-s*(0.1+t*0.5);
         cx.globalAlpha=(1-t)*0.45;cx.fillStyle=muted;cx.beginPath();cx.arc(px,py,s*(0.15+t*0.25),0,7);cx.fill()}cx.globalAlpha=1}
-    if(g==='ブレーキ'){const kk=!!c.boosting;cx.strokeStyle=kk?red:muted;cx.lineWidth=Math.max(1.5,s*(kk?0.16:0.1));cx.beginPath();cx.moveTo(x-s*(kk?2.6:1.2),y+1);cx.lineTo(x+s*0.3,y+1);cx.stroke()
+    // ブレーキは体をそらす姿勢で見せる。足もとのすべった跡の線は、体力のバーのとなりでメーターに見えたのでやめた（2026-10-25）
+    if(g==='ブレーキ'){const kk=!!c.boosting;
       // 急ブレーキ（ダッシュで止まる）：前の足もとから土がパッパッと前へ飛ぶ（2026-10-24。前は名前の上に「キキッ！」と出していた）
       if(kk){for(let k=0;k<4;k++){const t=(gt/170+k/4)%1,px=x+s*(0.35+t*1.2),py=y-s*(0.1+t*(1-t)*1.6);
         cx.globalAlpha=(1-t)*0.7;cx.fillStyle=k%2?muted:'#b98a5e';cx.beginPath();cx.arc(px,py,s*(0.1+t*0.14),0,7);cx.fill()}cx.globalAlpha=1}}
