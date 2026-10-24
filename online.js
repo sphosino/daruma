@@ -11,12 +11,28 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 
 // ---------- 部屋を作る（ふつうに開いたとき） ----------
 if(!ROOM){
-  const b=$('roomBtn');if(b)b.onclick=async()=>{
+  // 2026-10-25：「みんなで遊ぶ」を押すと、まず部屋の一覧（人がいる部屋）。入るか、新しく作るかを選ぶ（前は押したとたんに部屋ができていた）
+  const b=$('roomBtn');if(!b)return;
+  const box=document.createElement('div');box.className='rlist';box.hidden=true;b.after(box);
+  const make=async(btn)=>{
     let name=myName();if(!name){name=(prompt(L('みんなに見せる名前（8文字まで）','Your name for other players (up to 8 characters)'),'')||'').trim().slice(0,8)||L('ゲスト','Guest');saveName(name)}
-    b.disabled=true;b.textContent=L('部屋を作っています…','Making a room…');
+    btn.disabled=true;btn.textContent=L('部屋を作っています…','Making a room…');
     try{const id=await DR.create(name);location.href=location.pathname+'?room='+id}
-    catch(e){alert(L('部屋を作れませんでした。少し待ってから、もう一度どうぞ',"Couldn't make a room. Please wait a moment and try again"));b.disabled=false;b.textContent=L('みんなで遊ぶ（部屋を作る）','Play with friends (make a room)')}
+    catch(e){alert(L('部屋を作れませんでした。少し待ってから、もう一度どうぞ',"Couldn't make a room. Please wait a moment and try again"));btn.disabled=false;btn.textContent=L('新しく部屋を作る','Make a new room')}
   };
+  let rooms=null;
+  const draw=()=>{
+    const list=rooms==null?`<p class="rnone">${L('部屋を探しています…','Looking for rooms…')}</p>`:rooms.length?rooms.map(r=>{
+      const people=r.seats.filter(x=>x&&x.online),host=(people[0]||{}).name||'';
+      const st=r.phase==='lobby'?L('人を待っています','Waiting for players'):r.phase==='over'?L('ひと休み中','Between rounds'):L('遊んでいます（終わったら入れます）','Playing (join after this round)');
+      return `<a class="rrow" href="?room=${encodeURIComponent(r.id)}"><b>${esc(host)}${L('の部屋',"'s room")}</b><span>${EN?people.length+(people.length===1?' player':' players'):people.length+'人'} ・ ${st}</span></a>`}).join('')
+      :`<p class="rnone">${L('いま開いている部屋はありません。作って待ってみよう','No open rooms right now. Make one and wait for others')}</p>`;
+    box.innerHTML=`<p class="rlistH">${L('入れる部屋','Rooms you can join')}</p>${list}<button class="pill rmake" type="button">${L('新しく部屋を作る','Make a new room')}</button>`;
+    box.querySelector('.rmake').onclick=e=>make(e.currentTarget);
+  };
+  const fill=async()=>{if(box.hidden||phase!=='setup')return;try{const r=await fetch(DR.API+'/rooms?kind=daruma');rooms=(await r.json()).rooms||[]}catch(e){rooms=rooms||[]}if(!box.hidden)draw()};
+  b.onclick=()=>{box.hidden=!box.hidden;b.classList.toggle('on',!box.hidden);if(!box.hidden){draw();fill()}};
+  setInterval(fill,10000);
   return;
 }
 

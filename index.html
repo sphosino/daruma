@@ -151,6 +151,12 @@ header:has(#roomBadge) h1{visibility:hidden;flex:1 1 0}
 .rwait{margin:0;text-align:center;font-weight:700;color:var(--accent)}
 .rready{flex:0 0 auto;font-style:normal;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--bg);color:var(--muted);border:1.5px solid var(--line)}
 .rready.on{background:#e3f5dc;color:#2f8a3c;border-color:#8fd07e}
+.rlist{width:100%;max-width:420px;margin:4px auto 0;display:flex;flex-direction:column;gap:5px}
+.rlistH{margin:6px 0 0;font-weight:700;font-size:.85rem;color:var(--muted);text-align:left}
+.rrow{display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-decoration:none;color:var(--ink);background:var(--card);border:2px solid var(--line);border-radius:12px;padding:7px 12px;box-shadow:0 3px 0 var(--line)}
+.rrow b{font-size:.95rem}.rrow span{font-size:.78rem;color:var(--muted);font-weight:700}.rrow:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+.rmake{align-self:center;margin-top:4px}
+.rnone{margin:0;font-size:.8rem;color:var(--muted);text-align:left}
 /* 定型文：選ぶ箱（💬 の下）と、届いた言葉の吹き出し（上に数秒） */
 .sayBox{position:fixed;z-index:30;top:58px;right:max(16px,calc(50% - 344px));width:min(320px,calc(100% - 32px));display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:var(--card);border:2px solid var(--accent);border-radius:16px;box-shadow:0 6px 0 var(--line)}
 .sayBox .pill{font-size:.85rem;padding:6px 12px}
@@ -246,7 +252,7 @@ body.tutRun #chant{position:relative;z-index:8}
       <div class="roomCard" id="roomCard" hidden></div>
       <div class="choices" id="goRow"><button class="go" id="startBtn" type="button" data-en="Start">はじめる</button><button class="go" id="otherBtn" type="button" hidden></button></div>
       <p id="waitHost" hidden data-en="Waiting for the room's host to start">部屋を作った人が始めるのを待っています</p>
-      <button class="pill" id="roomBtn" type="button" data-en="Play with friends (make a room)">みんなで遊ぶ（部屋を作る）</button>
+      <button class="pill" id="roomBtn" type="button" data-en="Play with friends">みんなで遊ぶ</button>
       <div class="choices" id="exitRow" hidden><button class="pill" id="titleBtn" type="button" data-en="Back to the start screen">はじめの画面へ</button><a class="pill" href="/" style="text-decoration:none" data-en="Play other games">ほかのゲームで遊ぶ</a></div>
       <div class="fb" id="fb" hidden>
         <p class="fbQ" data-en="How was it?">遊んでみて、どうでした？</p>
@@ -1098,6 +1104,6 @@ function frame(now){
 renderTune();resize();renderSetup();$('overP').textContent=HOW[role];renderChant();requestAnimationFrame(frame);
 </script>
 <script src="room.js"></script>
-<script src="online.js?v=15"></script>
+<script src="online.js?v=17"></script>
 </body>
 </html>
