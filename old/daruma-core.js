@@ -46,8 +46,9 @@
     CATCH_KNOCK: null,
     // CATCH_KNOCK は、だるまの前で見つかったときに下がる量。遠いほど少なく、スタートでは ×CATCH_KNOCK_FAR（2026-10-24）
     CATCH_KNOCK_FAR: 0.4,   // 2026-10-24：2/3 → 0.4（スタートで 24 → 約10）
-    TEMPO_CHANGE_COST_PER_UNIT: 0.025,
-    STAMINA_MAX: 110,
+    // 気力の数字（2026-10-25）：ノーマルで 1000 になるよう、前の 110 から全部を約 9.1 倍にして切りのいい数字に丸めた
+    TEMPO_CHANGE_COST_PER_UNIT: 0.23,
+    STAMINA_MAX: 1000,
 
     // "necery dash": a random, cycle-count-independent burst of reckless
     // speed. Disabled for now (was 0.0006) — energy is the real gate.
@@ -189,8 +190,8 @@
     // ambush, because an ambush's bill is mostly holding the pace, not
     // reaching it. Loosening the drain does move it — and revives
     // chant-fast-never-turn from 0% to 100% at the same time.
-    TEMPO_MIN: { fillPerTick: 1.1, drainPerTick: 0.04 },
-    TEMPO_MAX: { fillPerTick: 3.8, drainPerTick: 1.10 },
+    TEMPO_MIN: { fillPerTick: 1.1, drainPerTick: 0.36 },
+    TEMPO_MAX: { fillPerTick: 3.8, drainPerTick: 10 },
     // >1 keeps the slow half of the slider cheap; cost only spikes near the top
     TEMPO_DRAIN_CURVE: 2.8,
     // Same shape for how fast the phrase actually advances. This exists so the
@@ -203,10 +204,10 @@
     TEMPO_FILL_CURVE: 1.0,
 
     REWARD: {
-      low:  { reward: 0,  turnCost: 11, label: "低" },
-      mid:  { reward: 6,  turnCost: 17, label: "中" },
-      high: { reward: 12, turnCost: 32, label: "高" },
-      max:  { reward: 20, turnCost: 60, label: "激" }
+      low:  { reward: 0,   turnCost: 100, label: "低" },
+      mid:  { reward: 50,  turnCost: 150, label: "中" },
+      high: { reward: 100, turnCost: 300, label: "高" },
+      max:  { reward: 180, turnCost: 550, label: "激" }
     },
 
     // --- だるまのタイプ -------------------------------------------------------
@@ -227,11 +228,11 @@
     DARUMA_TYPES: {
       normal: { label: "ふつう",     staminaScale: 1.00, turnCostScale: 1.00, tempoScale: 1.00, skipRewardScale: 1.00, expectTurn: 0.50 },
       // 器は大きいが実入りが細い。貯めるのではなく最初から持っている。
-      red:    { label: "金だるま",   staminaScale: 1.45, turnCostScale: 1.00, tempoScale: 1.00, skipRewardScale: 0.55, expectTurn: 0.50 },
+      red:    { label: "金だるま",   staminaScale: 1.50, turnCostScale: 1.00, tempoScale: 1.00, skipRewardScale: 0.50, expectTurn: 0.50 },
       // 振り向きは安いが詠唱で押せない。そして安いことは見抜かれている。
-      oni:    { label: "鬼だるま",   staminaScale: 1.00, turnCostScale: 0.62, tempoScale: 1.45, skipRewardScale: 1.00, expectTurn: 0.88 },
+      oni:    { label: "鬼だるま",   staminaScale: 1.00, turnCostScale: 0.60, tempoScale: 1.50, skipRewardScale: 1.00, expectTurn: 0.88 },
       // テンポは安いが振り向きが高い。舐められる分、たまの一発が刺さる。
-      attack: { label: "攻めだるま", staminaScale: 1.00, turnCostScale: 1.45, tempoScale: 0.55, skipRewardScale: 1.00, expectTurn: 0.15 }
+      attack: { label: "攻めだるま", staminaScale: 1.00, turnCostScale: 1.50, tempoScale: 0.50, skipRewardScale: 1.00, expectTurn: 0.15 }
     },
     DARUMA_TYPE: "normal",
     // How many phrases of "what this type usually does" the assumption is

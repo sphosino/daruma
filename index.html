@@ -215,7 +215,7 @@ body.tutRun #chant{position:relative;z-index:8}
   <div class="chant" id="chant"></div>
   <div class="stage" id="stage">
     <canvas id="cv"></canvas>
-    <div class="clock" id="clock" hidden><small id="clockLbl">だるまの時計</small><b id="clockNum">46.0<span data-en="s">秒</span></b><span class="bar"><i id="clockBar"></i></span></div>
+    <div class="clock" id="clock" hidden><small id="clockLbl">だるまの時計</small><b id="clockNum">45.0<span data-en="s">秒</span></b><span class="bar"><i id="clockBar"></i></span></div>
     <div class="paused" id="paused" hidden></div>
     <div class="msg" id="msg" hidden></div>
     <div class="over" id="over">
@@ -251,8 +251,8 @@ body.tutRun #chant{position:relative;z-index:8}
   <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る。上半分はダッシュ（すばやく走り出す・離すとすぐ止まる。体力を多く使う）" data-en-label="Run at the speed where you press. The top half is Dash (fast start, stops instantly when released, uses lots of energy)"><div class="padHi" data-en="⚡ Dash">⚡ ダッシュ</div><span class="padT" data-en="🏃 Run">🏃 走る</span><div class="scale"><span data-en="Walk">歩く</span><span data-en="Jog">小走り</span><span data-en="Sprint">全力</span></div><div class="tapHere" aria-hidden="true" data-en="<span>👆</span>here"><span>👆</span>ここ</div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
   <div class="padNote" aria-hidden="true"><span><b data-en="⚡ Dash">⚡ ダッシュ</b><i data-en="Quick start, quick stop (uses lots of energy)">すぐ走り出せて、すぐ止まれる（体力を多く使う）</i></span><span><b data-en="🏃 Run">🏃 走る</b><i data-en="Further right is faster · let go to stop">右ほど速い・離すと止まる</i></span></div>
 </div>
-<script src="old/daruma-core.js?v=6"></script>
-<script src="rules.js?v=4"></script>
+<script src="old/daruma-core.js?v=7"></script>
+<script src="rules.js?v=5"></script>
 <script>
 'use strict';
 const R=window.DarumaRules,Core=R.Core,P=R.P,TIERS=R.TIERS;
@@ -298,8 +298,8 @@ const HOW=EN?{
   daruma:'あなたはだるま。CPU の子ども4人がタッチしようと走ってきます。唱え終わったときに動いていた子を下がらせて、時計が切れるまで耐えたら勝ち。見送ると止まらずに、そのまま次の「だるまさんがころんだ」に続きます。'};
 
 // ---------- 調整の数字（⚙ 調整で変えられる。変えた値はこのブラウザに覚える） ----------
-// 時計・猶予・下がる量は、シミュレーター（sim.js）で決めた値（2026-10-18）。全速まで 2 秒・止まるまで 1 秒にしたので、どちらの役も 46 秒
-const TUNE_DEF={accT:2.0,stopT:1.0,cpuAccT:2.0,cpuStopMin:0.8,cpuStopMax:1.4,grace:0.3,clockKid:46,clockDaruma:46,knock:24,breakMin:1.0,breakMax:3.5,cue:0.8,watch:1.2};
+// 時計・猶予・下がる量は、シミュレーター（sim.js）で決めた値。2026-10-25：時計を 46 秒から切りのいい 45 秒にして、そのぶん猶予を 0.3 秒から 0.4 秒に（子どもの勝ちがノーマルで 73% のまま）
+const TUNE_DEF={accT:2.0,stopT:1.0,cpuAccT:2.0,cpuStopMin:0.8,cpuStopMax:1.4,grace:0.4,clockKid:45,clockDaruma:45,knock:24,breakMin:1.0,breakMax:3.5,cue:0.8,watch:1.2};
 const TUNE_INFO=[['accT','あなた：全速になるまで',0.3,3,0.1,'秒'],['stopT','あなた：全速から止まるまで',0.1,2.5,0.05,'秒'],
   ['cpuAccT','★CPU の子：全速になるまで（±15%）',0.3,3,0.1,'秒'],
   ['cpuStopMin','★CPU の子：止まるまで（最短）',0.1,2.5,0.05,'秒'],['cpuStopMax','★CPU の子：止まるまで（最長）',0.1,2.5,0.05,'秒'],
@@ -308,7 +308,7 @@ const TUNE_INFO=[['accT','あなた：全速になるまで',0.3,3,0.1,'秒'],['
   ['breakMin','ひと休み（いちばん短い）',0,5,0.1,'秒'],['breakMax','ひと休み（いちばん長い）',0,8,0.1,'秒'],
   ['cue','「すぅ…」の合図',0,2,0.1,'秒前'],['watch','振り向いて見ている時間',0.3,3,0.1,'秒']];
 // 前の最初の値（下がる量40・25・20）のまま覚えていたら、新しい最初の値にする
-const saved=store.get('dk-tune3',{});if([40,25,20].includes(saved.knock))delete saved.knock;if([0.1,0.2].includes(saved.grace))delete saved.grace;for(const [k,olds] of Object.entries({accT:[0.33,1.5],stopT:[0.5],cpuAccT:[1.5],cpuStopMin:[0.4],cpuStopMax:[0.7]}))if(olds.includes(saved[k]))delete saved[k];if([41,42,44].includes(saved.clockDaruma))delete saved.clockDaruma;if(saved.clockKid===40)delete saved.clockKid;
+const saved=store.get('dk-tune3',{});if([40,25,20].includes(saved.knock))delete saved.knock;if([0.1,0.2,0.3].includes(saved.grace))delete saved.grace;for(const [k,olds] of Object.entries({accT:[0.33,1.5],stopT:[0.5],cpuAccT:[1.5],cpuStopMin:[0.4],cpuStopMax:[0.7]}))if(olds.includes(saved[k]))delete saved[k];if([41,42,44,46].includes(saved.clockDaruma))delete saved.clockDaruma;if([40,46].includes(saved.clockKid))delete saved.clockKid;
 let T={...TUNE_DEF,...saved};
 function applyTune(){R.LOOK.grace=Math.round(T.grace*10);R.LOOK.ticks=Math.max(R.LOOK.grace+1,Math.round(T.watch*10));P.GOAL_TICKS=Math.round((role==='daruma'?T.clockDaruma:T.clockKid)*1000/P.TICK_MS);P.CATCH_KNOCK=T.knock>=96?null:T.knock;if(me)R.setMe(me,T.accT,T.stopT);renderCtl()}
 
@@ -325,9 +325,9 @@ if(!typeChoices().includes(pickedType))pickedType='random';
 // 選んでいるだるまの特徴（カードの下に出す）
 const typeNote=k=>k==='random'?L('4種類のどれかが、試合ごとにくじで決まる。','One of the 4, picked at random each game.')
   :k==='normal'?L('クセのない、ふつうのだるま。まずはこれで。','A plain Daruma with no quirks. Start here.')
-  :k==='attack'?L('唱える速さを変えるのが得意（速くするのに使う気力が約半分）。そのかわり振り向くのは苦手（振り向くのに使う気力が約1.5倍）。急な早口に注意！','Good at changing its chanting speed (speeding up costs about half the spirit). But turning around costs about 1.5× the spirit. Watch out for sudden speed-ups!')
-  :k==='oni'?L('振り向くのが得意（振り向くのに使う気力が約6割）なので、気力切れしにくい。そのかわり速さを変えるのは苦手（約1.5倍）で、比較的安定したリズムで唱える。','Good at turning around (costs about 60% of the spirit), so it rarely runs out. But changing speed costs about 1.5×, so it chants at a fairly steady rhythm.')
-  :k==='red'?L('気力がとても多い（約1.5倍）。そのかわり見送っても気力があまりたまらない（約半分）。たっぷりの気力で、どっしり振り向いてくる！','Huge spirit pool (about 1.5×). But letting a chant pass recovers only about half. It turns with plenty in reserve!')
+  :k==='attack'?L('唱える速さを変えるのが得意（速くするのに使う気力が半分）。そのかわり振り向くのは苦手（振り向くのに使う気力が1.5倍）。急な早口に注意！','Good at changing its chanting speed (speeding up costs half the spirit). But turning around costs 1.5× the spirit. Watch out for sudden speed-ups!')
+  :k==='oni'?L('振り向くのが得意（振り向くのに使う気力が6割）なので、気力切れしにくい。そのかわり速さを変えるのは苦手（1.5倍）で、比較的安定したリズムで唱える。','Good at turning around (costs 60% of the spirit), so it rarely runs out. But changing speed costs 1.5×, so it chants at a fairly steady rhythm.')
+  :k==='red'?L('気力がとても多い（1.5倍）。そのかわり見送っても気力があまりたまらない（半分）。たっぷりの気力で、どっしり振り向いてくる！','Huge spirit pool (1.5×). But letting a chant pass recovers only half. It turns with plenty in reserve!')
   :EN?'':TYPE_NOTE[k]||'';
 const typeName=k=>k==='random'?L('おまかせ','Random'):k==='normal'?L('ノーマル','Normal'):k==='attack'?L('攻めだるま','Attack Daruma'):k==='oni'?L('鬼だるま','Oni Daruma'):k==='red'?L('金だるま','Gold Daruma'):P.DARUMA_TYPES[k].label;
 let st=null,me=null,cpu=null,phase='setup',paused=false;
