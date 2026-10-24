@@ -45,7 +45,7 @@
     GOAL_POS: 96,
     CATCH_KNOCK: null,
     // CATCH_KNOCK は、だるまの前で見つかったときに下がる量。遠いほど少なく、スタートでは ×CATCH_KNOCK_FAR（2026-10-24）
-    CATCH_KNOCK_FAR: 2 / 3,
+    CATCH_KNOCK_FAR: 0.4,   // 2026-10-24：2/3 → 0.4（スタートで 24 → 約10）
     TEMPO_CHANGE_COST_PER_UNIT: 0.025,
     STAMINA_MAX: 110,
 

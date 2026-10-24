@@ -242,7 +242,7 @@ body.tutRun #chant{position:relative;z-index:8}
   <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る。上半分はダッシュ（すばやく走り出す・離すとすぐ止まる。体力を多く使う）"><div class="padHi">⚡ ダッシュ</div><span class="padT">🏃 走る</span><div class="scale"><span>歩く</span><span>小走り</span><span>全力</span></div><div class="tapHere" aria-hidden="true"><span>👆</span>ここ</div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
   <div class="padNote" aria-hidden="true"><span><b>⚡ ダッシュ</b>すぐ走り出せて、すぐ止まれる（体力を多く使う）</span><span><b>🏃 走る</b>右ほど速い・離すと止まる</span></div>
 </div>
-<script src="old/daruma-core.js?v=4"></script>
+<script src="old/daruma-core.js?v=5"></script>
 <script src="rules.js?v=2"></script>
 <script>
 'use strict';
@@ -267,7 +267,7 @@ const TUNE_INFO=[['accT','あなた：全速になるまで',0.3,3,0.1,'秒'],['
   ['cpuAccT','★CPU の子：全速になるまで（±15%）',0.3,3,0.1,'秒'],
   ['cpuStopMin','★CPU の子：止まるまで（最短）',0.1,2.5,0.05,'秒'],['cpuStopMax','★CPU の子：止まるまで（最長）',0.1,2.5,0.05,'秒'],
   ['grace','振り向き始めてから見つかるまでの猶予',0,0.5,0.1,'秒'],['clockKid','だるまの時計（子ども役のとき）',20,90,1,'秒'],['clockDaruma','だるまの時計（だるま役のとき）',20,90,1,'秒'],
-  ['knock','だるまの前で捕まったら下がる（遠いほど少なく、スタートで3分の2。96でスタートへ）',0,96,1,''],
+  ['knock','だるまの前で捕まったら下がる（遠いほど少なく、スタートで0.4倍。96でスタートへ）',0,96,1,''],
   ['breakMin','ひと休み（いちばん短い）',0,5,0.1,'秒'],['breakMax','ひと休み（いちばん長い）',0,8,0.1,'秒'],
   ['cue','「すぅ…」の合図',0,2,0.1,'秒前'],['watch','振り向いて見ている時間',0.3,3,0.1,'秒']];
 // 前の最初の値（下がる量40・25・20）のまま覚えていたら、新しい最初の値にする

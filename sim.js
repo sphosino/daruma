@@ -168,7 +168,7 @@ function table(opt) {
 
 const mode = process.argv[2] || "table";
 const knockArg = v => (v === "start" ? null : +v);
-// 何も指定しないときは、ゲーム（index.html）の今の値：時計 46 秒・猶予 0.3 秒・だるまの前で見つかったら 24 下がる（遠いほど少なく、スタートで 16）
+// 何も指定しないときは、ゲーム（index.html）の今の値：時計 46 秒・猶予 0.3 秒・だるまの前で見つかったら 24 下がる（遠いほど少なく、スタートで約10）
 const GAME = { clock: 46, grace: 0.3, knock: "24" };
 const MAIN = require.main === module;   // ほかのファイルから読みこんだときは、表を出さない
 if (MAIN && mode === "table") table({ clock: +env("CLOCK", GAME.clock), knock: knockArg(env("KNOCK", GAME.knock)), grace: +env("GRACE", GAME.grace) });
