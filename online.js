@@ -17,7 +17,8 @@ if(!ROOM){
   const make=async(btn)=>{
     let name=myName();if(!name){name=(prompt(L('みんなに見せる名前（8文字まで）','Your name for other players (up to 8 characters)'),'')||'').trim().slice(0,8)||L('ゲスト','Guest');saveName(name)}
     btn.disabled=true;btn.textContent=L('部屋を作っています…','Making a room…');
-    try{const id=await DR.create(name);location.href=location.pathname+'?room='+id}
+    // 作ったら、そのままゲーム画面へ（2026-10-25）：選んでいた役とだるまの種類で、CPU とすぐ遊び始める。遊びながら人を待つ
+    try{const id=await DR.create(name);try{sessionStorage.setItem('dk-go',JSON.stringify({id,role,type:pickedType}))}catch(e){}location.href=location.pathname+'?room='+id}
     catch(e){alert(L('部屋を作れませんでした。少し待ってから、もう一度どうぞ',"Couldn't make a room. Please wait a moment and try again"));btn.disabled=false;btn.textContent=L('新しく部屋を作る','Make a new room')}
   };
   let rooms=null;
@@ -66,8 +67,17 @@ DR.connect(ROOM,m=>{
   if(m.t==='open'){DR.send({t:'join',name:myName()||L('ゲスト','Guest')});return}
   if(m.t==='close'){note(L('つなぎ直しています…','Reconnecting…'));return}
   if(m.t==='err'){showMsg(EN&&ERR_EN[m.msg]||m.msg,1800);if(m.room)apply(m.room,[]);return}
-  if(m.t==='room')apply(m.room,m.ev||[]);
+  if(m.t==='room'){apply(m.room,m.ev||[]);autoGo(m.room)}
 });
+// 部屋を作ったばかりなら、選んでいた役の席に移って、種類を決めて、すぐ始める（ひとりのときだけ・一度だけ）
+function autoGo(v){
+  let g=null;try{g=JSON.parse(sessionStorage.getItem('dk-go')||'null')}catch(e){}
+  if(!g||g.id!==v.id)return;try{sessionStorage.removeItem('dk-go')}catch(e){}
+  if(!v.host||v.phase!=='lobby'||present(v).length>1)return;
+  if(g.role==='kid'&&v.you===0)DR.send({t:'seat',i:1});
+  if(g.type)DR.send({t:'dtype',k:g.type});
+  DR.send({t:'start'});
+}
 
 function apply(v,ev){
   const was=RV;RV=v;const playing=!['lobby','over'].includes(v.phase);
@@ -121,7 +131,7 @@ function onEvent(e){
 const present=v=>v.seats.filter(s=>!s.empty&&s.online).map(s=>s.name).concat(v.waiting||[]);
 function renderBadge(v,was){
   const n=present(v).length,w=(v.waiting||[]).length;
-  badge.innerHTML=`<i></i>${L('部屋','Room')} ${EN?n+(n===1?' player':' players'):n+'人'}${w?L(`・${w}人待ち`,` · ${w} waiting`):''}`;
+  badge.innerHTML=`<i></i>${L('部屋','Room')} ${EN?n+(n===1?' player':' players'):n+'人'}${w?L(`・${w}人待ち`,` · ${w} waiting`):n<=1?L('・待っています',' · waiting'):''}`;
   badge.title=L('みんなで遊ぶ部屋の中にいます','You are in a room with friends');
   if(!was)return;
   const before=present(was);
