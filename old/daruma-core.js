@@ -44,8 +44,8 @@
     CATCH_VEL_THRESHOLD: 0.05,
     GOAL_POS: 96,
     CATCH_KNOCK: null,
-    // 下がる量は、だるまに近いほど少し多く、遠いほど少し少なく（2026-10-24）。スタートで ×(1-SPREAD)、だるまの前で ×(1+SPREAD)
-    CATCH_KNOCK_SPREAD: 0.2,
+    // CATCH_KNOCK は、だるまの前で見つかったときに下がる量。遠いほど少なく、スタートでは ×CATCH_KNOCK_FAR（2026-10-24）
+    CATCH_KNOCK_FAR: 2 / 3,
     TEMPO_CHANGE_COST_PER_UNIT: 0.025,
     STAMINA_MAX: 110,
 
@@ -1047,7 +1047,8 @@
         if (c.vel > P.CATCH_VEL_THRESHOLD) {
           out.caught.push(c);
           // CATCH_KNOCK（2026-10-18）：null ならスタートへ。数なら、その分だけ下がる
-          var knockMul = 1 + (P.CATCH_KNOCK_SPREAD || 0) * (2 * clamp((c.pos - 2) / (P.GOAL_POS - 2), 0, 1) - 1);
+          var knockFar = P.CATCH_KNOCK_FAR == null ? 1 : P.CATCH_KNOCK_FAR;
+          var knockMul = knockFar + (1 - knockFar) * clamp((c.pos - 2) / (P.GOAL_POS - 2), 0, 1);
           var back = P.CATCH_KNOCK == null ? c.pos - 2 : Math.min(c.pos - 2, P.CATCH_KNOCK * knockMul);
           c.pos -= back; c.vel = 0; c.burstTicks = 0;
           // Walking back to the line is the one real rest anybody gets, so the
