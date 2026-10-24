@@ -872,7 +872,7 @@ function draw(now){
     cx.restore();
     cx.globalAlpha=1;
     // 名前と「！」は、みんなを描いたあとにいちばん上へ（頭が大きいので、後ろの列の子の頭にかくれないように）。白いふちで読めるように
-    const label=(c.human?L('あなた','You'):EN?nm(c):c.name.replace(/^.*の/,''))+(c.winded?L(' ぜぇ…',' pant…'):'');
+    const label=(c.human?L('あなた','You'):EN?nm(c):c.name.replace(/^.*[のな](?=[ァ-ヶー]+$)/,''))+(c.winded?L(' ぜぇ…',' pant…'):'');
     //   名前は頭の上ではなく、頭の後ろ（左）に右寄せで置く（列の間がせまく、上に置くと後ろの列の子の頭にかかる）
     heads.push({x,y:y-s*2.55,r:s*0.8,c});
     tags.push({c,label,x,y,s,hit});
