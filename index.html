@@ -288,7 +288,7 @@ const KID_COL=['#4f8fd8','#3aa65a','#b45cc8','#e0457b'];
 // 子ども役の相手のだるま（rules.js の cpuDaruma の style）
 const CPU_STYLES={normal:{n:L('ノーマル','Normal Daruma'),sub:L('クセのない、ふつうのだるま','No tricks')},
   tempo:{n:L('攻めだるま','Attack Daruma'),sub:L('唱える速さを変えてくる！','Changes its chanting speed!')},
-  oni:{n:L('鬼だるま','Oni Daruma'),sub:L('何度も振り向いてくる！','Turns around a lot!')},
+  oni:{n:L('鬼だるま','Oni Daruma'),sub:L('安定したリズムで唱える','Steady rhythm')},
   gold:{n:L('金だるま','Gold Daruma'),sub:L('気力たっぷりで粘ってくる！','Plenty of spirit to spare!')}};
 const TYPE_NOTE={normal:'クセなし。まずはこれで。',red:'気力の器が大きいぶん、見送っても実入りが細い。',oni:'振り向きが安い。そのかわりテンポを上げるのが高い。',attack:'テンポが安い。そのかわり振り向きが高い。'};
 const HOW=EN?{
@@ -326,7 +326,7 @@ if(!typeChoices().includes(pickedType))pickedType='random';
 const typeNote=k=>k==='random'?L('4種類のどれかが、試合ごとにくじで決まる。','One of the 4, picked at random each game.')
   :k==='normal'?L('クセのない、ふつうのだるま。まずはこれで。','A plain Daruma with no quirks. Start here.')
   :k==='attack'?L('唱える速さを変えるのが得意（速くするのに使う気力が約半分）。そのかわり振り向くのは苦手（振り向くのに使う気力が約1.5倍）。急な早口に注意！','Good at changing its chanting speed (speeding up costs about half the spirit). But turning around costs about 1.5× the spirit. Watch out for sudden speed-ups!')
-  :k==='oni'?L('振り向くのが得意（振り向くのに使う気力が約6割）。そのかわり速さを変えるのは苦手（約1.5倍）。一定のリズムで、何度も振り向いてくる！','Good at turning around (costs about 60% of the spirit). But changing speed costs about 1.5×. Steady rhythm, lots of turns!')
+  :k==='oni'?L('振り向くのが得意（振り向くのに使う気力が約6割）なので、気力切れしにくい。そのかわり速さを変えるのは苦手（約1.5倍）で、比較的安定したリズムで唱える。','Good at turning around (costs about 60% of the spirit), so it rarely runs out. But changing speed costs about 1.5×, so it chants at a fairly steady rhythm.')
   :k==='red'?L('気力がとても多い（約1.5倍）。そのかわり見送っても気力があまりたまらない（約半分）。たっぷりの気力で、どっしり振り向いてくる！','Huge spirit pool (about 1.5×). But letting a chant pass recovers only about half. It turns with plenty in reserve!')
   :EN?'':TYPE_NOTE[k]||'';
 const typeName=k=>k==='random'?L('おまかせ','Random'):k==='normal'?L('ノーマル','Normal'):k==='attack'?L('攻めだるま','Attack Daruma'):k==='oni'?L('鬼だるま','Oni Daruma'):k==='red'?L('金だるま','Gold Daruma'):P.DARUMA_TYPES[k].label;
