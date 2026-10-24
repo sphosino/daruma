@@ -23,7 +23,7 @@ if(!ROOM){
 // ---------- 部屋の中 ----------
 window.DARUMA_ONLINE=true;
 window.DarumaOnline={get RV(){return RV}};   // 確かめ用（部屋の様子を外から読む）
-let RV=null,game=-1,myId=null,lastWant=-1,lastBoost=false;
+let RV=null,game=-1,myId=null,lastWant=-1,lastBoost=false,prepEnd=null,prepS=-1;
 const HUMAN_COL=['#e8743b','#ff6f9f','#43b2f5','#6cc94e'];
 $('roomBtn').hidden=true;$('pauseBtn').remove();$('helpBtn').hidden=true;
 document.title='だるまさんがころんだ（みんなで）';
@@ -44,7 +44,9 @@ function apply(v,ev){
   phase=v.phase==='lobby'?'setup':v.phase;
   $('ctlDaruma').hidden=!(playing&&v.you===0);$('pad').hidden=!(playing&&v.you>0);
   $('endBtn').hidden=false;
-  if(playing){$('over').hidden=true;note(v.phase==='prep'?(v.you===0?'ひと休み。準備ができたら「唱える」':'ひと休み。動けない'):'')}
+  // だるまの準備は30秒まで（過ぎたらサーバーが自動で唱え始める）。残りの秒は下の loop で数える
+  prepEnd=v.phase==='prep'&&v.prepLeft!=null?performance.now()+v.prepLeft:null;prepS=-1;
+  if(playing){$('over').hidden=true;note(v.phase==='prep'?prepNote(v.prepLeft):'')}
   else renderRoomCard();
   renderCtl();renderChant();
 }
@@ -108,8 +110,10 @@ $('arm').onclick=()=>{if(st&&role==='daruma')DR.send({t:'arm',on:!st.turnArmed})
 $('tempo').oninput=()=>{if(st&&role==='daruma')DR.send({t:'tempo',v:+$('tempo').value})};
 window.sendAura=r=>DR.send({t:'aura',r});
 $('endBtn').onclick=()=>{if(confirm('部屋を出ますか？（遊んでいる途中なら、あなたの席は CPU になります）')){DR.send({t:'leave'});setTimeout(()=>{location.href=location.pathname},200)}};
+function prepNote(ms){const n=ms!=null?Math.max(0,Math.ceil(ms/1000)):null;return role==='daruma'?`「唱える」を押そう${n!=null?`　あと${n}秒`:''}`:`だるまの準備中${n!=null?`　あと${n}秒`:''}`}
 // 子ども：押している場所の速さとダッシュ（パッドの上半分）を、変わったときだけ送る
 (function loop(){
+  if(prepEnd&&phase==='prep'){const left=prepEnd-performance.now(),sec=Math.max(0,Math.ceil(left/1000));if(sec!==prepS){prepS=sec;note(prepNote(left))}}
   if(RV&&RV.you>0&&!['lobby','over'].includes(RV.phase)){const v=pressed?want:0;if(Math.abs(v-lastWant)>0.01||boost!==lastBoost){lastWant=v;lastBoost=boost;DR.send({t:'want',v:+v.toFixed(2),b:boost})}}
   requestAnimationFrame(loop);
 })();
