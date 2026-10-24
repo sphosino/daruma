@@ -222,8 +222,7 @@ body.tutRun #chant{position:relative;z-index:8}
       <button class="pill on" id="shareBtn" type="button" hidden data-en="🎉 Share your result on X">🎉 結果をXでシェア</button>
       <div class="choices" id="types"></div>
       <div class="roomCard" id="roomCard" hidden></div>
-      <button class="go" id="startBtn" type="button" data-en="Start">はじめる</button>
-      <button class="pill" id="otherBtn" type="button" hidden></button>
+      <div class="choices" id="goRow"><button class="go" id="startBtn" type="button" data-en="Start">はじめる</button><button class="go" id="otherBtn" type="button" hidden></button></div>
       <p id="waitHost" hidden data-en="Waiting for the room's host to start">部屋を作った人が始めるのを待っています</p>
       <button class="pill" id="roomBtn" type="button" data-en="Play with friends (make a room)">みんなで遊ぶ（部屋を作る）</button>
       <div class="choices" id="exitRow" hidden><button class="pill" id="titleBtn" type="button" data-en="Back to the start screen">はじめの画面へ</button><a class="pill" href="/" style="text-decoration:none" data-en="Play other games">ほかのゲームで遊ぶ</a></div>
@@ -475,8 +474,8 @@ function end(kid){
   else{h=!kid?'時間切れ…だるまの勝ち':kid===me?'タッチ！あなたの勝ち':`${kid.name}がタッチ！子どもの勝ち`;
     p=kid?`だるまの時計は、のこり${left}秒だった。`:`ゴールまで、あと${Math.max(0,Math.round((P.GOAL_POS-me.pos)/(P.GOAL_POS-2)*100))}%だった。`}
   if(kid)beep(880,0.15);
-  $('overH').textContent=h;$('overP').textContent=p;$('startBtn').textContent=L('もう一回','Play again');$('over').hidden=false;$('exitRow').hidden=false;renderSetup();$('roles').hidden=true;
-  $('otherBtn').textContent=role==='kid'?L('だるまで遊ぶ','Play as the Daruma'):L('子どもで遊ぶ','Play as a runner');$('otherBtn').hidden=false;showFb();
+  $('overH').textContent=h;$('overP').textContent=p;$('startBtn').textContent=role==='kid'?L('子どもで遊ぶ','Play as a runner'):L('だるまで遊ぶ','Play as the Daruma');$('over').hidden=false;$('exitRow').hidden=false;renderSetup();$('roles').hidden=true;
+  $('otherBtn').textContent=role==='kid'?L('だるまで遊ぶ','Play as the Daruma'):L('子どもで遊ぶ','Play as a runner');$('otherBtn').hidden=false;$('otherBtn').style.order=role==='kid'?'':'-1';showFb();
   const txt=shareText(kid,left);$('shareBtn').onclick=()=>sharePost(txt+L(' #だるまさんがころんだ',' #RedLightGreenLight'),'https://mataasobo.com/daruma/');$('shareBtn').hidden=false}
 // ---------- 結果を X にシェア（三人将棋の share.js と同じ形） ----------
 function shareText(kid,left){
