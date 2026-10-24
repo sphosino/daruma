@@ -412,7 +412,7 @@ function resolve(){
   const out=R.resolve(st);
   if(out.carry){
     // 見送り：止まらずに続ける。最後の「だ」が次の「だ」
-    log(`${cyc}回目：${out.autoSkip?'気力が足りず、見送った':'見送った'}`+(role==='daruma'?`（気力+${Math.round(out.gained)}）`:''));showMsg(role==='daruma'?(out.autoSkip?'気力が足りない…見送り':'見送り！'):'だるまが\n見送り！',out.autoSkip?1100:800);
+    log(`${cyc}回目：${out.autoSkip?'気力が足りず、見送った':'見送った'}`+(role==='daruma'?`（気力+${Math.round(out.gained)}）`:''));if(role==='daruma')showMsg(out.autoSkip?'気力が足りない…見送り':'見送り！',out.autoSkip?1100:800);   // 子どもには出さない（走り続けられるので見て分かる）
     if(cpu)cpu.onCarry(st);else st.turnArmed=false;
     tutDaruma();   // 練習中は、CPU が選び直したオーラを手順のものに戻す（「いまはオーラが弱でした」の説明の前に変わっていた）
     phase='chant';renderCtl();renderChant();tutEv('carry');return}
@@ -796,6 +796,6 @@ function frame(now){
 renderTune();resize();renderSetup();$('overP').textContent=HOW[role];renderChant();requestAnimationFrame(frame);
 </script>
 <script src="room.js"></script>
-<script src="online.js?v=6"></script>
+<script src="online.js?v=7"></script>
 </body>
 </html>

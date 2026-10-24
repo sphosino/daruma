@@ -75,7 +75,7 @@ function onEvent(e){
   if(e.pushed){const names=e.pushed.map(id=>(st.children.find(c=>c.id===id)||{}).name).filter(Boolean);
     if(!e.pushed.length)showMsg('セーフ…みんな止まってた',1000);else if(!e.pushed.includes(myId))showMsg((role==='kid'?'セーフ！ ':'見つけた！ ')+names.join('・'),1200);
     push={from:e.from,to:st.children.map(c=>c.pos),t0:gt,dur:e.pushed.length?700:0};}
-  if(e.carry)showMsg(role==='daruma'?(e.auto?'気力が足りない…見送り':'見送り！'):'だるまが\n見送り！',e.auto?1100:800);
+  if(e.carry&&role==='daruma')showMsg(e.auto?'気力が足りない…見送り':'見送り！',e.auto?1100:800);
   if(e.outOfGas&&role==='daruma')showMsg('気力切れ！',1400,'テンポが半分に落ちた');
   if(e.over&&RV&&RV.winner){const w=RV.winner;beep(880,0.15);}
 }
