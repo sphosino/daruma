@@ -54,6 +54,9 @@ h1 span:nth-child(4n+1){color:var(--p0)}h1 span:nth-child(4n+2){color:var(--p1)}
 .chant{font-family:var(--pop);font-size:clamp(1.3rem,6vw,2rem);text-align:center;letter-spacing:.06em;min-height:1.4em;white-space:nowrap}
 .chant span{color:var(--line)}.chant span.said:nth-child(4n+1){color:var(--p0)}.chant span.said:nth-child(4n+2){color:var(--p1)}.chant span.said:nth-child(4n+3){color:var(--p2)}.chant span.said:nth-child(4n){color:var(--p3)}
 .chant span.said{text-shadow:0 3px 0 var(--card)}.chant.look span.said{color:var(--red)}
+/* 英語のとき：唱える言葉はローマ字の音（DA RU MA …）。1つずつが長いので小さめに、すき間をあける */
+html[lang=en] h1{line-height:1.1}
+.chant.en{font-size:clamp(1.05rem,5vw,1.7rem);letter-spacing:0}.chant.en span{margin:0 .12em}
 .stage{position:relative;flex:0 0 auto;box-shadow:0 5px 0 var(--line);height:clamp(160px,52vw,300px);border-radius:16px;overflow:hidden;background:var(--sky);border:2px solid var(--line)}
 canvas{display:block;width:100%;height:100%}
 .msg{white-space:pre-line;position:absolute;left:8px;right:138px;top:12%;width:auto;text-align:center;font-family:var(--pop);font-size:clamp(1.3rem,6.5vw,2.2rem);line-height:1.2;color:#e0402c;text-shadow:0 2px 0 #fffdf9;pointer-events:none}
@@ -85,7 +88,7 @@ canvas{display:block;width:100%;height:100%}
 .pad .padHi,.pad .padT{position:absolute;left:0;right:0;height:50%;display:flex;align-items:center;justify-content:center}.pad .padT{top:50%;bottom:auto}
 /* パッドの説明は、パッドの中ではなく下に小さく（2026-10-24）。パッドが出ていないときと、あそびかたの間（吹き出しの場所を空ける）は出さない */
 .padNote{display:flex;flex-direction:column;gap:1px;font-size:.72rem;font-weight:700;color:var(--muted);line-height:1.35}
-.padNote b{color:var(--accent);margin-right:6px}
+.padNote b{color:var(--accent);margin-right:6px}.padNote i{font-style:normal}
 .pad[hidden] + .padNote,body.tutRun .padNote{display:none}
 .pad.hi .padHi{background:color-mix(in srgb,var(--accent) 30%,var(--card))}
 
@@ -117,7 +120,7 @@ canvas{display:block;width:100%;height:100%}
 .btn.primary{box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 60%,var(--ink));background:var(--accent);border-color:var(--accent);color:var(--card);font-family:var(--pop);font-weight:400;font-size:1.1rem}
 .btn[disabled],.pill[disabled]{opacity:.45;cursor:default}
 .lv{--c:var(--line);position:relative}.lv.on{border-color:var(--c);box-shadow:0 0 0 2px var(--c) inset}
-.lv.next{border-style:dashed;border-color:var(--c)}.lv.next::after{content:'予約';position:absolute;top:3px;right:6px;font-size:.65rem;color:var(--c)}
+.lv.next{border-style:dashed;border-color:var(--c)}.lv.next::after{content:'予約';position:absolute;top:3px;right:6px;font-size:.65rem;color:var(--c)}html[lang=en] .lv.next::after{content:'next'}
 input[type=range]{width:100%;accent-color:var(--accent)}
 .arm.on{background:var(--on);border-color:var(--red)}
 /* はじめる・終わりの画面 */
@@ -187,9 +190,10 @@ body.tutRun #chant{position:relative;z-index:8}
 <div class="app">
   <header>
     <h1 aria-label="だるまさんがころんだ"><span>だ</span><span>る</span><span>ま</span><span>さ</span><span>ん</span><span>が</span><span>こ</span><span>ろ</span><span>ん</span><span>だ</span></h1>
-    <button type="button" class="pill" id="helpBtn" aria-label="あそびかた">？<span class="wide"> あそびかた</span></button>
+    <button type="button" class="pill" id="helpBtn" aria-label="あそびかた" data-en-label="How to play" data-en="?<span class=&quot;wide&quot;> How to play</span>">？<span class="wide"> あそびかた</span></button>
     <button type="button" class="pill" id="pauseBtn" hidden>⏸ 中断</button>
-    <button type="button" class="pill" id="endBtn" hidden>■ 終了</button>
+    <button type="button" class="pill" id="endBtn" hidden data-en="■ Quit">■ 終了</button>
+    <button type="button" class="pill" id="langBtn"></button>
     <button type="button" class="pill" id="tuneBtn" aria-expanded="false" hidden>⚙ 調整</button>
   </header>
   <div class="tuneWrap" id="tune" hidden><section class="tune" role="dialog" aria-label="調整">
@@ -208,40 +212,40 @@ body.tutRun #chant{position:relative;z-index:8}
   <div class="chant" id="chant"></div>
   <div class="stage" id="stage">
     <canvas id="cv"></canvas>
-    <div class="clock" id="clock" hidden><small id="clockLbl">だるまの時計</small><b id="clockNum">46.0<span>秒</span></b><span class="bar"><i id="clockBar"></i></span></div>
+    <div class="clock" id="clock" hidden><small id="clockLbl">だるまの時計</small><b id="clockNum">46.0<span data-en="s">秒</span></b><span class="bar"><i id="clockBar"></i></span></div>
     <div class="paused" id="paused" hidden></div>
     <div class="msg" id="msg" hidden></div>
     <div class="over" id="over">
-      <h2 id="overH">だるまさんがころんだ</h2>
+      <h2 id="overH" data-en="Red Light, Green Light">だるまさんがころんだ</h2>
       <div class="choices" id="roles"></div>
       <p id="overP"></p>
-      <button class="pill on" id="shareBtn" type="button" hidden>🎉 結果をXでシェア</button>
+      <button class="pill on" id="shareBtn" type="button" hidden data-en="🎉 Share your result on X">🎉 結果をXでシェア</button>
       <div class="choices" id="types"></div>
       <div class="roomCard" id="roomCard" hidden></div>
-      <button class="go" id="startBtn" type="button">はじめる</button>
-      <p id="waitHost" hidden>部屋を作った人が始めるのを待っています</p>
-      <button class="pill" id="roomBtn" type="button">みんなで遊ぶ（部屋を作る）</button>
+      <button class="go" id="startBtn" type="button" data-en="Start">はじめる</button>
+      <p id="waitHost" hidden data-en="Waiting for the room's host to start">部屋を作った人が始めるのを待っています</p>
+      <button class="pill" id="roomBtn" type="button" data-en="Play with friends (make a room)">みんなで遊ぶ（部屋を作る）</button>
       <div class="fb" id="fb" hidden>
-        <p class="fbQ">遊んでみて、どうでした？</p>
+        <p class="fbQ" data-en="How was it?">遊んでみて、どうでした？</p>
         <div class="choices" id="fbBtns"></div>
-        <p class="fbThanks" id="fbThanks" hidden>ありがとう！ 感想を書いてもらえるなら <a href="https://x.com/mataasobo_games" target="_blank" rel="noopener">X（@mataasobo_games）</a> へどうぞ。</p>
+        <p class="fbThanks" id="fbThanks" hidden data-en="Thanks! If you'd like to say more, find us on &lt;a href=&quot;https://x.com/mataasobo_games&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;X (@mataasobo_games)&lt;/a&gt;.">ありがとう！ 感想を書いてもらえるなら <a href="https://x.com/mataasobo_games" target="_blank" rel="noopener">X（@mataasobo_games）</a> へどうぞ。</p>
       </div>
     </div>
   </div>
 
   <div class="spot" id="spot" hidden></div>
-  <div class="tut" id="tut" hidden><div class="tutTop"><b id="tutStep"></b><button type="button" class="tutQuit" id="tutSkip">チュートリアルを終える</button></div><p id="tutText"></p><div class="tutBtns"><span class="tutDo" id="tutDo" hidden>やってみると、次に進みます</span><button type="button" class="pill on" id="tutNext" hidden>次へ</button></div></div>
+  <div class="tut" id="tut" hidden><div class="tutTop"><b id="tutStep"></b><button type="button" class="tutQuit" id="tutSkip" data-en="Skip tutorial">チュートリアルを終える</button></div><p id="tutText"></p><div class="tutBtns"><span class="tutDo" id="tutDo" hidden data-en="Do it to continue">やってみると、次に進みます</span><button type="button" class="pill on" id="tutNext" hidden>次へ</button></div></div>
   <!-- だるま役の操作 -->
   <div class="card" id="ctlDaruma" hidden>
-    <div><div class="lbl"><span>オーラ</span><span id="lvNote"></span></div>
+    <div><div class="lbl"><span data-en="Aura">オーラ</span><span id="lvNote"></span></div>
       <div class="row" id="lvRow"></div></div>
-    <div><div class="lbl"><span>テンポ</span><span id="tempoTxt"></span></div>
-      <input type="range" id="tempo" min="0" max="100" step="1" value="45" aria-label="テンポ"></div>
-    <div class="row" id="armRow"><button class="btn arm on" id="arm" type="button"></button><button class="btn primary" id="go" type="button">唱える</button></div>
+    <div><div class="lbl"><span data-en="Tempo">テンポ</span><span id="tempoTxt"></span></div>
+      <input type="range" id="tempo" min="0" max="100" step="1" value="45" aria-label="テンポ" data-en-label="Tempo"></div>
+    <div class="row" id="armRow"><button class="btn arm on" id="arm" type="button"></button><button class="btn primary" id="go" type="button" data-en="Chant">唱える</button></div>
   </div>
   <!-- 子ども役の操作 -->
-  <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る。上半分はダッシュ（すばやく走り出す・離すとすぐ止まる。体力を多く使う）"><div class="padHi">⚡ ダッシュ</div><span class="padT">🏃 走る</span><div class="scale"><span>歩く</span><span>小走り</span><span>全力</span></div><div class="tapHere" aria-hidden="true"><span>👆</span>ここ</div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
-  <div class="padNote" aria-hidden="true"><span><b>⚡ ダッシュ</b>すぐ走り出せて、すぐ止まれる（体力を多く使う）</span><span><b>🏃 走る</b>右ほど速い・離すと止まる</span></div>
+  <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る。上半分はダッシュ（すばやく走り出す・離すとすぐ止まる。体力を多く使う）" data-en-label="Run at the speed where you press. The top half is Dash (fast start, stops instantly when released, uses lots of energy)"><div class="padHi" data-en="⚡ Dash">⚡ ダッシュ</div><span class="padT" data-en="🏃 Run">🏃 走る</span><div class="scale"><span data-en="Walk">歩く</span><span data-en="Jog">小走り</span><span data-en="Sprint">全力</span></div><div class="tapHere" aria-hidden="true" data-en="<span>👆</span>here"><span>👆</span>ここ</div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
+  <div class="padNote" aria-hidden="true"><span><b data-en="⚡ Dash">⚡ ダッシュ</b><i data-en="Quick start, quick stop (uses lots of energy)">すぐ走り出せて、すぐ止まれる（体力を多く使う）</i></span><span><b data-en="🏃 Run">🏃 走る</b><i data-en="Further right is faster · let go to stop">右ほど速い・離すと止まる</i></span></div>
 </div>
 <script src="old/daruma-core.js?v=5"></script>
 <script src="rules.js?v=2"></script>
@@ -251,13 +255,36 @@ const R=window.DarumaRules,Core=R.Core,P=R.P,TIERS=R.TIERS;
 const $=id=>document.getElementById(id);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+// 言葉（2026-10-25）：日本語と英語。?lang=en・?lang=ja で選ぶと、このブラウザに覚える（また遊ぼのゲームで共通の mataasobo-lang）。
+//   選んでいなければブラウザの言語（日本語以外は英語）。画面の決まった字は data-en、動きで変わる字は L('日本語','English')
+const LANG=(()=>{let l=null;try{l=new URLSearchParams(location.search).get('lang');if(l==='en'||l==='ja')localStorage.setItem('mataasobo-lang',l);else l=localStorage.getItem('mataasobo-lang')}catch(e){}
+  return l==='en'||l==='ja'?l:/^ja\b/i.test(navigator.language||'')?'ja':'en'})();
+const EN=LANG==='en',L=(ja,en)=>EN?en:ja;
+document.documentElement.lang=LANG;
+if(EN){
+  document.title='Red Light, Green Light (Daruma-san ga Koronda)';
+  document.querySelectorAll('[data-en]').forEach(e=>e.innerHTML=e.dataset.en);
+  document.querySelectorAll('[data-en-label]').forEach(e=>e.setAttribute('aria-label',e.dataset.enLabel));
+  const h=document.querySelector('h1'),t='Red Light, Green Light';h.setAttribute('aria-label',t);h.innerHTML=[...t].map(s=>`<span>${s}</span>`).join('');
+  $('chant').classList.add('en');
+}
+$('langBtn').textContent=EN?'日本語':'EN';$('langBtn').setAttribute('aria-label',EN?'日本語にする':'English');
+$('langBtn').onclick=()=>{const u=new URLSearchParams(location.search);u.set('lang',EN?'ja':'en');location.search=u};
+// 英語の名前（CPU の子）。日本語の名前は「強気なボウル」のように性格つきだが、英語では名前だけ
+const KID_EN={c1:'Bowl',c2:'Cain',c3:'Mill',c4:'Ren',c5:'Yuki',c6:'Hayate',c7:'Koharu',c8:'Dai',c9:'Shizuka',c10:'Sora'};
+const nm=c=>EN&&KID_EN[c.id]||c.name;
+const CHANT_EN=['DA','RU','MA','SA','N','GA','KO','RO','N','DA'];
+const TEMPO_EN={'かなり遅い':'very slow','遅め':'slow','ふつう':'normal','速め':'fast','かなり速い':'very fast'};
+const tempoName=v=>{const s=Core.tempoLabel(v);return EN?TEMPO_EN[s]||s:s};
 // オーラ（前の名前は強気度）の見せ方（2026-10-19）：オーラが強いほど振り向きやすい、の向きで見せる。子どもから見える光そのものの名前。しくみ（old/daruma-core.js の段階）は
 //   そのままで、名前・並び・光だけ逆にしている。中身の low（振り向きが安い・見送りの実入りが少ない）が「激」、max が「低」
-const LV_NAME={low:'全開',mid:'強',high:'中',max:'弱'},LV_ORDER=['max','high','mid','low'];
+const LV_NAME=EN?{low:'Max',mid:'High',high:'Mid',max:'Low'}:{low:'全開',mid:'強',high:'中',max:'弱'},LV_ORDER=['max','high','mid','low'];
 const TIER_COL={low:'#e0402c',mid:'#ef8a2c',high:'#e5b830',max:'#4f8fd8'},PULSE={low:2.6,mid:1.6,high:1,max:0.6};
 const KID_COL=['#4f8fd8','#3aa65a','#b45cc8','#e0457b'];
 const TYPE_NOTE={normal:'クセなし。まずはこれで。',red:'気力の器が大きいぶん、見送っても実入りが細い。',oni:'振り向きが安い。そのかわりテンポを上げるのが高い。',attack:'テンポが安い。そのかわり振り向きが高い。'};
-const HOW={
+const HOW=EN?{
+  kid:"You're the orange runner. You can only move while the Daruma is chanting. If you're moving when it turns around, you get pushed back. If any runner touches the Daruma, the runners win. If the Daruma's clock (it only ticks while chanting) runs out, the Daruma wins. The stronger the Daruma's aura, the more likely it is to turn.",
+  daruma:"You're the Daruma. 4 CPU runners are racing to touch you. Push back anyone still moving when your chant ends, and hold out until your clock runs out to win. If you let a chant pass, you go straight into the next one without stopping."}:{
   kid:'あなたはオレンジの子。だるまが唱えている間だけ進めます。振り向いたときに動いていたら少し下がる。だれか1人でもだるまにタッチしたら子どもの勝ち、だるまの時計（唱えている時間だけ進む）が切れたらだるまの勝ち。だるまのオーラが強いほど、だるまは振り向きやすい。',
   daruma:'あなたはだるま。CPU の子ども4人がタッチしようと走ってきます。唱え終わったときに動いていた子を下がらせて、時計が切れるまで耐えたら勝ち。見送ると止まらずに、そのまま次の「だるまさんがころんだ」に続きます。'};
 
@@ -290,7 +317,7 @@ function later(ms,fn){timers.push({at:gt+ms,fn})}
 
 // ---------- 画面の部品 ----------
 function renderSetup(){
-  $('roles').innerHTML=[['kid','子どもで遊ぶ'],['daruma','だるまで遊ぶ']].map(([k,l])=>`<button class="pill${k===role?' on':''}" data-r="${k}" type="button">${l}</button>`).join('');
+  $('roles').innerHTML=[['kid',L('子どもで遊ぶ','Play as a runner')],['daruma',L('だるまで遊ぶ','Play as the Daruma')]].map(([k,l])=>`<button class="pill${k===role?' on':''}" data-r="${k}" type="button">${l}</button>`).join('');
   $('roles').querySelectorAll('button').forEach(b=>b.onclick=()=>{role=b.dataset.r;store.set('dk-role',role);renderSetup();if(phase==='setup')$('overP').textContent=HOW[role]});
   $('types').hidden=role!=='daruma'||!q.has('debug');   // だるまの種類は、まだ ?debug のときだけ（初めての人には意味が分からない）
   $('types').innerHTML=Object.keys(P.DARUMA_TYPES).map(k=>`<button class="pill${k===pickedType?' on':''}" data-t="${k}" type="button" title="${TYPE_NOTE[k]||''}">${P.DARUMA_TYPES[k].label}</button>`).join('');
@@ -305,15 +332,17 @@ function renderCtl(){
 
   if(role!=='daruma')return;
   const prep=phase==='prep';
-  setHTML($('lvRow'),LV_ORDER.map(t=>`<button class="btn lv${st.reward===t?' on':''}${st.nextReward===t?' next':''}" data-r="${t}" style="--c:${TIER_COL[t]}" type="button">${LV_NAME[t]}<small>見送り+${Math.round(P.REWARD[t].reward*st.type.skipRewardScale)}<br>振向−${Math.round(Core.turnCostOf(P,st,t))}</small></button>`).join(''));
+  setHTML($('lvRow'),LV_ORDER.map(t=>`<button class="btn lv${st.reward===t?' on':''}${st.nextReward===t?' next':''}" data-r="${t}" style="--c:${TIER_COL[t]}" type="button">${LV_NAME[t]}<small>${L('見送り','Pass ')}+${Math.round(P.REWARD[t].reward*st.type.skipRewardScale)}<br>${L('振向','Turn ')}−${Math.round(Core.turnCostOf(P,st,t))}</small></button>`).join(''));
   const cost=Math.round(Core.turnCostOf(P,st)),afford=st.stamina>=cost;
   // 気力が足りないときは、どちらを選んでも見送りになるので、押せない灰色にして理由を出す（押しても見た目が変わらず、壊れたように見えていた）
   $('arm').disabled=!afford;$('arm').classList.toggle('on',st.turnArmed&&afford);
-  setHTML($('arm'),!afford?`🙈 気力が足りないので見送り<small>${st.reward==='low'?'見送って気力をためよう':'オーラを強くすると振り向ける'}（気力+${Math.round(Core.currentSkipReward(P,st))}）</small>`:st.turnArmed?`👀 唱え終わったら振り向く<small>気力 -${cost}</small>`:`🙈 振り向かずに見送る<small>気力 +${Math.round(Core.currentSkipReward(P,st))}</small>`);
+  const gain=Math.round(Core.currentSkipReward(P,st));
+  setHTML($('arm'),EN?(!afford?`🙈 Not enough spirit: pass<small>${st.reward==='low'?'Pass to recover spirit':'A stronger aura lets you turn'} (spirit +${gain})</small>`:st.turnArmed?`👀 Turn when the chant ends<small>spirit -${cost}</small>`:`🙈 Let it pass<small>spirit +${gain}</small>`)
+    :!afford?`🙈 気力が足りないので見送り<small>${st.reward==='low'?'見送って気力をためよう':'オーラを強くすると振り向ける'}（気力+${gain}）</small>`:st.turnArmed?`👀 唱え終わったら振り向く<small>気力 -${cost}</small>`:`🙈 振り向かずに見送る<small>気力 +${gain}</small>`);
   $('go').disabled=!prep||paused;
-  $('tempo').value=Math.round(st.tempoValue);$('tempoTxt').textContent=Core.tempoLabel(st.tempoValue)+(phase==='chant'?'（上げると気力を使う）':'');
+  $('tempo').value=Math.round(st.tempoValue);$('tempoTxt').textContent=tempoName(st.tempoValue)+(phase==='chant'?L('（上げると気力を使う）',' (raising it costs spirit)'):'');
 
-  $('lvNote').textContent=prep?'':st.nextReward?'唱え終わりで変わる':'押すと予約';
+  $('lvNote').textContent=prep?'':st.nextReward?L('唱え終わりで変わる','changes when the chant ends'):L('押すと予約','tap to reserve');
 }
 // だるまの時計を描く。唱えている間だけ進むので、それ以外は「止まってる」
 function renderClock(){
@@ -323,16 +352,16 @@ function renderClock(){
   const full=(role==='daruma'?T.clockDaruma:T.clockKid);
   $('clockNum').firstChild.nodeValue=(tut?full:left).toFixed(1);
   $('clockBar').style.width=tut?'100%':(100*left/(P.GOAL_TICKS*P.TICK_MS/1000))+'%';
-  el.classList.toggle('stop',tut||phase!=='chant');$('clockLbl').textContent=tut?'練習中は進まない':phase==='chant'?'だるまの時計':'時計は止まってる';el.classList.toggle('low',!tut&&left<=10);el.classList.toggle('panic',!tut&&left<=5&&phase==='chant');
+  el.classList.toggle('stop',tut||phase!=='chant');$('clockLbl').textContent=tut?L('練習中は進まない','paused in practice'):phase==='chant'?L('だるまの時計',"Daruma's clock"):L('時計は止まってる','clock stopped');el.classList.toggle('low',!tut&&left<=10);el.classList.toggle('panic',!tut&&left<=5&&phase==='chant');
 }
 function renderChant(){const el=$('chant');el.classList.toggle('look',phase==='look'||phase==='push');
-  if(phase==='prep'||phase==='cue'){el.innerHTML=`<span class="said">${phase==='cue'?'すぅ…':'ひと休み'}</span>`;return}
-  const n=phase==='push'?10:st?R.said(st):0;el.innerHTML=Core.CHANT_CHARS.map((s,k)=>`<span class="${k<n?'said':''}">${s}</span>`).join('')}
+  if(phase==='prep'||phase==='cue'){el.innerHTML=`<span class="said">${phase==='cue'?L('すぅ…','Ready…'):L('ひと休み','Break')}</span>`;return}
+  const n=phase==='push'?10:st?R.said(st):0;el.innerHTML=(EN?CHANT_EN:Core.CHANT_CHARS).map((s,k)=>`<span class="${k<n?'said':''}">${s}</span>`).join('')}
 let msgT=0;function showMsg(s,ms,sub){const m=$('msg');m.textContent=s;if(sub){const e=document.createElement('small');e.textContent=sub;m.appendChild(e)}m.hidden=false;clearTimeout(msgT);msgT=setTimeout(()=>m.hidden=true,ms||1100)}
 function log(s){$('log').insertAdjacentHTML('afterbegin',`<div>${s}</div>`)}
 function setPaused(s){$('paused').textContent=s||'';$('paused').hidden=!s}
 let pausedNote='';
-function note(s){pausedNote=s||'';setPaused(paused?'中断中（⏸ をもう一度で再開）':pausedNote)}
+function note(s){pausedNote=s||'';setPaused(paused?L('中断中（⏸ をもう一度で再開）','Paused (press ⏸ again to resume)'):pausedNote)}
 
 // ---------- 音 ----------
 let actx=null;
@@ -347,7 +376,7 @@ function start(){
   let ci=0;st.children.forEach((c,i)=>{c.lane=i;c.col=c.human?null:KID_COL[ci++]});
   me=st.children.find(c=>c.human)||null;cpu=role==='kid'?R.cpuDaruma():null;
   applyTune();if(tut)P.GOAL_TICKS=1e7;
-  $('ctlDaruma').hidden=role!=='daruma';$('pad').hidden=role!=='kid';$('pauseBtn').hidden=false;$('endBtn').hidden=false;
+  $('ctlDaruma').hidden=role!=='daruma';$('pad').hidden=role!=='kid';$('pauseBtn').hidden=false;$('endBtn').hidden=false;$('langBtn').hidden=true;
   $('over').hidden=true;$('shareBtn').hidden=true;meCaughtN=0;$('log').innerHTML='';prev=snap();prevAt=gt;
   log(role==='kid'?`子ども：${st.children.map(c=>c.name).join('・')}`:`${st.type.label}で始めた。子ども：${st.children.map(c=>c.name).join('・')}`);
   renderPause();toPrep(true);
@@ -357,9 +386,9 @@ const snap=()=>{prevVel=st.children.map(c=>c.vel);return st.children.map(c=>c.po
 let prevVel=null;
 function toPrep(first){
   phase='prep';R.applyReserved(st);
-  if(role==='daruma'){st.turnArmed=true;note(first?'':'時間は止まっている。今のうちに作戦を立てよう')}
+  if(role==='daruma'){st.turnArmed=true;note(first?'':L('時間は止まっている。今のうちに作戦を立てよう','Time is stopped. Plan your next move'))}
   else{cpu.onPrep(st);const b=first?1500:(T.breakMin+Math.random()*Math.max(0,T.breakMax-T.breakMin))*1000;
-    later(Math.max(0,b-T.cue*1000),toCue);note('ひと休み。動けない')}
+    later(Math.max(0,b-T.cue*1000),toCue);note(L('ひと休み。動けない',"Break. You can't move"))}
   renderCtl();renderChant();tutEv('prep');
 }
 function toCue(){phase='cue';beep(260,0.5,'sine');renderCtl();renderChant();later(T.cue*1000,toChant)}
@@ -371,7 +400,7 @@ function step(){ // 0.1秒ぶん世界を進める
 }
 function tick(){
   const before=R.said(st),res=step();
-  if(st.justOutOfGas){st.justOutOfGas=false;if(role==='daruma')showMsg('気力切れ！',1400,'テンポが半分に落ちた');log(`${st.cycle}回目：気力切れでテンポが半分に`)}
+  if(st.justOutOfGas){st.justOutOfGas=false;if(role==='daruma')showMsg(L('気力切れ！','Out of spirit!'),1400,L('テンポが半分に落ちた','Tempo dropped by half'));log(`${st.cycle}回目：気力切れでテンポが半分に`)}
   const n=R.said(st);if(n>before&&n<10)beep(520+n*18,0.06);
   if(res.reached){end(res.reached);return}
   if(res.timeUp){end(null);return}
@@ -393,7 +422,7 @@ function lookTick(){
   for(const c of r.newly){
     // 見つかった：その場で固まって「！」。自分なら、どれだけ間に合わなかったかを出す
     caughtAt[c.id]=gt;beep(150,0.25,'sawtooth');
-    if(c===me)showMsg('見つかった！',2200);
+    if(c===me)showMsg(L('見つかった！','Caught!'),2200);
   }
   if(r.done)endLook();
 }
@@ -401,8 +430,9 @@ function endLook(){
   const cyc=st.cycle,cost=Math.round(Core.turnCostOf(P,st));
   const out=R.endLook(st);
   const names=out.caughtList.map(c=>c.name),meCaught=me&&out.caughtList.includes(me);if(meCaught)meCaughtN++;
-  if(!out.caughtList.length)showMsg('セーフ…みんな止まってた',1000);
-  else if(!meCaught)showMsg((me?'セーフ！ ':'見つけた！ ')+names.join('・')+(me?'が見つかった':''),1200);
+  const shown=out.caughtList.map(nm).join(L('・',', '));
+  if(!out.caughtList.length)showMsg(L('セーフ…みんな止まってた','Safe… everyone stopped'),1000);
+  else if(!meCaught)showMsg(EN?(me?`Safe! ${shown} got caught`:`Got you! ${shown}`):(me?'セーフ！ ':'見つけた！ ')+shown+(me?'が見つかった':''),1200);
   log(`${cyc}回目：振り向いた`+(role==='daruma'?`（気力-${cost}）`:'')+(names.length?` → ${names.join('・')} が見つかって下がった`:' → 誰も動いてなかった'));
   // ギューっと押し戻す（最初は速く、だんだんゆっくり）
   phase='push';push={from:out.before,to:snap(),t0:gt,dur:out.caughtList.length?700:0};prev=snap();prevAt=gt;renderCtl();renderChant();
@@ -414,7 +444,7 @@ function resolve(){
   const out=R.resolve(st);
   if(out.carry){
     // 見送り：止まらずに続ける。最後の「だ」が次の「だ」
-    log(`${cyc}回目：${out.autoSkip?'気力が足りず、見送った':'見送った'}`+(role==='daruma'?`（気力+${Math.round(out.gained)}）`:''));if(role==='daruma')showMsg(out.autoSkip?'気力が足りない…見送り':'見送り！',out.autoSkip?1100:800);   // 子どもには出さない（走り続けられるので見て分かる）
+    log(`${cyc}回目：${out.autoSkip?'気力が足りず、見送った':'見送った'}`+(role==='daruma'?`（気力+${Math.round(out.gained)}）`:''));if(role==='daruma')showMsg(out.autoSkip?L('気力が足りない…見送り','Not enough spirit… passed'):L('見送り！','Passed!'),out.autoSkip?1100:800);   // 子どもには出さない（走り続けられるので見て分かる）
     if(cpu)cpu.onCarry(st);else st.turnArmed=false;
     tutDaruma();   // 練習中は、CPU が選び直したオーラを手順のものに戻す（「いまはオーラが弱でした」の説明の前に変わっていた）
     phase='chant';renderCtl();renderChant();tutEv('carry');return}
@@ -423,27 +453,38 @@ function resolve(){
     const names=out.caught.map(c=>c.name);
     out.caught.forEach(c=>caughtAt[c.id]=gt);if(out.caught.length)beep(150,0.25,'sawtooth');
     const meCaught=me&&out.caught.includes(me);if(meCaught)meCaughtN++;
-    showMsg(meCaught?'見つかった！下がる':out.caught.length?'見た！ '+names.join('・'):'見た！ …みんな止まってた',T.watch*1000);
+    showMsg(meCaught?L('見つかった！下がる','Caught! Pushed back'):out.caught.length?L('見た！ ','Saw you! ')+out.caught.map(nm).join(L('・',', ')):L('見た！ …みんな止まってた','Looked! …everyone stopped'),T.watch*1000);
     log(`${cyc}回目：振り向いた`+(role==='daruma'?`（気力-${cost}）`:'')+(out.caught.length?` → ${names.join('・')} を下がらせた`:' → 誰も動いてなかった'))}
-  else{showMsg('力が足りない…',1000);log(`${cyc}回目：振り向こうとしたが、気力が足りなかった`)}
+  else{showMsg(L('力が足りない…','Not enough spirit…'),1000);log(`${cyc}回目：振り向こうとしたが、気力が足りなかった`)}
   prev=snap();prevAt=gt;renderCtl();renderChant();
   later(out.turned?T.watch*1000:1000,()=>toPrep(false));
 }
 function end(kid){
   if(tut&&kid){ // 練習中はタッチしても終わらない：みんなスタートに戻って続ける
-    showMsg('タッチ！',1500,role==='kid'?'本番なら、これで子どもの勝ち':'本番なら、これでだるまの負け');
+    showMsg(L('タッチ！','Touch!'),1500,role==='kid'?L('本番なら、これで子どもの勝ち','In a real game, the runners win'):L('本番なら、これでだるまの負け','In a real game, the Daruma loses'));
     st.children.forEach(c=>{c.pos=2;c.vel=0});prev=snap();return}
-  phase='over';timers=[];paused=false;renderCtl();renderChant();note('');$('pauseBtn').hidden=true;$('endBtn').hidden=true;renderPause();
+  phase='over';timers=[];paused=false;renderCtl();renderChant();note('');$('pauseBtn').hidden=true;$('endBtn').hidden=true;$('langBtn').hidden=false;renderPause();
   const left=Math.max(0,(P.GOAL_TICKS-st.elapsedTicks)*P.TICK_MS/1000).toFixed(1);let h,p;
-  if(role==='daruma'){h=kid?`${kid.name}にタッチされた`:'だるまの勝ち！';p=kid?`${st.cycle}回目、時計はのこり${left}秒だった。捕まえたのは${st.catches}回。`:`耐えきった。${st.cycle}回唱えて、捕まえたのは${st.catches}回。`}
+  const rest=Math.max(0,P.GOAL_POS-(me?me.pos:0)).toFixed(0);
+  if(EN){
+    if(role==='daruma'){h=kid?`${nm(kid)} touched you`:'The Daruma wins!';p=kid?`Chant ${st.cycle}, with ${left}s left on the clock. You caught runners ${st.catches} times.`:`You held out! ${st.cycle} chants, ${st.catches} catches.`}
+    else{h=!kid?"Time's up… the Daruma wins":kid===me?'Touch! You win':`${nm(kid)} touched it! The runners win`;
+      p=kid?`The Daruma's clock had ${left}s left.`:`You still had ${Math.max(0,Math.round((P.GOAL_POS-me.pos)/(P.GOAL_POS-2)*100))}% of the way to go.`}}
+  else if(role==='daruma'){h=kid?`${kid.name}にタッチされた`:'だるまの勝ち！';p=kid?`${st.cycle}回目、時計はのこり${left}秒だった。捕まえたのは${st.catches}回。`:`耐えきった。${st.cycle}回唱えて、捕まえたのは${st.catches}回。`}
   else{h=!kid?'時間切れ…だるまの勝ち':kid===me?'タッチ！あなたの勝ち':`${kid.name}がタッチ！子どもの勝ち`;
-    p=kid?`だるまの時計は、のこり${left}秒だった。`:`あなたはあと${Math.max(0,P.GOAL_POS-me.pos).toFixed(0)}だった。`}
+    p=kid?`だるまの時計は、のこり${left}秒だった。`:`あなたはあと${rest}だった。`}
   if(kid)beep(880,0.15);
-  $('overH').textContent=h;$('overP').textContent=p;$('startBtn').textContent='もう一回';$('over').hidden=false;renderSetup();showFb();
-  const txt=shareText(kid,left);$('shareBtn').onclick=()=>sharePost(txt+' #だるまさんがころんだ','https://mataasobo.com/daruma/');$('shareBtn').hidden=false}
+  $('overH').textContent=h;$('overP').textContent=p;$('startBtn').textContent=L('もう一回','Play again');$('over').hidden=false;renderSetup();showFb();
+  const txt=shareText(kid,left);$('shareBtn').onclick=()=>sharePost(txt+L(' #だるまさんがころんだ',' #RedLightGreenLight'),'https://mataasobo.com/daruma/');$('shareBtn').hidden=false}
 // ---------- 結果を X にシェア（三人将棋の share.js と同じ形） ----------
 function shareText(kid,left){
-  const c=st.cycle,caught=meCaughtN?`見つかった${meCaughtN}回`:'一度も見つからず';
+  const c=st.cycle;
+  if(EN){const caught=meCaughtN?`caught ${meCaughtN}×`:'never caught',G='Red Light, Green Light';
+    if(role==='daruma')return kid?`${G}: played the Daruma and got touched by ${nm(kid)}… (${left}s left · ${st.catches} catches)`:`${G}: held out as the Daruma! (${c} chants · ${st.catches} catches)`;
+    if(kid===me)return `${G}: I touched the Daruma! (${left}s left · ${caught})`;
+    if(kid)return `${G}: ${nm(kid)} touched the Daruma first… runners win (${caught})`;
+    return `${G}: time ran out… ${Math.max(0,Math.round((P.GOAL_POS-me.pos)/(P.GOAL_POS-2)*100))}% left to go (${caught})`}
+  const caught=meCaughtN?`見つかった${meCaughtN}回`:'一度も見つからず';
   if(role==='daruma')return kid?`だるまさんがころんだ、だるまで遊んで${kid.name}にタッチされた…（時計のこり${left}秒・捕まえたのは${st.catches}回）`
     :`だるまさんがころんだ、だるまで耐えきった！（${c}回唱えて、捕まえたのは${st.catches}回）`;
   if(kid===me)return `だるまさんがころんだで、だるまにタッチ！（時計のこり${left}秒・${caught}）`;
@@ -459,7 +500,7 @@ async function sharePost(text,url){
   }catch(e){if(e&&e.name==='AbortError')return}   // 共有の画面を閉じただけ
   window.open('https://x.com/intent/post?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(url),'_blank','noopener')}
 // ---------- ワンタップの感想（終わりの画面） ----------
-const FB=[['fun','おもしろい'],['hard','むずかしい'],['easy','かんたん'],['confused','よくわからない']];
+const FB=EN?[['fun','Fun'],['hard','Too hard'],['easy','Too easy'],['confused','Confusing']]:[['fun','おもしろい'],['hard','むずかしい'],['easy','かんたん'],['confused','よくわからない']];
 let fbSent=false;
 function showFb(){fbSent=false;$('fb').hidden=false;$('fbThanks').hidden=true;
   $('fbBtns').innerHTML=FB.map(([k,l])=>`<button class="pill" type="button" data-k="${k}">${l}</button>`).join('');
@@ -467,11 +508,11 @@ function showFb(){fbSent=false;$('fb').hidden=false;$('fbThanks').hidden=true;
     if(fbSent)return;fbSent=true;b.classList.add('on');
     try{gtag('event','daruma_fb_'+b.dataset.k,{role})}catch(e){}
     $('fbBtns').querySelectorAll('button').forEach(x=>{if(x!==b)x.disabled=true});$('fbThanks').hidden=false})}
-function quit(){$('roles').hidden=false;if(tut){tut=null;$('tut').hidden=true;tutHl(null)}$('tune').hidden=true;tunePaused=false;phase='setup';timers=[];paused=false;st=null;me=null;note('');$('pauseBtn').hidden=true;$('endBtn').hidden=true;renderPause();
+function quit(){$('roles').hidden=false;if(tut){tut=null;$('tut').hidden=true;tutHl(null)}$('tune').hidden=true;tunePaused=false;phase='setup';timers=[];paused=false;st=null;me=null;note('');$('pauseBtn').hidden=true;$('endBtn').hidden=true;$('langBtn').hidden=false;renderPause();
   $('ctlDaruma').hidden=true;$('pad').hidden=true;
-  $('fb').hidden=true;$('shareBtn').hidden=true;$('overH').textContent='だるまさんがころんだ';$('overP').textContent=HOW[role];$('startBtn').textContent='はじめる';$('over').hidden=false;renderSetup();renderChant()}
+  $('fb').hidden=true;$('shareBtn').hidden=true;$('overH').textContent=L('だるまさんがころんだ','Red Light, Green Light');$('overP').textContent=HOW[role];$('startBtn').textContent=L('はじめる','Start');$('over').hidden=false;renderSetup();renderChant()}
 function togglePause(){if(!st||phase==='over'||phase==='setup')return;paused=!paused;renderPause();note(pausedNote);renderCtl()}
-function renderPause(){const t=paused?'▶ 再開':'⏸ 中断';$('pauseBtn').textContent=t;$('pause2').textContent=t;$('pauseBtn').classList.toggle('on',paused);$('pause2').classList.toggle('on',paused)}
+function renderPause(){const t=paused?L('▶ 再開','▶ Resume'):L('⏸ 中断','⏸ Pause');$('pauseBtn').textContent=t;$('pause2').textContent=t;$('pauseBtn').classList.toggle('on',paused);$('pause2').classList.toggle('on',paused)}
 
 // ---------- あそびかた（チュートリアル） ----------
 // 大事なところでゲームを止めて説明する（stop）。「やってみよう」のところだけ動かしたまま待つ（do）。
@@ -504,7 +545,7 @@ const TUT={
     {type:'stop',on:'now',t:'唱えている間',x:'唱えている間だけ、子どもは進めます。唱え終わったとき、このボタンが「👀 振り向く」なら振り向きます。',hl:'#arm'},
     {type:'stop',on:'lookStart',t:'振り向いた！',x:'このあと少し見ている間に、まだ動いている子を見つけます。',hl:'#stage'},
     {type:'stop',on:'lookEnd',t:'見つけると',x:e=>e.n?'見つけた子は押し戻されます。':'みんな止まっていました。止まっている子は見つけられません。'},
-    {type:'stop',on:'now',t:'気力',x:'振り向くと、だるまの「気力」が減ります。だるまの足もとのゲージと数字が気力です。気力が足りないと（ゲージが灰色）振り向けず、自動で見送りになります。気力が0になると、テンポが半分に落ちます。',hl:'#stage'},
+    {type:'stop',on:'now',t:'気力',key:'stamina',x:'振り向くと、だるまの「気力」が減ります。だるまの足もとのゲージと数字が気力です。気力が足りないと（ゲージが灰色）振り向けず、自動で見送りになります。気力が0になると、テンポが半分に落ちます。',hl:'#stage'},
     {type:'stop',on:'prep',t:'見送る',x:'次は見送ってみよう。「唱える」を押して、唱えている間に左のボタンで「🙈 見送る」に切り替えます。',hl:'#armRow'},
     {type:'do',on:'carry',t:'見送る',x:'「唱える」を押して、唱えている間に左のボタンを「🙈 見送る」に切り替えよう。',hl:'#armRow'},
     {type:'stop',on:'now',t:'見送った！',x:'見送ると、止まらずにそのまま次の「だるまさんがころんだ」を唱えます。子どもは走り続けられます。そのかわり、減った気力がたまります。',hl:'#stage'},
@@ -514,6 +555,40 @@ const TUT={
     {type:'stop',on:'now',t:'勝ち負け',x:'子どもにタッチされずに、だるまの時計（唱えている時間だけ進む）が切れるまで耐えたら勝ちです。',hl:'#clock'},
     {type:'stop',on:'now',t:'まとめ',x:()=>TUT_END[role],end:true}]
 };
+// 英語の手順（上と同じ順番。t・x・fail・nudgeMsg を置きかえる）
+const TUT_EN={
+  kid:[
+    {t:'You',x:"You're the orange runner. You can only move while the Daruma is chanting \"Da-ru-ma-sa-n-ga-ko-ro-n-da\"."},
+    {t:'Run',x:'Press the pad to run. Where you press sets your speed: further right is faster. You can slide left and right while holding. Let go to stop.'},
+    {t:'Try it',x:'Hold the right end of the pad ("Sprint") and run at full speed.',nudgeMsg:'Press further right, on "Sprint"'},
+    {t:'Full speed',x:'You reached full speed. Getting from standing still to full speed takes 2 seconds.'},
+    {t:'Stop',x:'Now practice stopping. From full speed it takes 1 second to stop. Let go before "ko-ro-n-da" and be standing still.',fail:['Still moving','Let go a little earlier']},
+    {t:'You stopped!',x:"If you're standing still when the chant ends, you're safe even if the Daruma turns around."},
+    {t:'Getting caught',x:'This time the Daruma will always turn. Keep running and wait for the chant to end.'},
+    {t:'It turned!',x:'The Daruma turned around. While it watches for a moment, anyone still moving gets caught with a "!".'},
+    {t:'When caught',x:e=>e.meCaught?'You were caught, so you get pushed back.':"You stopped in time, so you're safe. If you'd been moving, you'd be caught and pushed back."},
+    {t:'Letting it pass',x:"Sometimes the Daruma doesn't turn. Keep running and wait for the chant to end."},
+    {t:'Passed!',x:"The Daruma let it pass without turning, so the next chant starts right away and you can keep running. The weaker the Daruma's aura, the more often it lets it pass. Its aura was \"Low\" just now."},
+    {t:'Dash',x:'The top half of the pad is Dash. You speed up fast, and letting go in the top half stops you almost instantly. But it uses a lot of energy.'},
+    {t:'Energy',x:"Running drains the energy bar under your feet. At 0 you're winded and slow down. Don't sprint the whole time. Ease off now and then."},
+    {t:'Win or lose',x:"In the real game, 3 CPU runners join you. If anyone touches the Daruma, the runners win. If the Daruma's clock (it only ticks while chanting) runs out, you lose."},
+    {t:'Summary'}],
+  daruma:[
+    {t:'Daruma',x:"You're the Daruma. CPU runners are racing toward you, trying to touch you."},
+    {t:'Chant',x:'Press "Chant".'},
+    {t:'While chanting',x:'Runners can only move while you chant. When the chant ends, if this button says "👀 Turn", you turn around.'},
+    {t:'You turned!',x:'For a moment now, you watch and catch anyone still moving.'},
+    {t:'Catching',x:e=>e.n?'Caught runners get pushed back.':"Everyone was standing still. You can't catch someone who isn't moving."},
+    {t:'Spirit',x:'Turning around costs the Daruma "spirit". The gauge and number under the Daruma show it. Without enough spirit (gray gauge) you can\'t turn, and the chant passes automatically. At 0 spirit, your tempo drops by half.'},
+    {t:'Let it pass',x:'Next, try letting a chant pass. Press "Chant", and while chanting, switch the left button to "🙈 Let it pass".'},
+    {t:'Let it pass',x:'Press "Chant", and while chanting, switch the left button to "🙈 Let it pass".'},
+    {t:'Passed!',x:'When you let it pass, you go straight into the next chant without stopping. Runners can keep running, but you recover spirit.'},
+    {t:'Aura',x:'The stronger your aura, the less spirit it costs to turn ("Turn −" on the buttons). But passing recovers less ("Pass +").'},
+    {t:'Aura is visible',x:'Runners can see your aura too. When it\'s weak, they get bold. Tapping while chanting "reserves" it, and it changes when the chant ends.'},
+    {t:'Tempo',x:'The faster you chant (slider to the right), the more spirit you use.'},
+    {t:'Win or lose',x:"Hold out until the Daruma's clock (it only ticks while chanting) runs out without being touched, and you win."},
+    {t:'Summary'}]};
+if(EN)for(const r of ['kid','daruma'])TUT_EN[r].forEach((e,i)=>Object.assign(TUT[r][i],e));
 let tut=null,tutDm='normal',nudged=-1;
 function startTut(){tut={steps:TUT[role],i:-1,hold:false};tutDm='normal';start()}
 function tutCur(){return tut&&tut.steps[tut.i]}
@@ -543,8 +618,8 @@ function tutPlace(){
 addEventListener('resize',()=>tutPlace());
 function tutShow(b,e,hold){
   $('tut').hidden=false;$('tut').classList.toggle('tutHold',!!hold);
-  $('tutStep').textContent=`あそびかた ${tut.i+1}/${tut.steps.length}：${b.t}`;$('tutText').textContent=(typeof b.x==='function'?b.x(e||{}):b.x).replace(/。(?=.)/g,'。\n');   // 文ごとに改行
-  $('tutNext').hidden=!hold;$('tutDo').hidden=!!hold;$('tutNext').textContent=b.end?'本番をはじめる':'わかった';$('tutSkip').hidden=!!b.end;tutHl(b.hl);requestAnimationFrame(tutPlace);
+  $('tutStep').textContent=`${L('あそびかた','How to play')} ${tut.i+1}/${tut.steps.length}${L('：',': ')}${b.t}`;$('tutText').textContent=(typeof b.x==='function'?b.x(e||{}):b.x).replace(EN?/([.!?]) (?=[A-Z"])/g:/。(?=.)/g,EN?'$1\n':'。\n');   // 文ごとに改行
+  $('tutNext').hidden=!hold;$('tutDo').hidden=!!hold;$('tutNext').textContent=b.end?L('本番をはじめる','Start the real game'):L('わかった','Got it');$('tutSkip').hidden=!!b.end;tutHl(b.hl);requestAnimationFrame(tutPlace);
 }
 function tutNextBeat(){
   tut.i++;tut.hold=false;const b=tutCur();if(!b){endTut();return}
@@ -558,7 +633,7 @@ function tutEv(name,e){
   const b=tutCur();
   // だるま役で、振り向くのを待っているのに見送りになった：ボタンを振り向くに戻して知らせる（待ったまま進めなくなるのを防ぐ）
   if(b&&role==='daruma'&&name==='carry'&&(b.on==='lookStart'||b.on==='lookEnd')&&!tut.hold){
-    st.turnArmed=true;renderCtl();showMsg('見送りになりました',1600,'ボタンを「👀 振り向く」にして、唱え終わるのを待とう');return}
+    st.turnArmed=true;renderCtl();showMsg(L('見送りになりました','It passed'),1600,L('ボタンを「👀 振り向く」にして、唱え終わるのを待とう','Set the button to "👀 Turn" and wait for the chant to end'));return}
   if(!b||tut.hold||b.on!==name)return;
   if(b.if&&!b.if(e||{})){if(b.fail)showMsg(b.fail[0],1400,b.fail[1]);return}
   if(b.type==='do')tutNextBeat();
@@ -566,20 +641,28 @@ function tutEv(name,e){
 }
 function tutTick(){
   const b=tutCur();if(!b||tut.hold)return;
-  if(b.nudge&&b.nudge()&&nudged!==st.cycle*1000+st.resolvedCycles){nudged=st.cycle*1000+st.resolvedCycles;showMsg(b.nudgeMsg||'そろそろ離そう',900)}
+  if(b.nudge&&b.nudge()&&nudged!==st.cycle*1000+st.resolvedCycles){nudged=st.cycle*1000+st.resolvedCycles;showMsg(b.nudgeMsg||L('そろそろ離そう','Let go soon'),900)}
   tutEv('tick');
 }
 // 子ども役の練習中、CPU のだるまの振り向き方を手順に合わせる
 function tutDaruma(){
   if(!tut)return;
   // だるま役：「気力」の説明までは気力を満タンに（オーラを変えても振り向けなくならないように）
-  if(role==='daruma'){const qi=tut.steps.findIndex(b=>b.t==='気力');if(tut.i<qi)st.stamina=st.staminaMax;return}
+  if(role==='daruma'){const qi=tut.steps.findIndex(b=>b.key==='stamina');if(tut.i<qi)st.stamina=st.staminaMax;return}
   if(tutDm==='never')st.turnArmed=false;
   else if(tutDm==='always'){st.stamina=st.staminaMax;st.turnArmed=true}
   else if(tutDm==='skip'){st.reward='max';st.turnArmed=false}
 }
 // 終わり方：最後の吹き出し「まとめ」で振り返ってから、そのまま本番へ。「チュートリアルを終える」でもすぐ本番
-const TUT_END={
+const TUT_END=EN?{
+  kid:`・Run at the speed where you press. Let go to stop (1 second from full speed)
+・If you're moving when the chant ends, you get caught and pushed back
+・A Daruma with a weaker aura lets chants pass more often
+・The top half of the pad is Dash (stops fast, but uses energy)`,
+  daruma:`・Turn when the chant ends and catch anyone moving
+・Letting a chant pass keeps it going and recovers spirit
+・The stronger your aura, the cheaper it is to turn
+・Chanting faster uses more spirit`}:{
   kid:`・押した場所の速さで走り、離すと止まる（全力からは1秒かかる）
 ・唱え終わったときに動いていたら、見つかって押し戻される
 ・オーラが弱いだるまほど、見送りやすい
@@ -598,12 +681,13 @@ function endTut(){
 $('startBtn').onclick=()=>{if(!store.get('dk-tut-'+role,false))startTut();else start()};
 $('helpBtn').onclick=()=>{$('tune').hidden=true;startTut()};
 // 「わかった」とまちがえて押さないよう、やめる前に確かめる
-$('tutSkip').onclick=()=>{if(confirm(`チュートリアルを終えて、本番を始めますか？
-（右上の「？」から、いつでもやり直せます）`))endTut()};
+$('tutSkip').onclick=()=>{if(confirm(L(`チュートリアルを終えて、本番を始めますか？
+（右上の「？」から、いつでもやり直せます）`,`Skip the tutorial and start the real game?
+(You can replay it any time from "?" at the top right)`)))endTut()};
 $('tutNext').onclick=()=>{const b=tutCur();if(!b)return;if(b.end)endTut();else tutNextBeat()};
 $('pauseBtn').onclick=togglePause;
 // 終了：はじめの画面に戻る（役を選び直せる）。まちがえて押さないよう確かめる
-$('endBtn').onclick=()=>{if(confirm('このゲームを終了して、はじめの画面に戻りますか？'))quit()};$('pause2').onclick=()=>{tunePaused=false;togglePause()};$('quitBtn').onclick=quit;
+$('endBtn').onclick=()=>{if(confirm(L('このゲームを終了して、はじめの画面に戻りますか？','Quit this game and go back to the start screen?')))quit()};$('pause2').onclick=()=>{tunePaused=false;togglePause()};$('quitBtn').onclick=quit;
 // だるま役：オーラは、ひと休み中はすぐ変わり、唱えている間は予約（次の「だ」かひと休みで変わる）。ボタンは描き直すので押した瞬間に拾う
 $('lvRow').addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||!st||role!=='daruma'||phase==='over'||phase==='setup'||paused)return
   if(window.DARUMA_ONLINE){sendAura(b.dataset.r);return}   // みんなで遊ぶとき：サーバーに送る;
@@ -696,7 +780,7 @@ function draw(now){
     const lc=TIER_COL[st.reward],li=LV_ORDER.indexOf(st.reward),beat=0.5+0.5*Math.sin(now/1000*Math.PI*2*PULSE[st.reward]),ar=dr*(1.35+0.15*li+0.12*beat);
     const g=cx.createRadialGradient(dx,dy,dr*0.6,dx,dy,ar);g.addColorStop(0,lc+'cc');g.addColorStop(1,lc+'00');
     cx.fillStyle=g;cx.beginPath();cx.arc(dx,dy,ar,0,7);cx.fill();
-    cx.textAlign='right';cx.fillStyle=lc;cx.font=`900 ${Math.max(10,dr*0.34)}px ${css('--ui')}`;cx.fillText('オーラ',dx-dr*1.2,dy-dr*0.25);
+    cx.textAlign='right';cx.fillStyle=lc;cx.font=`900 ${Math.max(10,dr*0.34)}px ${css('--ui')}`;cx.fillText(L('オーラ','AURA'),dx-dr*1.2,dy-dr*0.25);
     cx.font=`900 ${Math.max(13,dr*0.5)}px ${css('--pop')}`;cx.fillText(LV_NAME[st.reward],dx-dr*1.2,dy+dr*0.35);
     // 気力のゲージ（2026-10-24：オーラの色はやめて、いつも同じ緑。太く・ふちどりで目立たせる。振り向けないときは灰色で「気力が足りない」）
     const cost=Core.turnCostOf(P,st),bw=dr*2.2,bx=dx-bw/2,by=yT+6,bh=Math.max(12,dr*0.26),rr=bh/2;
@@ -706,7 +790,7 @@ function draw(now){
     cx.strokeStyle=ink;cx.lineWidth=2;cx.beginPath();cx.roundRect(bx,by,bw,bh,rr);cx.stroke();
     cx.textAlign='center';cx.fillStyle=ink;cx.font=`900 ${Math.max(11,dr*0.36)}px ${css('--ui')}`;
     // 数字はだるまにだけ（子どもには、振り向きや見送りで増減する量が見えないので、数字だけあっても読めない）
-    const qt=st.stamina<cost?'気力が足りない':role==='daruma'?`気力 ${Math.round(st.stamina)}`:'気力',qw=cx.measureText(qt).width;   // ボードの右はしで切れないように
+    const qt=st.stamina<cost?L('気力が足りない','Low spirit'):role==='daruma'?`${L('気力','Spirit')} ${Math.round(st.stamina)}`:L('気力','Spirit'),qw=cx.measureText(qt).width;   // ボードの右はしで切れないように
     cx.fillText(qt,Math.min(dx,W-6-qw/2),by+bh+Math.max(13,dr*0.42));
   }
   cx.fillStyle=red;cx.beginPath();cx.ellipse(dx,dy,dr*0.95,dr*1.1,0,0,7);cx.fill();
@@ -728,12 +812,12 @@ function draw(now){
   // 「あなた」はいつも一番手前の列に描く（奥にいると、上に出る「見送り！」などが自分のことに見えた）。並びは絵だけで、中身の順は変えない
   //   1人だけ（あそびかた）のときも手前に
   const order=st.children.map((c,i)=>i).sort((a,b)=>(st.children[a].human?1:0)-(st.children[b].human?1:0));
-  order.forEach((i,li)=>{const c=st.children[i],L=n===1?1:li;
+  order.forEach((i,li)=>{const c=st.children[i],row=n===1?1:li;
     let pos=(prev?prev[i]:c.pos)+(c.pos-(prev?prev[i]:c.pos))*u;
     const hit=caughtAt[c.id]!=null&&(phase==='look'||phase==='push')&&caughtAt[c.id]>=faceAt;
     if(push&&push.dur){const k=Math.min(1,(gt-push.t0)/push.dur),e=1-Math.pow(1-k,3);pos=push.from[i]+(push.to[i]-push.from[i])*e}
     // 前の子ども役と同じ：足は地面の帯の上。奥（i=0）ほど上で小さく、手前ほど下で大きい
-    const s=Math.min(H*0.075,W*0.05)*(0.8+0.15*L*2/Math.max(1,n-1)),y=gy+6+L*(H-gy-12)/(Math.max(1,n-1)*1.1),col=c.human?accent:c.col;
+    const s=Math.min(H*0.075,W*0.05)*(0.8+0.15*row*2/Math.max(1,n-1)),y=gy+6+row*(H-gy-12)/(Math.max(1,n-1)*1.1),col=c.human?accent:c.col;
     // 見つかった直後はビクッと震える
     const x=X(pos)+(hit&&gt-caughtAt[c.id]<350?Math.sin((gt-caughtAt[c.id])/18)*s*0.15:0);
     // すべった跡：振り向いたところから、見つかったところまで（押し戻されている間も残す）
@@ -756,7 +840,7 @@ function draw(now){
     drawPicto(x,y,s,col,pictoPose(g,hit,mv?pos*(g==='全力'?1.6:g==='小走り'?2.2:2.6):0));
     cx.restore();
     cx.globalAlpha=1;cx.textAlign='center';
-    const label=(c.human?'あなた':c.name.replace(/^.*の/,''))+(c.winded?' ぜぇ…':'');
+    const label=(c.human?L('あなた','You'):EN?nm(c):c.name.replace(/^.*の/,''))+(c.winded?L(' ぜぇ…',' pant…'):'');
     cx.fillStyle=c.human?ink:muted;cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.fillText(label,x,y-s*3.7);
     if(hit){cx.fillStyle=red;cx.font=`900 ${Math.max(14,s*1.1)}px ${css('--pop')}`;cx.fillText('！',x,y-s*3.7-Math.max(12,s*0.7))}
 
@@ -816,6 +900,6 @@ function frame(now){
 renderTune();resize();renderSetup();$('overP').textContent=HOW[role];renderChant();requestAnimationFrame(frame);
 </script>
 <script src="room.js"></script>
-<script src="online.js?v=8"></script>
+<script src="online.js?v=9"></script>
 </body>
 </html>
