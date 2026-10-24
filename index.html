@@ -466,7 +466,7 @@ function endLook(){
   const names=out.caughtList.map(c=>c.name),meCaught=me&&out.caughtList.includes(me);if(meCaught)meCaughtN++;
   const shown=out.caughtList.map(nm).join(L('・',', '));
   if(!out.caughtList.length)showMsg(L('セーフ…みんな止まってた','Safe… everyone stopped'),1000);
-  else if(!meCaught)showMsg(EN?(me?`Safe! ${shown} got caught`:`Got you! ${shown}`):(me?'セーフ！ ':'見つけた！ ')+shown+(me?'が見つかった':''),1200);
+  else if(!meCaught)showMsg(EN?(me?`${shown} got caught`:`Got you! ${shown}`):(me?'':'見つけた！ ')+shown+(me?'が見つかった':''),1200);   // ほかの子だけが見つかったときに「セーフ！」は付けない（自分が見つかったように読めた）
   log(`${cyc}回目：振り向いた`+(role==='daruma'?`（気力-${cost}）`:'')+(names.length?` → ${names.join('・')} が見つかって下がった`:' → 誰も動いてなかった'));
   // ギューっと押し戻す（最初は速く、だんだんゆっくり）
   phase='push';push={from:out.before,to:snap(),t0:gt,dur:out.caughtList.length?700:0};prev=snap();prevAt=gt;renderCtl();renderChant();
@@ -1083,6 +1083,6 @@ function frame(now){
 renderTune();resize();renderSetup();$('overP').textContent=HOW[role];renderChant();requestAnimationFrame(frame);
 </script>
 <script src="room.js"></script>
-<script src="online.js?v=11"></script>
+<script src="online.js?v=12"></script>
 </body>
 </html>

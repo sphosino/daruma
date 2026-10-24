@@ -78,7 +78,7 @@ function onEvent(e){
   if(e.caught){caughtAt[e.caught]=gt;beep(150,0.25,'sawtooth');
     if(e.caught===myId)showMsg(L('見つかった！','Caught!'),2200)}
   if(e.pushed){const names=e.pushed.map(id=>st.children.find(c=>c.id===id)).filter(Boolean).map(nm);
-    if(!e.pushed.length)showMsg(L('セーフ…みんな止まってた','Safe… everyone stopped'),1000);else if(!e.pushed.includes(myId))showMsg((role==='kid'?L('セーフ！ ','Safe! '):L('見つけた！ ','Got you! '))+names.join(L('・',', ')),1200);
+    if(!e.pushed.length)showMsg(L('セーフ…みんな止まってた','Safe… everyone stopped'),1000);else if(!e.pushed.includes(myId))showMsg(role==='kid'?names.join(L('・',', '))+L('が見つかった',' got caught'):L('見つけた！ ','Got you! ')+names.join(L('・',', ')),1200);   // ほかの子だけのときに「セーフ！」は付けない
     push={from:e.from,to:st.children.map(c=>c.pos),t0:gt,dur:e.pushed.length?700:0};}
   if(e.carry&&role==='daruma')showMsg(e.auto?L('気力が足りない…見送り','Not enough spirit… passed'):L('見送り！','Passed!'),e.auto?1100:800);
   if(e.outOfGas&&role==='daruma')showMsg(L('気力切れ！','Out of spirit!'),1400,L('テンポが半分に落ちた','Tempo dropped by half'));
