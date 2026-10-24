@@ -242,7 +242,7 @@ body.tutRun #chant{position:relative;z-index:8}
   <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る。上半分はダッシュ（すばやく走り出す・離すとすぐ止まる。体力を多く使う）"><div class="padHi">⚡ ダッシュ</div><span class="padT">🏃 走る</span><div class="scale"><span>歩く</span><span>小走り</span><span>全力</span></div><div class="tapHere" aria-hidden="true"><span>👆</span>ここ</div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
   <div class="padNote" aria-hidden="true"><span><b>⚡ ダッシュ</b>すぐ走り出せて、すぐ止まれる（体力を多く使う）</span><span><b>🏃 走る</b>右ほど速い・離すと止まる</span></div>
 </div>
-<script src="old/daruma-core.js?v=3"></script>
+<script src="old/daruma-core.js?v=4"></script>
 <script src="rules.js?v=2"></script>
 <script>
 'use strict';
@@ -728,7 +728,10 @@ function draw(now){
     if(g==='全力'){ // 土ぼこり（後ろに流れる）
       for(let k=0;k<3;k++){const t=((gt/260+k/3+i*0.17)%1),px=x-s*(0.5+t*1.6),py=y-s*(0.1+t*0.5);
         cx.globalAlpha=(1-t)*0.45;cx.fillStyle=muted;cx.beginPath();cx.arc(px,py,s*(0.15+t*0.25),0,7);cx.fill()}cx.globalAlpha=1}
-    if(g==='ブレーキ'){const kk=!!c.boost;cx.strokeStyle=kk?red:muted;cx.lineWidth=Math.max(1.5,s*(kk?0.16:0.1));cx.beginPath();cx.moveTo(x-s*(kk?2.6:1.2),y+1);cx.lineTo(x+s*0.3,y+1);cx.stroke()}
+    if(g==='ブレーキ'){const kk=!!c.boosting;cx.strokeStyle=kk?red:muted;cx.lineWidth=Math.max(1.5,s*(kk?0.16:0.1));cx.beginPath();cx.moveTo(x-s*(kk?2.6:1.2),y+1);cx.lineTo(x+s*0.3,y+1);cx.stroke()
+      // 急ブレーキ（ダッシュで止まる）：前の足もとから土がパッパッと前へ飛ぶ（2026-10-24。前は名前の上に「キキッ！」と出していた）
+      if(kk){for(let k=0;k<4;k++){const t=(gt/170+k/4)%1,px=x+s*(0.35+t*1.2),py=y-s*(0.1+t*(1-t)*1.6);
+        cx.globalAlpha=(1-t)*0.7;cx.fillStyle=k%2?muted:'#b98a5e';cx.beginPath();cx.arc(px,py,s*(0.1+t*0.14),0,7);cx.fill()}cx.globalAlpha=1}}
     cx.save();cx.translate(x,y);cx.rotate(lean);cx.translate(-x,-y);
     drawPicto(x,y,s,col,pictoPose(g,hit,mv?pos*(g==='全力'?1.6:g==='小走り'?2.2:2.6):0));
     cx.restore();
@@ -736,8 +739,7 @@ function draw(now){
     const label=(c.human?'あなた':c.name.replace(/^.*の/,''))+(c.winded?' ぜぇ…':'');
     cx.fillStyle=c.human?ink:muted;cx.font=`700 ${Math.max(c.human?11:10,s*(c.human?0.6:0.5))}px ${css('--ui')}`;cx.fillText(label,x,y-s*3.7);
     if(hit){cx.fillStyle=red;cx.font=`900 ${Math.max(14,s*1.1)}px ${css('--pop')}`;cx.fillText('！',x,y-s*3.7-Math.max(12,s*0.7))}
-    // ダッシュ中の急ブレーキ：長い跡と、名前の上に「キキッ！」（だるまから見て、走っていたのにセーフだった理由が分かるように）
-    else if(g==='ブレーキ'&&c.boost){cx.fillStyle=red;cx.font=`900 ${Math.max(12,s*0.8)}px ${css('--pop')}`;cx.fillText('キキッ！',x,y-s*3.7-Math.max(12,s*0.7))}
+
     if(mind||c.human){const bw=s*1.6,bx=x-bw/2,by=y+5;cx.fillStyle=SC.line;cx.fillRect(bx,by,bw,3);cx.fillStyle=c.winded?red:accent;cx.fillRect(bx,by,bw*c.energy/c.energyMax,3)}
     if(mind&&!c.human){const m=[gaitOf(c,i),c.intendsToStop===false?'賭け':''].filter(Boolean).join('・');if(m){cx.fillStyle=c.intendsToStop===false?red:ink;cx.font=`900 ${Math.max(9,s*0.48)}px ${css('--ui')}`;cx.fillText(m,x,y-s*3.7-Math.max(11,s*0.6))}}
   });

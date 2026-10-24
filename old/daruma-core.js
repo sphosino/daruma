@@ -44,6 +44,8 @@
     CATCH_VEL_THRESHOLD: 0.05,
     GOAL_POS: 96,
     CATCH_KNOCK: null,
+    // 下がる量は、だるまに近いほど少し多く、遠いほど少し少なく（2026-10-24）。スタートで ×(1-SPREAD)、だるまの前で ×(1+SPREAD)
+    CATCH_KNOCK_SPREAD: 0.2,
     TEMPO_CHANGE_COST_PER_UNIT: 0.025,
     STAMINA_MAX: 110,
 
@@ -778,22 +780,38 @@
         // 0 になると「ぜぇ」で遅くなる。疲れているほどブレーキも効きにくい
         var hTop = c.winded ? c.maxSpeed * P.WINDED_SPEED_MULT : c.maxSpeed;
         var hFat = (1 - c.energy / c.energyMax) * (1 - c.motorControl) * P.MOTOR_DEGRADE_SCALE;
-        var hBoost = !!c.boost;
-        var hBrake = c.brake * clamp(1 - hFat, 0.2, 1) * (hBoost ? P.BOOST_BRAKE_MULT : 1);
+        // ダッシュ（上半分）：速さを変える力が強いかわりに体力を使う。体力がなければ効かない（2026-10-24）。
+        //   このコマで要る体力より残りが少なければ、残っているぶんだけ効く（ふつうとダッシュの間）
+        var hBrake0 = c.brake * clamp(1 - hFat, 0.2, 1);
         // input は目標の速さ（全速の何割か。true なら全速、false なら離している）。目標より速ければブレーキ
         var hWant = c.input === true ? 1 : (+c.input || 0);
         var hTgt = hTop * Math.max(0, Math.min(1, hWant));
-        if (hWant > 0 && c.vel <= hTgt) c.vel = Math.min(hTgt, c.vel + accelStep(c, hTgt, hBoost && c.accT ? Math.max(1, c.accT * P.BOOST_ACC_MULT) : 0));
-        else if (hWant > 0) c.vel = Math.max(hTgt, c.vel - easeStep(c, hTgt, hBrake));   // 指を左へ：ゆるめる
-        else c.vel = Math.max(0, c.vel - hBrake);                                          // 指を離す：ブレーキ
+        var hStep = function (boost) {   // このコマのあとの速さ
+          var br = hBrake0 * (boost ? P.BOOST_BRAKE_MULT : 1);
+          if (hWant > 0 && c.vel <= hTgt) return Math.min(hTgt, c.vel + accelStep(c, hTgt, boost && c.accT ? Math.max(1, c.accT * P.BOOST_ACC_MULT) : 0));
+          if (hWant > 0) return Math.max(hTgt, c.vel - easeStep(c, hTgt, br));   // 指を左へ：ゆるめる
+          return Math.max(0, c.vel - br);                                         // 指を離す：ブレーキ
+        };
+        var hNorm = hStep(false), hNew = hNorm, hBoostCost = 0;
+        c.boosting = false;
+        if (c.boost && c.energy > 0) {
+          var hFast = hStep(true), hExtra = Math.abs(hFast - c.vel) - Math.abs(hNorm - c.vel);
+          if (hExtra > 0) {
+            var hNeed = (hFast > c.vel ? P.BOOST_ACC_COST : P.BOOST_STOP_COST) * Math.abs(hFast - c.vel) / c.maxSpeed;
+            var hPart = Math.min(1, c.energy / hNeed);
+            hNew = hNorm + (hFast - hNorm) * hPart;
+            hBoostCost = hNeed * hPart;
+            c.boosting = hPart >= 0.3;   // 絵で「効いている」と見せるのは、3割以上効いたときだけ
+          }
+        }
+        c.vel = hNew;
         var hEffort = P.RUN_DRAIN_EXPONENT === 1 ? 1
           : Math.pow(clamp(c.vel / Math.max(0.001, c.maxSpeed), 0, 1), P.RUN_DRAIN_EXPONENT - 1);
         var hSteady = (c.vel < c.maxSpeed * P.REGEN_VEL_RATIO)
           ? P.REST_REGEN_RATE * c.regenScale
           : -(c.vel * P.RUN_DRAIN_RATE * c.drainScale * hEffort);
         var hDv = c.vel - oldVel;
-        var hBoostCost = !hBoost ? 0 : (hDv > 0 ? P.BOOST_ACC_COST : P.BOOST_STOP_COST) * Math.abs(hDv) / c.maxSpeed;
-        c.energy = clamp(c.energy + hSteady - Math.abs(hDv) * P.CHANGE_DRAIN_RATE - hBoostCost, 0, c.energyMax);
+        c.energy = clamp(c.energy - hBoostCost + hSteady - Math.abs(hDv) * P.CHANGE_DRAIN_RATE, 0, c.energyMax);
         c.feltEnergy = c.energy;
       } else if (c.burstTicks > 0) {
         // mid-dash: committed, ignores nervousness entirely.
@@ -1029,7 +1047,8 @@
         if (c.vel > P.CATCH_VEL_THRESHOLD) {
           out.caught.push(c);
           // CATCH_KNOCK（2026-10-18）：null ならスタートへ。数なら、その分だけ下がる
-          var back = P.CATCH_KNOCK == null ? c.pos - 2 : Math.min(c.pos - 2, P.CATCH_KNOCK);
+          var knockMul = 1 + (P.CATCH_KNOCK_SPREAD || 0) * (2 * clamp((c.pos - 2) / (P.GOAL_POS - 2), 0, 1) - 1);
+          var back = P.CATCH_KNOCK == null ? c.pos - 2 : Math.min(c.pos - 2, P.CATCH_KNOCK * knockMul);
           c.pos -= back; c.vel = 0; c.burstTicks = 0;
           // Walking back to the line is the one real rest anybody gets, so the
           // tank comes back with them. Without this the punishment is double —
