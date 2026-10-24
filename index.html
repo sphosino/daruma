@@ -127,7 +127,10 @@ canvas{display:block;width:100%;height:100%}
 input[type=range]{width:100%;accent-color:var(--accent)}
 .arm.on{background:var(--on);border-color:var(--red)}
 /* はじめる・終わりの画面 */
-.over{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:color-mix(in srgb,var(--bg) 94%,transparent);text-align:center;padding:20px 16px;overflow:auto}
+.over{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;gap:12px;background:color-mix(in srgb,var(--bg) 94%,transparent);text-align:center;padding:62px 16px 20px;overflow:auto}
+/* 2026-10-25：上のボタンの列（z-index 6 で浮いている）に見出しが隠れていたので、上を空ける。
+   真ん中寄せは justify-content だと、画面より長いときに上が切れてスクロールでも見えないので、最初と最後の子の auto の余白で寄せる */
+.over>:first-child{margin-top:auto}.over>:last-child{margin-bottom:auto}
 .over>*{max-width:520px}.over p.lines{white-space:pre-line;text-align:left;color:var(--ink);font-size:.92rem;line-height:1.8}
 .over h2{font-family:var(--pop);font-weight:400;margin:0;font-size:1.6rem;color:var(--accent);text-shadow:0 3px 0 var(--card)}
 .over p{margin:0;font-size:.86rem;color:var(--muted);max-width:32em}
