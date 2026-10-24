@@ -143,6 +143,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .choices{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 .typeQ{flex-basis:100%;font-size:.82rem;font-weight:700;color:var(--muted)}.pill.t_attack.on{background:#dfe8ff;border-color:#2f5bd0}.pill.t_oni.on{background:#e6e3ea;border-color:#33303a}.pill.t_red.on{background:#fff4cc;border-color:#c99a14}
 .typeNote{flex-basis:100%;margin:2px 0 0;font-size:.8rem;color:var(--muted);line-height:1.5}
+.rtypes .dCard{min-width:64px;padding:3px 6px 5px}.rtypes .dCard span{font-size:.75rem}.dCard:disabled{opacity:1}.dCard:disabled:not(.on){opacity:.55}
 .dCard{display:flex;flex-direction:column;align-items:center;gap:0;padding:4px 12px 6px;border-radius:16px;min-width:88px}.dCard canvas{display:block}
 .go{box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 60%,var(--ink));font:inherit;font-family:var(--pop);font-size:1.25rem;border:0;border-radius:16px;background:var(--accent);color:var(--card);padding:12px 26px;cursor:pointer}
 /* 調整（デバッグ） */
@@ -1068,6 +1069,6 @@ function frame(now){
 renderTune();resize();renderSetup();$('overP').textContent=HOW[role];renderChant();requestAnimationFrame(frame);
 </script>
 <script src="room.js"></script>
-<script src="online.js?v=10"></script>
+<script src="online.js?v=11"></script>
 </body>
 </html>

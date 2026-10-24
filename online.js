@@ -28,7 +28,8 @@ const HUMAN_COL=['#e8743b','#ff6f9f','#43b2f5','#6cc94e'];
 $('roomBtn').hidden=true;$('pauseBtn').remove();$('helpBtn').hidden=true;
 document.title=L('だるまさんがころんだ（みんなで）','Red Light, Green Light (with friends)');
 // サーバーからのお知らせは日本語で届くので、英語のときはここで置きかえる
-const ERR_EN={'もう始まっています。終わるまで待ってね':'The game has already started. Please wait until it ends','満員です':'The room is full','まだ部屋に入っていません':"You haven't joined the room yet",'いまは席を移れません':"You can't change seats right now",'その席はありません':"That seat doesn't exist",'その席にはもう人がいます':'Someone is already in that seat','部屋に入っていません':"You're not in the room",'部屋を作った人だけが始められます':'Only the host can start','もう始まっています':'Already started','いまは唱えられません':"You can't chant right now"};
+const ERR_EN={'もう始まっています。終わるまで待ってね':'The game has already started. Please wait until it ends','満員です':'The room is full','まだ部屋に入っていません':"You haven't joined the room yet",'いまは席を移れません':"You can't change seats right now",'その席はありません':"That seat doesn't exist",'その席にはもう人がいます':'Someone is already in that seat','部屋に入っていません':"You're not in the room",'部屋を作った人だけが始められます':'Only the host can start','もう始まっています':'Already started','いまは唱えられません':"You can't chant right now",
+  'いまは変えられません':"You can't change it right now",'そのだるまはありません':"That Daruma doesn't exist",'だるまの人だけが選べます':'Only the Daruma player can choose','部屋を作った人だけが選べます':'Only the host can choose'};
 
 DR.connect(ROOM,m=>{
   if(m.t==='open'){DR.send({t:'join',name:myName()||L('ゲスト','Guest')});return}
@@ -57,6 +58,8 @@ function syncState(v){
   const s=v.st;
   if(!st||game!==v.game){
     game=v.game;myId=v.you>0?'h'+(v.you-1):null;
+    // 子どもには、今回のだるまの種類を知らせる（色でも分かるが、名前とクセも）
+    if(v.you>0){const k=CPU_STYLES[CPU_OF[s.type]||'normal'];if(k)showMsg(k.n,2400,k.sub)}
     let ci=0,hi=1;
     st={children:s.kids.map(k=>({...k,col:k.id===myId?null:(/^h/.test(k.id)?HUMAN_COL[hi++%4]:KID_COL[ci++%4])}))};
     prev=null;Object.keys(caughtAt).forEach(k=>delete caughtAt[k]);
@@ -93,11 +96,18 @@ function renderRoomCard(){
   const seat=(s,i)=>{const label=i===0?L('だるま','Daruma'):L('子ども','Runner ')+i,mine=v.you===i;
     return `<div class="rseat${mine?' mine':''}"><b>${label}</b><span>${s.empty?'CPU':esc(s.name)+(s.online?'':L('（るす）',' (away)'))}</span>${s.empty&&v.you>=0?`<button class="pill" data-seat="${i}" type="button">${L('ここに座る','Sit here')}</button>`:''}</div>`};
   $('roomCard').hidden=false;
-  $('roomCard').innerHTML=`<div class="rseats">${v.seats.map(seat).join('')}</div>
+  // だるまの種類（2026-10-25）：だるまの席に人がいればその人、CPU のだるまなら部屋を作った人が選ぶ。ほかの人には見えるだけ
+  const canPick=v.dtypeBy===0?v.you===0:v.host,dt=v.dtype||'random';
+  const dHTML=`<div class="choices rtypes"><span class="typeQ">${L('だるまの種類','Daruma type')}${canPick?'':v.dtypeBy===0?L('（だるまの人が選びます）',' (the Daruma player picks)'):L('（部屋を作った人が選びます）',' (the host picks)')}</span>`+
+    typeChoices().map(k=>`<button class="pill dCard${k===dt?' on':''}${k!=='random'&&k!=='normal'?' t_'+k:''}" data-dt="${k}" type="button"${canPick?'':' disabled'}><canvas data-k="${k}"></canvas><span>${typeName(k)}</span></button>`).join('')+
+    `<p class="typeNote">${typeNote(dt)}</p></div>`;
+  $('roomCard').innerHTML=`<div class="rseats">${v.seats.map(seat).join('')}</div>${dHTML}
     <div class="rinv"><input id="rUrl" readonly value="${esc(url)}"><button class="pill" id="rCopy" type="button">${L('コピー','Copy')}</button>
     ${EN?'':`<a class="pill" href="https://line.me/R/share?text=${encodeURIComponent('だるまさんがころんだで遊ぼ！ '+url)}" target="_blank" rel="noopener">LINE</a>`}${navigator.share?`<button class="pill" id="rShare" type="button">${L('送る','Share')}</button>`:''}</div>
     <label class="rname">${L('あなたの名前','Your name')} <input id="rName" maxlength="8" value="${esc(myName())}"></label>`;
   $('roomCard').querySelectorAll('[data-seat]').forEach(b=>b.onclick=()=>DR.send({t:'seat',i:+b.dataset.seat}));
+  $('roomCard').querySelectorAll('canvas[data-k]').forEach(c=>{c.style.width=c.style.height='48px';drawDarumaThumb(c,c.dataset.k)});
+  $('roomCard').querySelectorAll('[data-dt]').forEach(b=>b.onclick=()=>DR.send({t:'dtype',k:b.dataset.dt}));
   $('rCopy').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(url).then(()=>showMsg(L('コピーしました','Copied'),900))};
   const sh=$('rShare');if(sh)sh.onclick=()=>navigator.share({title:L('だるまさんがころんだ','Red Light, Green Light'),text:L('だるまさんがころんだで遊ぼ！',"Let's play Red Light, Green Light!"),url}).catch(()=>{});
   $('rName').onchange=()=>{const n=$('rName').value.trim().slice(0,8)||L('ゲスト','Guest');saveName(n);DR.send({t:'join',name:n})};
