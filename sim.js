@@ -58,6 +58,7 @@ const POLICIES = {
   "読み＋振り向く回に加速": () => reader({ ambush: true }),
   "読み＋見送る回に加速": () => reader({ feint: true }),
   "ゲームの CPU のだるま": () => R.cpuDaruma(),
+  "攻めだるま": () => R.cpuDaruma(null, "tempo"),
   "毎回振り向く": () => ({ onPrep(st) { st.reward = "low"; Core.applyTempoChange(P, st, 50); }, onCarry() {}, onTick(st) { st.turnArmed = true; } }),
   "絶対振り向かない": () => ({ onPrep(st) { st.reward = "max"; Core.applyTempoChange(P, st, 50); }, onCarry() {}, onTick(st) { st.turnArmed = false; } }),
   "でたらめ": () => ({
@@ -106,7 +107,7 @@ function play(policy, opt) {
   P.CATCH_KNOCK = opt.knock == null ? null : opt.knock;
   if (opt.grace != null) R.LOOK.grace = Math.round(opt.grace * 10);
   const kids = opt.kids || +env("KIDS", 4);
-  const st = R.newGame({ withMe: !!opt.kid, kids, lane: kids - 1, cpuStop: OLD ? [0, 0] : undefined });
+  const st = R.newGame({ withMe: !!opt.kid, kids, lane: kids - 1, cpuStop: OLD ? [0, 0] : undefined, type: opt.type || env("TYPE", "normal") });
   if (OLD) { // 止まり方を元の値に戻す
     const defs = Object.fromEntries(Core.ROSTER.map(d => [d.id, d]));
     st.children.forEach(c => { if (defs[c.id]) c.brake = defs[c.id].brake; });

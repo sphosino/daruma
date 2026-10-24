@@ -143,10 +143,21 @@
   // （足が動いているかで見える。見てから 0.3 秒遅れて気づく）、自分の気力。「ブレーキを踏み始めたか」は 4 人を
   // 相手に人には見分けられないので使わない（前はそれで見送って「なんでそんな動きに？」になった）。
   // 毎回の気まぐれ（その回の「振り向く気になる線」）を入れる。st.cpuThought に考えを書く（画面で見られる）
-  function cpuDaruma(rand) {
+  // style（2026-10-25）：'normal' はいつもの唱え方。'tempo' はテンポを武器にする（攻めだるま：テンポを上げるのが安い）。
+  //   決まった手順ではなく、子どもの様子を見て回ごとに変える：
+  //   ・唱え始めの速さは毎回ばらばら
+  //   ・みんな止まって待っている → ゆっくり唱える（時計は唱えている間だけ進むので、待っている子は時間だけ取られる）
+  //   ・走っている子がいて、唱え終わりが近い → いきなり最高速（止まりきれない子を捕まえる）
+  //   ・ときどき、速めたのに振り向かない（「速くなったら振り向く」と読ませない）
+  // 数字はシミュレーター（node sim.js kid、POLS=攻めだるま TYPE=attack）で、子どもの勝ちが ふつうのだるまとそろうように決めた（2026-10-25）。
+  //   ふつう 平均72%・攻め 平均74%（子ども6通り、各400局）。人は急な早口にあわてるので、実際は少し手ごわいはず
+  //   line：振り向く気になる線にかける数。振り向くのが高いだるまなので、大きめ（ここぞのときだけ振り向く）。小さくすると気力が切れて弱くなる
+  var TEMPO = { start: [40, 90], slow: 15, rushAt: [55, 85], bluff: 0.2, line: 1.15 };
+  function cpuDaruma(rand, style) {
     rand = rand || Math.random;
+    var tempoStyle = style === 'tempo';
     var SEE_LAG = 3;
-    var seen = [], ramp = false, willRamp = false, line = 0.5;
+    var seen = [], ramp = false, willRamp = false, line = 0.5, rushAt = Infinity, bluff = false;
     function pickReward(st) {
       var q = st.stamina / st.staminaMax;
       var w = q < 0.3 ? [1, 2, 4, 3] : q > 0.7 ? [3, 3, 3, 1] : [2, 3, 3, 2];
@@ -160,6 +171,13 @@
       st.tempoValue = healthy ? 40 + rand() * 30 : 20 + rand() * 20;
       ramp = false; willRamp = rand() < 0.25;   // たまに、振り向く回の終わりぎわに速める
       line = 0.35 + rand() * 0.4;               // その回の気まぐれ：この線を超えたら振り向く
+      if (tempoStyle) {
+        st.tempoValue = TEMPO.start[0] + rand() * (TEMPO.start[1] - TEMPO.start[0]) * (healthy ? 1 : 0.5);
+        willRamp = false;
+        rushAt = TEMPO.rushAt[0] + rand() * (TEMPO.rushAt[1] - TEMPO.rushAt[0]);
+        bluff = rand() < TEMPO.bluff;
+        line *= TEMPO.line;
+      }
     }
     return {
       // ひと休みのあと、言い始める前
@@ -184,6 +202,10 @@
           (near < 0.3 ? "まだ遠い…見送る" : v.run < 0.25 ? "みんな止まってる…見送る" : "見送る");
         var left = (100 - st.chantProgress) / Core.tempoFill(P, 100);
         if (st.turnArmed && willRamp && !ramp && left <= 6) { Core.applyTempoChange(P, st, 100); ramp = true; }
+        if (tempoStyle && !ramp) {
+          if (v.run < 0.2 && st.chantProgress > 20 && st.tempoValue > TEMPO.slow) { st.tempoValue = TEMPO.slow; st.cpuThought += "（止まってるな…ゆっくり）"; }   // 遅くするのはただ
+          else if (st.chantProgress >= rushAt && v.run >= 0.25 && (st.turnArmed || bluff)) { Core.applyTempoChange(P, st, 100); ramp = true; }
+        }
       }
     };
   }
@@ -192,6 +214,6 @@
     Core: Core, P: P, TIERS: TIERS, ME: ME,
     humanStop: humanStop, setMe: setMe, newGame: newGame, newGameSeats: newGameSeats,
     LOOK: LOOK, wantsTurn: wantsTurn, startLook: startLook, lookTick: lookTick, endLook: endLook, resolve: resolve, applyReserved: applyReserved,
-    said: said, cpuDaruma: cpuDaruma
+    said: said, cpuDaruma: cpuDaruma, TEMPO: TEMPO
   };
 });
