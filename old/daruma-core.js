@@ -665,6 +665,15 @@
       st.stamina -= cost;
       st.tempoChangeCostPaid += cost;
     }
+    else if (signedDelta < 0 && P.TEMPO_SLOW_COST_PER_UNIT) {
+      // 遅くするのにも気力がかかる（試し中。ふだんは 0 でただ）：唱え終わり近くで極端にためる手に、元手をかけるため
+      var perDown = P.TEMPO_SLOW_COST_PER_UNIT * st.type.tempoScale;
+      var canDown = st.stamina / perDown;
+      if (-signedDelta > canDown) { signedDelta = -canDown; newVal = st.tempoValue - canDown; }
+      var downCost = -signedDelta * perDown;
+      st.stamina -= downCost;
+      st.tempoChangeCostPaid += downCost;
+    }
     st.tempoValue = newVal;
     return newVal;
   }
