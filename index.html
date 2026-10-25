@@ -282,7 +282,7 @@ body.tutRun #chant{position:relative;z-index:8}
   <div class="pad" id="pad" hidden tabindex="0" role="button" aria-label="押した場所の速さで走る。上半分はダッシュ（すばやく走り出す・離すとすぐ止まる。体力を多く使う）" data-en-label="Run at the speed where you press. The top half is Dash (fast start, stops instantly when released, uses lots of energy)"><div class="padHi" data-en="⚡ Dash">⚡ ダッシュ</div><span class="padT" data-en="🏃 Run">🏃 走る</span><div class="scale"><span data-en="Walk">歩く</span><span data-en="Jog">小走り</span><span data-en="Sprint">全力</span></div><div class="tapHere" aria-hidden="true" data-en="<span>👆</span>here"><span>👆</span>ここ</div><div class="target" id="target" hidden></div><div class="gauge" id="gauge"></div></div>
   <div class="padNote" aria-hidden="true"><span><b data-en="⚡ Dash">⚡ ダッシュ</b><i data-en="Quick start, quick stop (uses lots of energy)">すぐ走り出せて、すぐ止まれる（体力を多く使う）</i></span><span><b data-en="🏃 Run">🏃 走る</b><i data-en="Further right is faster · let go to stop">右ほど速い・離すと止まる</i></span></div>
 </div>
-<script src="old/daruma-core.js?v=7"></script>
+<script src="old/daruma-core.js?v=8"></script>
 <script src="rules.js?v=5"></script>
 <script>
 'use strict';
@@ -400,7 +400,8 @@ function renderCtl(){
   setHTML($('arm'),EN?(!afford?`🙈 Not enough spirit: pass<small>${st.reward==='low'?'Pass to recover spirit':'A stronger aura lets you turn'} (spirit +${gain})</small>`:st.turnArmed?`👀 Turn when the chant ends<small>spirit -${cost}</small>`:`🙈 Let it pass<small>spirit +${gain}</small>`)
     :!afford?`🙈 気力が足りないので見送り<small>${st.reward==='low'?'見送って気力をためよう':'オーラを強くすると振り向ける'}（気力+${gain}）</small>`:st.turnArmed?`👀 唱え終わったら振り向く<small>気力 -${cost}</small>`:`🙈 振り向かずに見送る<small>気力 +${gain}</small>`);
   $('go').disabled=!prep||paused;
-  $('tempo').value=Math.round(st.tempoValue);$('tempoTxt').textContent=tempoName(st.tempoValue)+(phase==='chant'?L('（上げると気力を使う）',' (raising it costs spirit)'):'');
+  $('tempo').value=Math.round(st.tempoValue);{const net=Math.round((Core.tempoRegen(P,st.tempoValue)-Core.tempoDrain(P,st.tempoValue)*st.type.tempoScale)*1000/P.TICK_MS),ns=(net>0?'+':net<0?'−':'')+Math.abs(net);   // 唱えている間の気力の増減（1秒あたり）。遅いと回復する（2026-10-25）
+  $('tempoTxt').textContent=tempoName(st.tempoValue)+L(`（唱えている間 気力${ns}/秒${phase==='chant'?'・上げると気力を使う':''}）`,` (spirit ${ns}/s while chanting${phase==='chant'?' · raising it costs spirit':''})`)}
 
   $('lvNote').textContent=prep?'':st.nextReward?L('唱え終わりで変わる','changes when the chant ends'):L('押すと予約','tap to reserve');
 }
