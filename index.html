@@ -173,6 +173,10 @@ header:has(#roomBadge) h1{visibility:hidden;flex:1 1 0}
 .choices{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 .typeQ{flex-basis:100%;font-size:.82rem;font-weight:700;color:var(--muted)}.pill.t_attack.on{background:#dfe8ff;border-color:#2f5bd0}.pill.t_oni.on{background:#e6e3ea;border-color:#33303a}.pill.t_red.on{background:#fff4cc;border-color:#c99a14}
 .typeNote{flex-basis:100%;margin:2px 0 0;font-size:.8rem;color:var(--muted);line-height:1.5}
+.body{flex-basis:100%;display:grid;grid-template-columns:auto 1fr auto;gap:4px 8px;align-items:center;max-width:340px;margin:0 auto}
+.body b{font-size:.85rem;text-align:left}.body small{display:block;font-weight:400;font-size:.7rem;color:var(--muted)}
+.body .pips{display:flex;gap:3px;justify-content:center}.body .pips i{width:14px;height:14px;border-radius:50%;border:2px solid var(--accent);background:transparent}.body .pips i.on{background:var(--accent)}
+.body .pm{display:flex;gap:4px}.body .pm button{width:30px;height:30px;padding:0;border-radius:50%;font-weight:700}.body .pm button:disabled{opacity:.35}
 .rtypes .dCard{min-width:64px;padding:3px 6px 5px}.rtypes .dCard span{font-size:.75rem}.dCard:disabled{opacity:1}.dCard:disabled:not(.on){opacity:.55}
 .dCard{display:flex;flex-direction:column;align-items:center;gap:0;padding:4px 12px 6px;border-radius:16px;min-width:88px}.dCard canvas{display:block}
 .go{box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 60%,var(--ink));font:inherit;font-family:var(--pop);font-size:1.25rem;border:0;border-radius:16px;background:var(--accent);color:var(--card);padding:12px 26px;cursor:pointer}
@@ -283,7 +287,7 @@ body.tutRun #chant{position:relative;z-index:8}
   <div class="padNote" aria-hidden="true"><span><b data-en="⚡ Dash">⚡ ダッシュ</b><i data-en="Quick start, quick stop (uses lots of energy)">すぐ走り出せて、すぐ止まれる（体力を多く使う）</i></span><span><b data-en="🏃 Run">🏃 走る</b><i data-en="Further right is faster · let go to stop">右ほど速い・離すと止まる</i></span></div>
 </div>
 <script src="old/daruma-core.js?v=11"></script>
-<script src="rules.js?v=6"></script>
+<script src="rules.js?v=7"></script>
 <script>
 'use strict';
 const R=window.DarumaRules,Core=R.Core,P=R.P,TIERS=R.TIERS;
@@ -356,6 +360,9 @@ let role=q.get('role')||store.get('dk-role','kid');if(role!=='daruma')role='kid'
 let pickedType=store.get('dk-daruma','random');
 // 相手の強さ（2026-10-26）：ふつうは今までの CPU、つよいは学習した AI（tools/league.js で育てた。rules.js の LEARNED・LEARNED_KIDS）
 let level=store.get('dk-level','normal');if(level!=='strong')level='normal';
+// 子ども役の体（2026-10-26）：速さ・止まりやすさ・走り出し・持久力に、合わせて R.BODY_POINTS 点を振り分ける（rules.js の BODY）
+let body=store.get('dk-body',null);if(!R.bodyOk(body))body={speed:3,stop:3,acc:3,end:3};
+const BODY_ROWS=[['speed',L('速さ','Speed'),v=>L(`ふつうの ${Math.round(v/R.ME.maxSpeed*100)}%`,`${Math.round(v/R.ME.maxSpeed*100)}% of normal`)],['stop',L('止まりやすさ','Braking'),v=>L(`止まるまで ${v}秒`,`Stops in ${v}s`)],['acc',L('走り出し','Start'),v=>L(`全力まで ${v}秒`,`Full speed in ${v}s`)],['end',L('持久力','Stamina'),v=>L(`体力 ${Math.round(v*100)}`,`Stamina ${Math.round(v*100)}`)]];
 const DTYPES=['normal','attack','oni','red'],CPU_OF={normal:'normal',attack:'tempo',oni:'oni',red:'gold'};
 const typeChoices=()=>DTYPES.concat('random');
 if(!typeChoices().includes(pickedType))pickedType='random';
@@ -387,6 +394,13 @@ function renderSetup(){
     (role==='kid'?[['normal',L('ふつうのだるま','Normal Daruma')],['strong',L('つよいだるま','Strong Daruma')]]:[['normal',L('ふつうの子どもたち','Normal runners')],['strong',L('つよい子どもたち','Strong runners')]]).map(([k,l])=>`<button class="pill${k===level?' on':''}" data-lv="${k}" type="button">${l}</button>`).join('')+
     `<p class="typeNote">${level==='strong'?(role==='kid'?L('たくさん戦って覚えただるま。手ごわい！','A Daruma that learned from many games. Tough!'):L('たくさん戦って覚えた子どもたち。ふつうに唱えていると勝てない！','Runners that learned from many games. Plain chanting will not beat them!')):L('いつもの相手。','The usual opponent.')}</p>`);
   $('types').querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{level=b.dataset.lv;store.set('dk-level',level);renderSetup()});
+  if(role==='kid'){
+    const left=R.BODY_POINTS-R.BODY_KEYS.reduce((a,k)=>a+body[k],0);
+    $('types').insertAdjacentHTML('beforeend',`<span class="typeQ">${L('あなたの体','Your body')}（${L('のこり','left')} ${left} ${L('点','pts')}）</span><div class="body">`+
+      BODY_ROWS.map(([k,n,f])=>`<b>${n}<small>${f(R.BODY[k][body[k]-1])}</small></b><span class="pips">${[1,2,3,4,5].map(i=>`<i class="${i<=body[k]?'on':''}"></i>`).join('')}</span><span class="pm"><button class="pill" type="button" data-b="${k}" data-d="-1" ${body[k]<=1?'disabled':''} aria-label="${n} −">−</button><button class="pill" type="button" data-b="${k}" data-d="1" ${body[k]>=5||left<=0?'disabled':''} aria-label="${n} +">＋</button></span>`).join('')+
+      `</div><p class="typeNote">${L('どれかを上げたら、どれかを下げよう。1つに全部ふるより、少しとがらせるくらいがちょうどいい。','Raise one, lower another. A slight lean works better than going all in.')}</p>`);
+    $('types').querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{const k=b.dataset.b,v=body[k]+(+b.dataset.d);if(v<1||v>5)return;const nb={...body,[k]:v};const sum=R.BODY_KEYS.reduce((a,x)=>a+nb[x],0);if(sum>R.BODY_POINTS)return;body=nb;if(R.bodyOk(body))store.set('dk-body',body);renderSetup()});
+  }
   $('types').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{pickedType=b.dataset.t;store.set('dk-daruma',pickedType);renderSetup()});
 }
 // 中身が変わったときだけ描き直す。0.1 秒ごとに描き直すと、押してから離すまでの間に中身が入れかわって、
@@ -443,7 +457,7 @@ function start(){
   const cpuStyle=CPU_OF[dType]||'normal';
   const strong=level==='strong'&&!tut;
   const pool=(R.LEARNED_KIDS[dType]||[]).slice(),learned=strong&&role==='daruma'&&pool.length?Array.from({length:nk},()=>pool.splice(Math.floor(Math.random()*pool.length),1)[0]||R.LEARNED_KIDS[dType][0]):null;   // 4 人ちがう子
-  st=R.newGame({learned,withMe:role==='kid',kids:nk,lane:nk-1,type:dType,accT:T.accT,stopT:T.stopT,cpuStop:[T.cpuStopMin,Math.max(T.cpuStopMin,T.cpuStopMax)],cpuAccT:T.cpuAccT});
+  st=R.newGame({learned,body:role==='kid'&&!tut?body:null,withMe:role==='kid',kids:nk,lane:nk-1,type:dType,accT:T.accT,stopT:T.stopT,cpuStop:[T.cpuStopMin,Math.max(T.cpuStopMin,T.cpuStopMax)],cpuAccT:T.cpuAccT});
   let ci=0;st.children.forEach((c,i)=>{c.lane=i;c.col=c.human?null:KID_COL[ci++]});
   st.cpuStyle=cpuStyle;
   me=st.children.find(c=>c.human)||null;cpu=role==='kid'?(strong&&R.LEARNED[dType]?R.learnedDaruma(dType):R.cpuDaruma(null,st.cpuStyle)):null;
@@ -753,7 +767,7 @@ function endTut(){
 
 // ---------- 入力 ----------
 // はじめる：その役で初めてなら、まずあそびかた（チュートリアル）
-$('startBtn').onclick=()=>{if(!store.get('dk-tut-'+role,false))startTut();else start()};
+$('startBtn').onclick=()=>{if(role==='kid'&&!R.bodyOk(body)){renderSetup();const q=document.querySelector('#types .body');if(q)q.scrollIntoView({block:'center'});alert(L('あなたの体の点を、ぜんぶ振り分けてね','Place all your body points first'));return}if(!store.get('dk-tut-'+role,false))startTut();else start()};
 // 結果画面：もう一つの役ですぐ始める（その役が初めてなら、あそびかたから）
 $('otherBtn').onclick=()=>{role=role==='kid'?'daruma':'kid';store.set('dk-role',role);$('startBtn').onclick()};
 $('helpBtn').onclick=()=>{$('tune').hidden=true;startTut()};

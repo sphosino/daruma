@@ -109,7 +109,7 @@ function play(policy, opt) {
   P.CATCH_KNOCK = opt.knock == null ? null : opt.knock;
   if (opt.grace != null) R.LOOK.grace = Math.round(opt.grace * 10);
   const kids = opt.kids || +env("KIDS", 4);
-  const st = R.newGame({ withMe: !!opt.kid, kids, lane: kids - 1, cpuStop: OLD ? [0, 0] : undefined, type: opt.type || env("TYPE", "normal") });
+  const st = R.newGame({ body: opt.body, meBody: opt.meBody, withMe: !!opt.kid, kids, lane: kids - 1, cpuStop: OLD ? [0, 0] : undefined, type: opt.type || env("TYPE", "normal") });
   if (OLD) { // 止まり方を元の値に戻す
     const defs = Object.fromEntries(Core.ROSTER.map(d => [d.id, d]));
     st.children.forEach(c => { if (defs[c.id]) c.brake = defs[c.id].brake; });

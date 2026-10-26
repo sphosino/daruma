@@ -38,6 +38,24 @@
     bodyAwareness: 0.5, skepticism: 0.5, conformity: 0, reaction: 0.5
   };
 
+  // 人の子どもの体をポイントで振り分ける（2026-10-26、けんじさん案）：速さ・止まりやすさ・走り出し・持久力をそれぞれ 1〜5、合わせて BODY_POINTS。
+  //   全部 3 がふつうの「あなた」（速さ 0.30・止まるまで 1 秒・全速まで 2 秒・持久力 0.5）。どれかを上げたら、どれかを下げる
+  //   1 段で同じくらい効くように、軸ごとに幅を変えた（シミュレーターで、1 つだけ変えたときの自分のタッチが 段1 約12%・3 約33%・5 約47%）。
+  //   上の段ほど伸びを小さくして、1 つに全部振るより散らすほうが得になる形にしている
+  var BODY = {
+    speed: [0.28, 0.29, 0.30, 0.308, 0.313],   // 全速（1 tick に進む量）。少しの差がとても効く
+    stop: [2.0, 1.4, 1.0, 0.75, 0.6],          // 全速から止まるまで（秒）。0.7 秒より短くしても、ほとんど効かない
+    acc: [2.9, 2.45, 2.0, 1.7, 1.55],          // 全速になるまで（秒）
+    end: [0.15, 0.3, 0.5, 0.7, 0.95]           // 持久力（体力の器・減りにくさ・戻りやすさ）
+  };
+  var BODY_POINTS = 12, BODY_KEYS = ["speed", "stop", "acc", "end"];
+  function bodyOk(b) {
+    if (!b) return false;
+    var sum = 0;
+    for (var i = 0; i < BODY_KEYS.length; i++) { var v = b[BODY_KEYS[i]]; if (!(v >= 1 && v <= 5) || v !== Math.round(v)) return false; sum += v; }
+    return sum === BODY_POINTS;
+  }
+
   // 人の子どもの加速・減速（全速になるまで accT 秒、全速から止まるまで stopT 秒）
   function setMe(c, accT, stopT) {
     c.accT = Math.max(1, accT * 10);
@@ -53,10 +71,12 @@
     // opt.learned（遺伝子の配列）：CPU の子を学習した子にする（2026-10-26、だるま役の「つよい」）。名前は元の子のまま、体は人の子と同じ
     if (opt.learned) defs = defs.map(function (d) { return Object.assign({}, ME, { id: d.id, name: d.name }); });
     var lane = opt.lane != null ? opt.lane : Math.floor(n / 2);
-    if (opt.withMe) defs.splice(lane, 0, ME);
+    //   opt.meBody = { speed, stop, acc, end }（値そのもの）は、調べる道具用
+    var body = opt.meBody || (bodyOk(opt.body) ? { speed: BODY.speed[opt.body.speed - 1], stop: BODY.stop[opt.body.stop - 1], acc: BODY.acc[opt.body.acc - 1], end: BODY.end[opt.body.end - 1] } : null);
+    if (opt.withMe) defs.splice(lane, 0, body ? Object.assign({}, ME, { maxSpeed: body.speed, accel: body.speed / 3.3, endurance: body.end }) : ME);
     var st = Core.newRunState(P, defs, opt.type);
     st.children.forEach(function (c, i) {
-      if (c.id === "me") { c.human = true; c.input = false; setMe(c, opt.accT != null ? opt.accT : ACC_T, opt.stopT != null ? opt.stopT : 1.0); }
+      if (c.id === "me") { c.human = true; c.input = false; setMe(c, body ? body.acc : opt.accT != null ? opt.accT : ACC_T, body ? body.stop : opt.stopT != null ? opt.stopT : 1.0); }
       else if (opt.learned) { c.driven = true; c.input = 0; setMe(c, ACC_T, 1.0); c.brain = learnedKid(opt.learned[i % opt.learned.length]); }
     });
     st.turnArmed = true;
@@ -308,7 +328,7 @@
   }
 
   return {
-    Core: Core, P: P, TIERS: TIERS, ME: ME, LEARNED: LEARNED, learnedDaruma: learnedDaruma, LEARNED_KIDS: LEARNED_KIDS, learnedKid: learnedKid,
+    Core: Core, P: P, TIERS: TIERS, ME: ME, BODY: BODY, BODY_POINTS: BODY_POINTS, BODY_KEYS: BODY_KEYS, bodyOk: bodyOk, LEARNED: LEARNED, learnedDaruma: learnedDaruma, LEARNED_KIDS: LEARNED_KIDS, learnedKid: learnedKid,
     humanStop: humanStop, setMe: setMe, newGame: newGame, newGameSeats: newGameSeats,
     LOOK: LOOK, wantsTurn: wantsTurn, startLook: startLook, lookTick: lookTick, endLook: endLook, resolve: resolve, applyReserved: applyReserved,
     said: said, cpuDaruma: cpuDaruma, TEMPO: TEMPO, ONI: ONI, GOLD: GOLD
