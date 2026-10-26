@@ -173,6 +173,7 @@ header:has(#roomBadge) h1{visibility:hidden;flex:1 1 0}
 .choices{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 .typeQ{flex-basis:100%;font-size:.82rem;font-weight:700;color:var(--muted)}.pill.t_attack.on{background:#dfe8ff;border-color:#2f5bd0}.pill.t_oni.on{background:#e6e3ea;border-color:#33303a}.pill.t_red.on{background:#fff4cc;border-color:#c99a14}
 .typeNote{flex-basis:100%;margin:2px 0 0;font-size:.8rem;color:var(--muted);line-height:1.5}
+.bodyBox{flex-basis:100%}.bodyBox>summary{cursor:pointer;list-style:none;font-size:.82rem;font-weight:700;color:var(--muted);padding:4px 0}.bodyBox>summary::-webkit-details-marker{display:none}.bodyBox[open]>summary{margin-bottom:4px}
 .body{flex-basis:100%;display:grid;grid-template-columns:auto 1fr auto;gap:4px 8px;align-items:center;max-width:340px;margin:0 auto}
 .body b{font-size:.85rem;text-align:left}.body small{display:block;font-weight:400;font-size:.7rem;color:var(--muted)}
 .body .pips{display:flex;gap:3px;justify-content:center}.body .pips i{width:14px;height:14px;border-radius:50%;border:2px solid var(--accent);background:transparent}.body .pips i.on{background:var(--accent)}
@@ -362,6 +363,7 @@ let pickedType=store.get('dk-daruma','random');
 let level=store.get('dk-level','normal');if(level!=='strong')level='normal';
 // 子ども役の体（2026-10-26）：速さ・止まりやすさ・走り出し・持久力に、合わせて R.BODY_POINTS 点を振り分ける（rules.js の BODY）
 let body=store.get('dk-body',null);if(!R.bodyOk(body))body={speed:3,stop:3,acc:3,end:3};
+let bodyOpen=false;   // ふだんはたたんでおく（2026-10-27、けんじさん「さすがに複雑すぎる」）。押したときだけ開く
 const BODY_ROWS=[['speed',L('速さ','Speed'),v=>L(`ふつうの ${Math.round(v/R.ME.maxSpeed*100)}%`,`${Math.round(v/R.ME.maxSpeed*100)}% of normal`)],['stop',L('止まりやすさ','Braking'),v=>L(`止まるまで ${v}秒`,`Stops in ${v}s`)],['acc',L('走り出し','Start'),v=>L(`全力まで ${v}秒`,`Full speed in ${v}s`)],['end',L('持久力','Stamina'),v=>L(`体力 ${Math.round(v*100)}`,`Stamina ${Math.round(v*100)}`)]];
 const DTYPES=['normal','attack','oni','red'],CPU_OF={normal:'normal',attack:'tempo',oni:'oni',red:'gold'};
 const typeChoices=()=>DTYPES.concat('random');
@@ -396,9 +398,11 @@ function renderSetup(){
   $('types').querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{level=b.dataset.lv;store.set('dk-level',level);renderSetup()});
   if(role==='kid'){
     const left=R.BODY_POINTS-R.BODY_KEYS.reduce((a,k)=>a+body[k],0);
-    $('types').insertAdjacentHTML('beforeend',`<span class="typeQ">${L('あなたの体','Your body')}（${L('のこり','left')} ${left} ${L('点','pts')}）</span><div class="body">`+
+    const plain=R.BODY_KEYS.every(k=>body[k]===3),sum=plain?L('ふつう','Normal'):EN?`Spd ${body.speed}·Brk ${body.stop}·Start ${body.acc}·Stam ${body.end}`:`速${body.speed}・止${body.stop}・出${body.acc}・久${body.end}`;
+    $('types').insertAdjacentHTML('beforeend',`<details class="bodyBox"${bodyOpen||left>0?' open':''}><summary>${L('あなたの体','Your body')}：${left>0?L(`のこり ${left} 点`,`${left} pts left`):sum} ${bodyOpen||left>0?'▾':'▸'}</summary><div class="body">`+
       BODY_ROWS.map(([k,n,f])=>`<b>${n}<small>${f(R.BODY[k][body[k]-1])}</small></b><span class="pips">${[1,2,3,4,5].map(i=>`<i class="${i<=body[k]?'on':''}"></i>`).join('')}</span><span class="pm"><button class="pill" type="button" data-b="${k}" data-d="-1" ${body[k]<=1?'disabled':''} aria-label="${n} −">−</button><button class="pill" type="button" data-b="${k}" data-d="1" ${body[k]>=5||left<=0?'disabled':''} aria-label="${n} +">＋</button></span>`).join('')+
-      `</div><p class="typeNote">${L('どれかを上げたら、どれかを下げよう。1つに全部ふるより、少しとがらせるくらいがちょうどいい。','Raise one, lower another. A slight lean works better than going all in.')}</p>`);
+      `</div><p class="typeNote">${L('合わせて12点。どれかを上げたら、どれかを下げよう。1つに全部ふるより、少しとがらせるくらいがちょうどいい。','12 points in all. Raise one, lower another. A slight lean works better than going all in.')}</p></details>`);
+    $('types').querySelector('.bodyBox').ontoggle=e=>{if(bodyOpen!==e.target.open){bodyOpen=e.target.open;renderSetup()}};
     $('types').querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{const k=b.dataset.b,v=body[k]+(+b.dataset.d);if(v<1||v>5)return;const nb={...body,[k]:v};const sum=R.BODY_KEYS.reduce((a,x)=>a+nb[x],0);if(sum>R.BODY_POINTS)return;body=nb;if(R.bodyOk(body))store.set('dk-body',body);renderSetup()});
   }
   $('types').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{pickedType=b.dataset.t;store.set('dk-daruma',pickedType);renderSetup()});
