@@ -194,11 +194,6 @@
     TEMPO_MAX: { fillPerTick: 3.8, drainPerTick: 10 },
     // >1 keeps the slow half of the slider cheap; cost only spikes near the top
     TEMPO_DRAIN_CURVE: 2.8,
-    // 気力の自動回復（2026-10-25、けんじさん案）：ゆっくり唱えている間、気力が少しずつ戻る。いちばん遅いと差し引き 1秒に +10（ノーマル）、
-    //   真ん中（50）で回復 0、そこから上は今までどおり減るだけ。ゆっくり唱えて気力をため、速く唱えて振り向く、という緩急の作戦のため
-    //   回復の分は種類によらず同じ（テンポのかかり方 tempoScale は、減るほうにだけ効く）
-    TEMPO_REGEN_SLOWEST: 1.36,   // いちばん遅いときの回復（tick あたり）。減る 0.36 を差し引いて +1.0（1秒に +10）
-    TEMPO_REGEN_UNTIL: 50,       // このテンポで回復が 0 になる（まっすぐ減っていく）
     // Same shape for how fast the phrase actually advances. This exists so the
     // TOP of the slider can be raised without dragging the middle up with it:
     // raising TEMPO_MAX.fillPerTick alone shortens every phrase at every tempo,
@@ -483,10 +478,6 @@
     var ratio = Math.pow(clamp(v, 0, 100) / 100, P.TEMPO_FILL_CURVE);
     return P.TEMPO_MIN.fillPerTick + (P.TEMPO_MAX.fillPerTick - P.TEMPO_MIN.fillPerTick) * ratio;
   }
-  function tempoRegen(P, v) {
-    if (!P.TEMPO_REGEN_SLOWEST) return 0;
-    return P.TEMPO_REGEN_SLOWEST * Math.max(0, 1 - clamp(v, 0, 100) / P.TEMPO_REGEN_UNTIL);
-  }
   function tempoDrain(P, v) {
     var ratio = Math.pow(v / 100, P.TEMPO_DRAIN_CURVE);
     return P.TEMPO_MIN.drainPerTick + (P.TEMPO_MAX.drainPerTick - P.TEMPO_MIN.drainPerTick) * ratio;
@@ -715,7 +706,7 @@
   //   { reached: child|null, chantDone: bool, timeUp: bool }
   // The caller resolves the cycle (so it can animate first).
   function tick(P, st) {
-    st.stamina = Math.min(st.staminaMax, Math.max(0, st.stamina - tempoDrain(P, st.tempoValue) * st.type.tempoScale + tempoRegen(P, st.tempoValue)));
+    st.stamina = Math.max(0, st.stamina - tempoDrain(P, st.tempoValue) * st.type.tempoScale);
     // 気力切れ（2026-10-19）：0 になった瞬間に、テンポの数字が半分になる（前は一番遅いところまで落ちていて、重すぎた）。
     // 気力が少しでも戻ったら、次に 0 になったときにまた半分にする
     if (st.stamina <= 0) {
@@ -1132,7 +1123,7 @@
     clearAdoptedBalance: clearAdoptedBalance,
     clamp: clamp,
     tempoFill: tempoFill,
-    tempoDrain: tempoDrain, tempoRegen: tempoRegen,
+    tempoDrain: tempoDrain,
     tempoLabel: tempoLabel,
     rollPhraseTraits: rollPhraseTraits,
     pickActiveChildren: pickActiveChildren,
