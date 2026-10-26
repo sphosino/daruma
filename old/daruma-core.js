@@ -48,6 +48,10 @@
     CATCH_KNOCK_FAR: 0.4,   // 2026-10-24：2/3 → 0.4（スタートで 24 → 約10）
     // 気力の数字（2026-10-25）：ノーマルで 1000 になるよう、前の 110 から全部を約 9.1 倍にして切りのいい数字に丸めた
     TEMPO_CHANGE_COST_PER_UNIT: 0.23,
+    // 唱えている途中で遅くするのにも気力がかかる（2026-10-26、けんじさん「途中から遅くするのがずるい」）。1 下げるごとに 2、種類によらず同じ。
+    //   最初から遅く唱えるのはただ（子どもは唱え切るまで走れる）。止めたいのは、唱え終わり直前に急にためて、止まって待つ子どもの時計を使わせる手。
+    //   一緒の進化で、0 だとどの種類も最後にテンポ 0 までためて 7〜9 割勝ち、1 ではノーマル・攻めがまだためた。2 でほぼ使わなくなった（docs/sim-2026-10.md）
+    TEMPO_SLOW_COST_PER_UNIT: 2,
     STAMINA_MAX: 1000,
 
     // "necery dash": a random, cycle-count-independent burst of reckless
@@ -227,8 +231,9 @@
     // force. GAMBLE_THREAT_WEIGHT is the knob that would give it teeth.
     DARUMA_TYPES: {
       normal: { label: "ふつう",     staminaScale: 1.00, turnCostScale: 1.00, tempoScale: 1.00, skipRewardScale: 1.00, expectTurn: 0.50 },
-      // 器は大きいが実入りが細い。貯めるのではなく最初から持っている。
-      red:    { label: "金だるま",   staminaScale: 1.50, turnCostScale: 1.00, tempoScale: 1.00, skipRewardScale: 0.50, expectTurn: 0.50 },
+      // 器は大きいが実入りが細い。貯めるのではなく最初から持っている。気力 1.5 → 1.2 倍（2026-10-26：遅くするコストを入れても、
+      //   一緒の進化で人っぽい子に 81% 勝ち、ほかの種類の 56〜70% から離れていた。1.2 倍で 66%）
+      red:    { label: "金だるま",   staminaScale: 1.20, turnCostScale: 1.00, tempoScale: 1.00, skipRewardScale: 0.50, expectTurn: 0.50 },
       // 振り向きは安いが詠唱で押せない。そして安いことは見抜かれている。
       oni:    { label: "鬼だるま",   staminaScale: 1.00, turnCostScale: 0.60, tempoScale: 1.50, skipRewardScale: 1.00, expectTurn: 0.88 },
       // テンポは安いが振り向きが高い。舐められる分、たまの一発が刺さる。
@@ -657,8 +662,8 @@
       st.tempoChangeCostPaid += cost;
     }
     else if (signedDelta < 0 && P.TEMPO_SLOW_COST_PER_UNIT) {
-      // 遅くするのにも気力がかかる（試し中。ふだんは 0 でただ）：唱え終わり近くで極端にためる手に、元手をかけるため
-      var perDown = P.TEMPO_SLOW_COST_PER_UNIT * st.type.tempoScale;
+      // 遅くするのにも気力がかかる（TEMPO_SLOW_COST_PER_UNIT）：唱え終わり近くで極端にためる手に、元手をかけるため
+      var perDown = P.TEMPO_SLOW_COST_PER_UNIT;   // 種類によらず同じ（鬼の tempoScale を掛けると、鬼だけ重くなりすぎた。2026-10-26）
       var canDown = st.stamina / perDown;
       if (-signedDelta > canDown) { signedDelta = -canDown; newVal = st.tempoValue - canDown; }
       var downCost = -signedDelta * perDown;

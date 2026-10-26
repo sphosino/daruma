@@ -18,6 +18,7 @@ if (process.env.SLOWCOST) P.TEMPO_SLOW_COST_PER_UNIT = +process.env.SLOWCOST;   
 if (process.env.UPCOST) P.TEMPO_CHANGE_COST_PER_UNIT = +process.env.UPCOST;   // 唱えている途中で速くするコスト（1 につき。ふだん 0.23）
 const GENS = +(process.argv[2] || 30), GAMES = +(process.argv[3] || 40), POP = 24, KEEP = 8, HOF = 6;
 const GAME = { ...E.GAME, type: process.env.TYPE || "normal" };
+if (process.env.STAMINA) P.DARUMA_TYPES[GAME.type].staminaScale = +process.env.STAMINA;   // だるまの気力の量（ふだんの何倍か。金だるまは 1.5）
 const SPD = (k) => Math.max(0, Math.min(8, Math.round(k))) / 8;   // 走る速さ 9 段階（0〜1）
 
 // ---------- 子どもの遺伝子 ----------
@@ -107,7 +108,7 @@ const HUMANS = [["careful", null], ["bold", null], ["normal", "brake"]];
 module.exports = { kid, kdescribe, KGENES };
 if (require.main !== module) return;
 // ---------- 進化 ----------
-console.log(`だるまの種類 ${GAME.type}・だるま ${POP}組 × 子ども ${POP}組 × ${GENS}世代・1組あたり ${GAMES}試合`);
+console.log(`だるまの種類 ${GAME.type}（気力 ${P.DARUMA_TYPES[GAME.type].staminaScale} 倍）・だるま ${POP}組 × 子ども ${POP}組 × ${GENS}世代・1組あたり ${GAMES}試合`);
 let dpop = Array.from({ length: POP }, () => ({ g: E.randomGene(), f: 0 })), kpop = Array.from({ length: POP }, () => ({ g: krandom(), f: 0 }));
 let dhof = [], khof = [];   // 昔の強者
 const t0 = Date.now();
