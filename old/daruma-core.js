@@ -786,11 +786,11 @@
       if (c.caughtNow) {
         // 見つかった子は、その場で固まる（押し戻されるのは見終わってから）
         c.vel = 0;
-      } else if (st.looking && !c.human) {
+      } else if (st.looking && !c.human && !c.driven) {
         // だるまがこっちを見ている。CPU の子はみんな止まろうとする
         c.vel = Math.max(0, c.vel - c.brake);
-      } else if (c.human) {
-        // 人が走らせている子（2026-10-18）。押している間は加速、離すとブレーキ。考えるのは人なので、
+      } else if (c.human || c.driven) {
+        // 人が走らせている子（2026-10-18）。学習した子（c.driven、rules.js の learnedKid）も同じ体で、外から c.input を入れる。押している間は加速、離すとブレーキ。考えるのは人なので、
         // 下の AI は飛ばす。体（体力・疲れ）は CPU の子とまったく同じ：走ると減り、速さを変えるだけでも減り、
         // 0 になると「ぜぇ」で遅くなる。疲れているほどブレーキも効きにくい
         var hTop = c.winded ? c.maxSpeed * P.WINDED_SPEED_MULT : c.maxSpeed;

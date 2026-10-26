@@ -105,7 +105,7 @@ function game(dg, kg, hk) {
 function match(dg, kg, hk, n) { let dw = 0, me = 0; for (let i = 0; i < n; i++) { const r = game(dg, kg, hk); dw += r.d; me += r.me; } return { dw: dw / n, me: me / n }; }
 const HUMANS = [["careful", null], ["bold", null], ["normal", "brake"]];
 
-module.exports = { kid, kdescribe, KGENES };
+module.exports = { kid, kdescribe, KGENES, krandom, kmutate, kcross };
 if (require.main !== module) return;
 // ---------- 進化 ----------
 console.log(`だるまの種類 ${GAME.type}（気力 ${P.DARUMA_TYPES[GAME.type].staminaScale} 倍）・だるま ${POP}組 × 子ども ${POP}組 × ${GENS}世代・1組あたり ${GAMES}試合`);

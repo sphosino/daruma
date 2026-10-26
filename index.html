@@ -354,6 +354,8 @@ let role=q.get('role')||store.get('dk-role','kid');if(role!=='daruma')role='kid'
 // だるまの種類（2026-10-25）：子ども役は「どのだるまと戦う？」、だるま役は「どのだるまになる？」。おまかせ（random）は試合ごとに4種類からくじ。
 //   選んだものは覚える。CPU のだるまは、種類ごとに特徴を生かして動く（rules.js の cpuDaruma の style）
 let pickedType=store.get('dk-daruma','random');
+// 相手の強さ（2026-10-26）：ふつうは今までの CPU、つよいは学習した AI（tools/league.js で育てた。rules.js の LEARNED・LEARNED_KIDS）
+let level=store.get('dk-level','normal');if(level!=='strong')level='normal';
 const DTYPES=['normal','attack','oni','red'],CPU_OF={normal:'normal',attack:'tempo',oni:'oni',red:'gold'};
 const typeChoices=()=>DTYPES.concat('random');
 if(!typeChoices().includes(pickedType))pickedType='random';
@@ -362,7 +364,7 @@ const typeNote=k=>k==='random'?L('4種類のどれかが、試合ごとにくじ
   :k==='normal'?L('クセのない、ふつうのだるま。まずはこれで。','A plain Daruma with no quirks. Start here.')
   :k==='attack'?L('唱える速さを変えるのが得意（速くするのに使う気力が半分）。そのかわり振り向くのは苦手（振り向くのに使う気力が1.5倍）。急な早口に注意！','Good at changing its chanting speed (speeding up costs half the spirit). But turning around costs 1.5× the spirit. Watch out for sudden speed-ups!')
   :k==='oni'?L('振り向くのが得意（振り向くのに使う気力が6割）なので、気力切れしにくい。そのかわり速さを変えるのは苦手（1.5倍）で、比較的安定したリズムで唱える。','Good at turning around (costs 60% of the spirit), so it rarely runs out. But changing speed costs 1.5×, so it chants at a fairly steady rhythm.')
-  :k==='red'?L('気力がとても多い（1.5倍）。そのかわり見送っても気力があまりたまらない（半分）。たっぷりの気力で、どっしり振り向いてくる！','Huge spirit pool (1.5×). But letting a chant pass recovers only half. It turns with plenty in reserve!')
+  :k==='red'?L('気力が多い（1.2倍）。そのかわり見送っても気力があまりたまらない（半分）。たっぷりの気力で、どっしり振り向いてくる！','Big spirit pool (1.2×). But letting a chant pass recovers only half. It turns with plenty in reserve!')
   :EN?'':TYPE_NOTE[k]||'';
 const typeName=k=>k==='random'?L('おまかせ','Random'):k==='normal'?L('ノーマル','Normal'):k==='attack'?L('攻めだるま','Attack Daruma'):k==='oni'?L('鬼だるま','Oni Daruma'):k==='red'?L('金だるま','Gold Daruma'):P.DARUMA_TYPES[k].label;
 let st=null,me=null,cpu=null,phase='setup',paused=false;
@@ -381,7 +383,11 @@ function renderSetup(){
     typeChoices().map(k=>`<button class="pill dCard${k===pickedType?' on':''}${k!=='random'&&k!=='normal'?' t_'+k:''}" data-t="${k}" type="button" title="${k==='random'?L('試合ごとにくじで決まる','Picked at random each game'):EN?'':TYPE_NOTE[k]||''}"><canvas data-k="${k}"></canvas><span>${typeName(k)}</span></button>`).join('');
   $('types').querySelectorAll('canvas').forEach(c=>{c.style.width=c.style.height='56px';drawDarumaThumb(c,c.dataset.k)});
   $('types').insertAdjacentHTML('beforeend',`<p class="typeNote">${typeNote(pickedType)}</p>`);
-  $('types').querySelectorAll('button').forEach(b=>b.onclick=()=>{pickedType=b.dataset.t;store.set('dk-daruma',pickedType);renderSetup()});
+  $('types').insertAdjacentHTML('beforeend',`<span class="typeQ">${role==='kid'?L('相手のだるまの強さ','Daruma strength'):L('相手の子どもの強さ','Runner strength')}</span>`+
+    [['normal',L('ふつう','Normal')],['strong',L('つよい','Strong')]].map(([k,l])=>`<button class="pill${k===level?' on':''}" data-lv="${k}" type="button">${l}</button>`).join('')+
+    `<p class="typeNote">${level==='strong'?(role==='kid'?L('たくさん戦って覚えただるま。手ごわい！','A Daruma that learned from many games. Tough!'):L('たくさん戦って覚えた子どもたち。ふつうに唱えていると勝てない！','Runners that learned from many games. Plain chanting will not beat them!')):L('いつもの相手。','The usual opponent.')}</p>`);
+  $('types').querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{level=b.dataset.lv;store.set('dk-level',level);renderSetup()});
+  $('types').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{pickedType=b.dataset.t;store.set('dk-daruma',pickedType);renderSetup()});
 }
 // 中身が変わったときだけ描き直す。0.1 秒ごとに描き直すと、押してから離すまでの間に中身が入れかわって、
 // 押したことが無視される（唱えている間に振り向くボタンが切りかわらなかった、2026-10-20）
@@ -435,16 +441,18 @@ function start(){
   // 選んだ種類（おまかせなら、ふつうか攻めをくじで）。あそびかたはいつもふつう。攻めだるまの CPU はテンポを武器にする
   const dType=tut?'normal':pickedType==='random'?DTYPES[Math.floor(Math.random()*DTYPES.length)]:pickedType;
   const cpuStyle=CPU_OF[dType]||'normal';
-  st=R.newGame({withMe:role==='kid',kids:nk,lane:nk-1,type:dType,accT:T.accT,stopT:T.stopT,cpuStop:[T.cpuStopMin,Math.max(T.cpuStopMin,T.cpuStopMax)],cpuAccT:T.cpuAccT});
+  const strong=level==='strong'&&!tut;
+  const pool=(R.LEARNED_KIDS[dType]||[]).slice(),learned=strong&&role==='daruma'&&pool.length?Array.from({length:nk},()=>pool.splice(Math.floor(Math.random()*pool.length),1)[0]||R.LEARNED_KIDS[dType][0]):null;   // 4 人ちがう子
+  st=R.newGame({learned,withMe:role==='kid',kids:nk,lane:nk-1,type:dType,accT:T.accT,stopT:T.stopT,cpuStop:[T.cpuStopMin,Math.max(T.cpuStopMin,T.cpuStopMax)],cpuAccT:T.cpuAccT});
   let ci=0;st.children.forEach((c,i)=>{c.lane=i;c.col=c.human?null:KID_COL[ci++]});
   st.cpuStyle=cpuStyle;
-  me=st.children.find(c=>c.human)||null;cpu=role==='kid'?R.cpuDaruma(null,st.cpuStyle):null;
+  me=st.children.find(c=>c.human)||null;cpu=role==='kid'?(strong&&R.LEARNED[dType]?R.learnedDaruma(dType):R.cpuDaruma(null,st.cpuStyle)):null;
   applyTune();if(tut)P.GOAL_TICKS=1e7;
   $('ctlDaruma').hidden=role!=='daruma';$('pad').hidden=role!=='kid';$('pauseBtn').hidden=false;$('endBtn').hidden=false;$('langBtn').hidden=true;
   $('over').hidden=true;$('shareBtn').hidden=true;$('exitRow').hidden=true;$('otherBtn').hidden=true;meCaughtN=0;$('log').innerHTML='';prev=snap();prevAt=gt;
-  log(role==='kid'?`子ども：${st.children.map(c=>c.name).join('・')}`:`${st.type.label}で始めた。子ども：${st.children.map(c=>c.name).join('・')}`);
+  log((strong?'つよい相手。':'')+(role==='kid'?`子ども：${st.children.map(c=>c.name).join('・')}`:`${st.type.label}で始めた。子ども：${st.children.map(c=>c.name).join('・')}`));
   renderPause();toPrep(true);
-  if(role==='kid'&&!tut){const k=CPU_STYLES[st.cpuStyle];showMsg(k.n,2400,k.sub)}   // 相手がどちらか（おまかせのときも分かるように）
+  if(role==='kid'&&!tut){const k=CPU_STYLES[st.cpuStyle];showMsg(k.n+(strong?L('（つよい）',' (Strong)'):''),2400,k.sub)}   // 相手がどちらか（おまかせのときも分かるように）
   if(tut&&tut.i<0)tutNextBeat();
 }
 const snap=()=>{prevVel=st.children.map(c=>c.vel);return st.children.map(c=>c.pos)};
@@ -460,6 +468,7 @@ function toCue(){phase='cue';beep(260,0.5,'sine');renderCtl();renderChant();late
 function toChant(){phase='chant';acc=0;note('');renderCtl();renderChant();tutEv('chantStart')}
 function step(){ // 0.1秒ぶん世界を進める
   if(me){me.input=pressed?want:0;me.boost=boost}
+  for(const c of st.children)if(c.brain)c.brain.tick(st,c);   // 学習した子（つよい）
   prev=snap();prevAt=gt;
   return Core.tick(P,st);
 }
@@ -481,6 +490,7 @@ function tick(){
 }
 function lookTick(){
   if(me){me.input=pressed?want:0;me.boost=boost}
+  for(const c of st.children)if(c.brain)c.brain.look(c);
   prev=snap();prevAt=gt;
   const r=R.lookTick(st);
   if(r.reached){end(r.reached);return}
