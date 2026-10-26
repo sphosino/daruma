@@ -384,7 +384,7 @@ function renderSetup(){
   $('types').querySelectorAll('canvas').forEach(c=>{c.style.width=c.style.height='56px';drawDarumaThumb(c,c.dataset.k)});
   $('types').insertAdjacentHTML('beforeend',`<p class="typeNote">${typeNote(pickedType)}</p>`);
   $('types').insertAdjacentHTML('beforeend',`<span class="typeQ">${role==='kid'?L('相手のだるまの強さ','Daruma strength'):L('相手の子どもの強さ','Runner strength')}</span>`+
-    [['normal',L('ふつう','Normal')],['strong',L('つよい','Strong')]].map(([k,l])=>`<button class="pill${k===level?' on':''}" data-lv="${k}" type="button">${l}</button>`).join('')+
+    (role==='kid'?[['normal',L('ふつうのだるま','Normal Daruma')],['strong',L('つよいだるま','Strong Daruma')]]:[['normal',L('ふつうの子どもたち','Normal runners')],['strong',L('つよい子どもたち','Strong runners')]]).map(([k,l])=>`<button class="pill${k===level?' on':''}" data-lv="${k}" type="button">${l}</button>`).join('')+
     `<p class="typeNote">${level==='strong'?(role==='kid'?L('たくさん戦って覚えただるま。手ごわい！','A Daruma that learned from many games. Tough!'):L('たくさん戦って覚えた子どもたち。ふつうに唱えていると勝てない！','Runners that learned from many games. Plain chanting will not beat them!')):L('いつもの相手。','The usual opponent.')}</p>`);
   $('types').querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{level=b.dataset.lv;store.set('dk-level',level);renderSetup()});
   $('types').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{pickedType=b.dataset.t;store.set('dk-daruma',pickedType);renderSetup()});
