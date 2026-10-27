@@ -145,7 +145,7 @@ function renderBadge(v,was){
 // 集まっているとき・終わったときのカード
 function renderRoomCard(){
   const v=RV,url=location.origin+location.pathname+'?room='+v.id,w=v.winner;
-  $('over').hidden=false;$('roles').hidden=true;$('types').hidden=true;$('fb').hidden=true;$('shareBtn').hidden=true;$('exitRow').hidden=true;$('otherBtn').hidden=true;
+  $('over').hidden=false;$('roles').hidden=true;$('types').hidden=true;$('fb').hidden=true;$('shareBtn').hidden=true;$('exitRow').hidden=true;
   let head=L('みんなで遊ぶ','Play with friends'),sub=L('リンクを送って、友だちを呼ぼう。空いた席には CPU が入ります。','Send the link to invite friends. Empty seats are filled by the CPU.');
   if(v.phase==='over'&&w){const mine=w.side==='kids'?v.you>0:v.you===0,wn=EN&&KID_EN[w.id]||w.name;
     head=w.side==='kids'?(w.id===myId?L('タッチ！あなたの勝ち','Touch! You win'):L(`${wn}がタッチ！子どもの勝ち`,`${wn} touched it! The runners win`)):L('時間切れ…だるまの勝ち',"Time's up… the Daruma wins");

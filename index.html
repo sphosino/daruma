@@ -261,7 +261,7 @@ body.tutRun #chant{position:relative;z-index:8}
       <button class="pill on" id="shareBtn" type="button" hidden data-en="🎉 Share your result on X">🎉 結果をXでシェア</button>
       <div class="choices" id="types"></div>
       <div class="roomCard" id="roomCard" hidden></div>
-      <div class="choices" id="goRow"><button class="go" id="startBtn" type="button" data-en="Start">はじめる</button><button class="go" id="otherBtn" type="button" hidden></button></div>
+      <div class="choices" id="goRow"><button class="go" id="startBtn" type="button" data-en="Start">はじめる</button></div>
       <p id="waitHost" hidden data-en="Waiting for the room's host to start">部屋を作った人が始めるのを待っています</p>
       <button class="pill" id="roomBtn" type="button" data-en="Play with friends">みんなで遊ぶ</button>
       <div class="choices" id="exitRow" hidden><button class="pill" id="titleBtn" type="button" data-en="Back to the start screen">はじめの画面へ</button><a class="pill" href="/" style="text-decoration:none" data-en="Play other games">ほかのゲームで遊ぶ</a></div>
@@ -388,7 +388,7 @@ function renderSetup(){
   $('roles').innerHTML=[['kid',L('子どもで遊ぶ','Play as a runner')],['daruma',L('だるまで遊ぶ','Play as the Daruma')]].map(([k,l])=>`<button class="pill${k===role?' on':''}" data-r="${k}" type="button">${l}</button>`).join('');
   $('roles').querySelectorAll('button').forEach(b=>b.onclick=()=>{role=b.dataset.r;store.set('dk-role',role);renderSetup();if(phase==='setup')$('overP').textContent=HOW[role]});
   $('types').hidden=false;
-  $('types').innerHTML=`<span class="typeQ">${phase==='over'?L('だるまの種類','Daruma type'):role==='kid'?L('どのだるまと戦う？','Which Daruma will you face?'):L('どのだるまになる？','Which Daruma will you be?')}</span>`+
+  $('types').innerHTML=`<span class="typeQ">${role==='kid'?L('どのだるまと戦う？','Which Daruma will you face?'):L('どのだるまになる？','Which Daruma will you be?')}</span>`+
     typeChoices().map(k=>`<button class="pill dCard${k===pickedType?' on':''}${k!=='random'&&k!=='normal'?' t_'+k:''}" data-t="${k}" type="button" title="${k==='random'?L('試合ごとにくじで決まる','Picked at random each game'):EN?'':TYPE_NOTE[k]||''}"><canvas data-k="${k}"></canvas><span>${typeName(k)}</span></button>`).join('');
   $('types').querySelectorAll('canvas').forEach(c=>{c.style.width=c.style.height='56px';drawDarumaThumb(c,c.dataset.k)});
   $('types').insertAdjacentHTML('beforeend',`<p class="typeNote">${typeNote(pickedType)}</p>`);
@@ -467,7 +467,7 @@ function start(){
   me=st.children.find(c=>c.human)||null;cpu=role==='kid'?(strong&&R.LEARNED[dType]?R.learnedDaruma(dType):R.cpuDaruma(null,st.cpuStyle)):null;
   applyTune();if(tut)P.GOAL_TICKS=1e7;
   $('ctlDaruma').hidden=role!=='daruma';$('pad').hidden=role!=='kid';$('pauseBtn').hidden=false;$('endBtn').hidden=false;$('langBtn').hidden=true;
-  $('over').hidden=true;$('shareBtn').hidden=true;$('exitRow').hidden=true;$('otherBtn').hidden=true;meCaughtN=0;$('log').innerHTML='';prev=snap();prevAt=gt;
+  $('over').hidden=true;$('shareBtn').hidden=true;$('exitRow').hidden=true;meCaughtN=0;$('log').innerHTML='';prev=snap();prevAt=gt;
   log((strong?'つよい相手。':'')+(role==='kid'?`子ども：${st.children.map(c=>c.name).join('・')}`:`${st.type.label}で始めた。子ども：${st.children.map(c=>c.name).join('・')}`));
   renderPause();toPrep(true);
   if(role==='kid'&&!tut){const k=CPU_STYLES[st.cpuStyle];showMsg(k.n+(strong?L('（つよい）',' (Strong)'):''),2400,k.sub)}   // 相手がどちらか（おまかせのときも分かるように）
@@ -566,8 +566,9 @@ function end(kid){
   else{h=!kid?'時間切れ…だるまの勝ち':kid===me?'タッチ！あなたの勝ち':`${kid.name}がタッチ！子どもの勝ち`;
     p=kid?`だるまの時計は、のこり${left}秒だった。`:`ゴールまで、あと${Math.max(0,Math.round((P.GOAL_POS-me.pos)/(P.GOAL_POS-2)*100))}%だった。`}
   if(kid)beep(880,0.15);
-  $('overH').textContent=h;$('overP').textContent=p;$('startBtn').textContent=role==='kid'?L('子どもで遊ぶ','Play as a runner'):L('だるまで遊ぶ','Play as the Daruma');$('over').hidden=false;$('exitRow').hidden=false;renderSetup();$('roles').hidden=true;
-  $('otherBtn').textContent=role==='kid'?L('だるまで遊ぶ','Play as the Daruma'):L('子どもで遊ぶ','Play as a runner');$('otherBtn').hidden=false;$('otherBtn').style.order=role==='kid'?'':'-1';showFb();
+  // 選ぶところは、はじめの画面と同じ（役・だるま・強さ・体を選んで「はじめる」）。前は「子どもで遊ぶ／だるまで遊ぶ」の2つのボタンで、
+  // 上に出ている選びものがどちらの役のものか分からず、子どもの CPU を選んでいるように見えた（2026-10-27）。役は結果の文の下に置く
+  $('overH').textContent=h;$('overP').textContent=p;$('startBtn').textContent=L('はじめる','Start');$('over').hidden=false;$('exitRow').hidden=false;$('shareBtn').after($('roles'));renderSetup();showFb();
   const txt=shareText(kid,left);$('shareBtn').onclick=()=>sharePost(txt+L(' #だるまさんがころんだ',' #RedLightGreenLight'),'https://mataasobo.com/daruma/');$('shareBtn').hidden=false}
 // ---------- 結果を X にシェア（三人将棋の share.js と同じ形） ----------
 function shareText(kid,left){
@@ -603,7 +604,7 @@ function showFb(){fbSent=false;$('fb').hidden=false;$('fbThanks').hidden=true;
     $('fbBtns').querySelectorAll('button').forEach(x=>{if(x!==b)x.disabled=true});$('fbThanks').hidden=false})}
 function quit(){$('roles').hidden=false;$('msg').hidden=true;if(tut){tut=null;$('tut').hidden=true;tutHl(null)}$('tune').hidden=true;tunePaused=false;phase='setup';timers=[];paused=false;st=null;me=null;note('');$('pauseBtn').hidden=true;$('endBtn').hidden=true;$('langBtn').hidden=false;renderPause();
   $('ctlDaruma').hidden=true;$('pad').hidden=true;
-  $('fb').hidden=true;$('shareBtn').hidden=true;$('exitRow').hidden=true;$('otherBtn').hidden=true;$('overH').textContent=L('だるまさんがころんだ','Red Light, Green Light');$('overP').textContent=HOW[role];$('startBtn').textContent=L('はじめる','Start');$('over').hidden=false;renderSetup();renderChant()}
+  $('fb').hidden=true;$('shareBtn').hidden=true;$('exitRow').hidden=true;$('overH').after($('roles'));$('overH').textContent=L('だるまさんがころんだ','Red Light, Green Light');$('overP').textContent=HOW[role];$('startBtn').textContent=L('はじめる','Start');$('over').hidden=false;renderSetup();renderChant()}
 function togglePause(){if(!st||phase==='over'||phase==='setup')return;paused=!paused;renderPause();note(pausedNote);renderCtl()}
 function renderPause(){const t=paused?L('▶ 再開','▶ Resume'):L('⏸ 中断','⏸ Pause');$('pauseBtn').textContent=t;$('pause2').textContent=t;$('pauseBtn').classList.toggle('on',paused);$('pause2').classList.toggle('on',paused)}
 
@@ -772,8 +773,6 @@ function endTut(){
 // ---------- 入力 ----------
 // はじめる：その役で初めてなら、まずあそびかた（チュートリアル）
 $('startBtn').onclick=()=>{if(role==='kid'&&!R.bodyOk(body)){renderSetup();const q=document.querySelector('#types .body');if(q)q.scrollIntoView({block:'center'});alert(L('あなたの体の点を、ぜんぶ振り分けてね','Place all your body points first'));return}if(!store.get('dk-tut-'+role,false))startTut();else start()};
-// 結果画面：もう一つの役ですぐ始める（その役が初めてなら、あそびかたから）
-$('otherBtn').onclick=()=>{role=role==='kid'?'daruma':'kid';store.set('dk-role',role);$('startBtn').onclick()};
 $('helpBtn').onclick=()=>{$('tune').hidden=true;startTut()};
 // 「わかった」とまちがえて押さないよう、やめる前に確かめる
 $('tutSkip').onclick=()=>{if(confirm(L(`チュートリアルを終えて、本番を始めますか？
