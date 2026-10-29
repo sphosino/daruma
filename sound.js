@@ -2,7 +2,7 @@
 //   最初は鳴らさない。🔇/🔊ボタンでオンにした人だけ鳴る。オン／オフはまた遊ぼのゲームで共通の mataasobo-sound に覚える
 //   ボタンは言葉の切りかえ（#langBtn）の左に、同じ見た目で置く。なければ header の最後に .pill で置く
 //   ブラウザは人が一度どこかを押すまで音を鳴らせないので、オンのまま開いたときは、最初に押されたときに鳴らし始める
-//   Sound.want(false) で止め、Sound.want(true) で続きから鳴らす（だるまは唱えている間だけ鳴らす）。タブを隠したら止める
+//   Sound.want(false) で止め、Sound.want(true) で続きから鳴らす。タブを隠したら止める
 (function () {
   const KEY = 'mataasobo-sound';
   const t = (ja, en) => (typeof L === 'function' ? L(ja, en) : ja);
