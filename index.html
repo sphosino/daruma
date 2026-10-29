@@ -1143,5 +1143,7 @@ renderTune();resize();renderSetup();$('overP').textContent=HOW[role];renderChant
 </script>
 <script src="room.js"></script>
 <script src="online.js?v=19"></script>
+<script src="sound.js"></script>
+<script>setInterval(()=>Sound.want(phase==='chant'&&!paused&&!tunePaused),50)   // BGM は、だるまが唱えている間だけ鳴らす（振り向いたら止まる）</script>
 </body>
 </html>
