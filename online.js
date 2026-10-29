@@ -93,7 +93,10 @@ function apply(v,ev){
   // だるまの準備は30秒まで（過ぎたらサーバーが自動で唱え始める）。残りの秒は下の loop で数える
   prepEnd=v.phase==='prep'&&v.prepLeft!=null?performance.now()+v.prepLeft:null;prepS=-1;
   if(playing){$('over').hidden=true;note(v.phase==='prep'||v.you<0?prepNote(v.prepLeft):'')}
-  else renderRoomCard();
+  else if(was&&!['lobby','over'].includes(was.phase)&&v.phase==='over'){   // 終わった瞬間：最後の場面を見せてから、結果のカードをふわっと出す（index.html の end と同じ）
+    showMsg(v.winner&&v.winner.side==='kids'?L('タッチ！','Touch!'):L('時間切れ！',"Time's up!"),OVER_HOLD_MS);overHoldUntil=performance.now()+OVER_HOLD_MS;
+    setTimeout(()=>{if(RV&&RV.phase==='over'){renderRoomCard();showOver()}},OVER_HOLD_MS)}
+  else if(performance.now()>=overHoldUntil)renderRoomCard();
   renderJump(v,playing);
   renderCtl();renderChant();
 }
@@ -143,6 +146,7 @@ function renderBadge(v,was){
     showMsg(playing?L(`${nmx}が観戦に来た！`,`${nmx} is watching!`):L(`${nmx}が来た！`,`${nmx} joined!`),2200)}
 }
 // 集まっているとき・終わったときのカード
+let overHoldUntil=0;
 function renderRoomCard(){
   const v=RV,url=location.origin+location.pathname+'?room='+v.id,w=v.winner;
   $('over').hidden=false;$('roles').hidden=true;$('types').hidden=true;$('fb').hidden=true;$('shareBtn').hidden=true;$('exitRow').hidden=true;

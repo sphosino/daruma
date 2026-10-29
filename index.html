@@ -132,6 +132,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
    真ん中寄せは justify-content だと、画面より長いときに上が切れてスクロールでも見えないので、最初と最後の子の auto の余白で寄せる */
 .over>:first-child{margin-top:auto}.over>:last-child{margin-bottom:auto}
 .foot{text-align:center;font-size:.75rem;font-weight:700;color:var(--muted);margin:4px 0 0}.foot a{color:inherit}
+.over.fade{animation:overIn .45s ease-out}@keyframes overIn{from{opacity:0}to{opacity:1}}
 .over>*{max-width:520px}.over p.lines{white-space:pre-line;text-align:left;color:var(--ink);font-size:.92rem;line-height:1.8}
 .over h2{font-family:var(--pop);font-weight:400;margin:0;font-size:1.6rem;color:var(--accent);text-shadow:0 3px 0 var(--card)}
 .over p{margin:0;font-size:.86rem;color:var(--muted);max-width:32em}
@@ -570,8 +571,13 @@ function end(kid){
   if(kid)beep(880,0.15);
   // 選ぶところは、はじめの画面と同じ（役・だるま・強さ・体を選んで「はじめる」）。前は「子どもで遊ぶ／だるまで遊ぶ」の2つのボタンで、
   // 上に出ている選びものがどちらの役のものか分からず、子どもの CPU を選んでいるように見えた（2026-10-27）。役は結果の文の下に置く
-  $('overH').textContent=h;$('overP').textContent=p;$('startBtn').textContent=L('はじめる','Start');$('over').hidden=false;$('exitRow').hidden=false;$('shareBtn').after($('roles'));renderSetup();showFb();
-  const txt=shareText(kid,left);$('shareBtn').onclick=()=>sharePost(txt+L(' #だるまさんがころんだ',' #RedLightGreenLight'),'https://mataasobo.com/daruma/');$('shareBtn').hidden=false}
+  // 終わった瞬間に結果の画面で覆うと、ブチっと切られた感じがする（2026-10-29）。最後の場面と「タッチ！」をしばらく見せてから、結果をふわっと出す
+  showMsg(kid?L('タッチ！','Touch!'):L('時間切れ！',"Time's up!"),OVER_HOLD_MS);
+  setTimeout(()=>{if(phase!=='over')return;   // 待っている間に「終了」などで画面が変わっていたら出さない
+    $('overH').textContent=h;$('overP').textContent=p;$('startBtn').textContent=L('はじめる','Start');showOver();$('exitRow').hidden=false;$('shareBtn').after($('roles'));renderSetup();showFb();
+    const txt=shareText(kid,left);$('shareBtn').onclick=()=>sharePost(txt+L(' #だるまさんがころんだ',' #RedLightGreenLight'),'https://mataasobo.com/daruma/');$('shareBtn').hidden=false},OVER_HOLD_MS)}
+const OVER_HOLD_MS=1800;
+function showOver(){const o=$('over');o.hidden=false;o.classList.remove('fade');void o.offsetWidth;o.classList.add('fade')}
 // ---------- 結果を X にシェア（三人将棋の share.js と同じ形） ----------
 function shareText(kid,left){
   const c=st.cycle;
@@ -1144,7 +1150,7 @@ function frame(now){
 renderTune();resize();renderSetup();$('overP').textContent=HOW[role];renderChant();requestAnimationFrame(frame);
 </script>
 <script src="room.js"></script>
-<script src="online.js?v=19"></script>
+<script src="online.js?v=20"></script>
 <script src="sound.js"></script>
 </body>
 </html>
