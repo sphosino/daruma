@@ -131,6 +131,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 /* 2026-10-25：上のボタンの列（z-index 6 で浮いている）に見出しが隠れていたので、上を空ける。
    真ん中寄せは justify-content だと、画面より長いときに上が切れてスクロールでも見えないので、最初と最後の子の auto の余白で寄せる */
 .over>:first-child{margin-top:auto}.over>:last-child{margin-bottom:auto}
+.foot{text-align:center;font-size:.75rem;font-weight:700;color:var(--muted);margin:4px 0 0}.foot a{color:inherit}
 .over>*{max-width:520px}.over p.lines{white-space:pre-line;text-align:left;color:var(--ink);font-size:.92rem;line-height:1.8}
 .over h2{font-family:var(--pop);font-weight:400;margin:0;font-size:1.6rem;color:var(--accent);text-shadow:0 3px 0 var(--card)}
 .over p{margin:0;font-size:.86rem;color:var(--muted);max-width:32em}
@@ -270,6 +271,7 @@ body.tutRun #chant{position:relative;z-index:8}
         <div class="choices" id="fbBtns"></div>
         <p class="fbThanks" id="fbThanks" hidden data-en="Thanks! If you'd like to say more, find us on &lt;a href=&quot;https://x.com/mataasobo_games&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;X (@mataasobo_games)&lt;/a&gt;.">ありがとう！ 感想を書いてもらえるなら <a href="https://x.com/mataasobo_games" target="_blank" rel="noopener">X（@mataasobo_games）</a> へどうぞ。</p>
       </div>
+      <p class="foot" data-en="&lt;a href=&quot;/&quot;&gt;Mataasobo&lt;/a&gt; · &lt;a href=&quot;/privacy.html&quot;&gt;Privacy policy&lt;/a&gt;"><a href="/">また遊ぼ</a>・<a href="/privacy.html">プライバシーポリシー</a></p>
     </div>
   </div>
 
