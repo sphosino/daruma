@@ -640,7 +640,7 @@ const TUT={
     {type:'do',on:'carry',t:'見送り',x:'だるまは振り向かないこともあります。走ったまま、唱え終わるのを待ってみよう。',dm:'skip',hl:'#pad'},
     {type:'stop',on:'now',t:'見送り！',x:'だるまが振り向かずに見送ったので、止まらずに次が続きます。走り続けられます。だるまのオーラが弱いほど、見送りやすい。いまはオーラが「弱」でした。',hl:'#stage'},
     {type:'stop',on:'now',t:'ダッシュ',x:'パッドの上半分はダッシュ。速く走り出せて、上で離すとすぐ止まれます。そのかわり体力をたくさん使います。',hl:'#pad'},
-    {type:'stop',on:'now',t:'体力',x:'走ると、足もとの体力のバーが減ります。0になると「ぜぇ」で遅くなります。ずっと全力ではなく、ゆるめるところも作ろう。',dm:'normal',hl:'#stage'},
+    {type:'stop',on:'now',t:'体力',key:'energy',x:'走ると、足もとの体力のバーが減ります。0になると「ぜぇ」で遅くなります。ずっと全力ではなく、ゆるめるところも作ろう。',dm:'normal',hl:'#stage'},
     {type:'stop',on:'now',t:'勝ち負け',x:'本番は CPU の子ども3人も一緒です。だれか1人でもだるまにタッチしたら子どもの勝ち。だるまの時計（唱えている時間だけ進む）が切れたら負けです。',hl:'#clock'},
     {type:'stop',on:'now',t:'まとめ',x:()=>TUT_END[role],end:true}],
   daruma:[
@@ -737,6 +737,9 @@ function tutNextBeat(){
 function tutEv(name,e){
   const b=tutCur();
   // だるま役で、振り向くのを待っているのに見送りになった：ボタンを振り向くに戻して知らせる（待ったまま進めなくなるのを防ぐ）
+  // だるま役で、見送るのを待っているのに振り向いた：切り替えるのを忘れている
+  if(b&&role==='daruma'&&name==='lookStart'&&b.on==='carry'&&!tut.hold){
+    showMsg(L('振り向きました','You turned'),2200,L('唱えている間に、左のボタンを「🙈 見送る」に切り替えよう','While chanting, switch the left button to "🙈 Let it pass"'));return}
   if(b&&role==='daruma'&&name==='carry'&&(b.on==='lookStart'||b.on==='lookEnd')&&!tut.hold){
     st.turnArmed=true;renderCtl();showMsg(L('見送りになりました','It passed'),1600,L('ボタンを「👀 振り向く」にして、唱え終わるのを待とう','Set the button to "👀 Turn" and wait for the chant to end'));return}
   if(!b||tut.hold||b.on!==name)return;
@@ -756,6 +759,8 @@ function tutDaruma(){
   if(!tut)return;
   // だるま役：「気力」の説明までは気力を満タンにして、振り向くに固定
   if(role==='daruma'){if(tutTurnOnly()){st.stamina=st.staminaMax;st.turnArmed=true}return}
+  // 子ども役：「体力」の説明までは体力を満タンに（「ぜぇ」で遅くなって、全力の練習が終わらなくならないように）
+  if(me&&tut.i<tut.steps.findIndex(b=>b.key==='energy')){me.energy=me.energyMax;me.winded=false}
   if(tutDm==='never')st.turnArmed=false;
   else if(tutDm==='always'){st.stamina=st.staminaMax;st.turnArmed=true}
   else if(tutDm==='skip'){st.reward='max';st.turnArmed=false}
