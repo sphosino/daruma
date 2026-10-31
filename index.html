@@ -219,6 +219,7 @@ body.tutRun #chant{position:relative;z-index:8}
 .hl{outline:3px solid var(--accent)!important;outline-offset:3px;animation:hl 1s ease-in-out infinite}
 @keyframes hl{50%{outline-color:transparent}}
 .tutHold{}
+#lvRow .btn:disabled,#tempo:disabled{opacity:.4;cursor:default}   /* 練習で振り向くだけの間は押せない */
 .tutDo{font-size:.78rem;font-weight:900;color:var(--accent);padding:4px 0}
 .tutQuit{font:inherit;font-size:.72rem;font-weight:700;color:var(--muted);background:none;border:0;padding:2px 0;text-decoration:underline;cursor:pointer;white-space:nowrap}
 #tutNext{font-size:.95rem;padding:6px 18px;background:var(--accent);border-color:var(--accent);color:var(--card)}
@@ -423,6 +424,7 @@ function renderCtl(){
   const cost=Math.round(Core.turnCostOf(P,st)),afford=st.stamina>=cost;
   // 気力が足りないときは、どちらを選んでも見送りになるので、押せない灰色にして理由を出す（押しても見た目が変わらず、壊れたように見えていた）
   $('arm').disabled=!afford;$('arm').classList.toggle('on',st.turnArmed&&afford);
+  $('lvRow').querySelectorAll('button').forEach(b=>{b.disabled=tutTurnOnly()});$('tempo').disabled=tutTurnOnly();
   const gain=Math.round(Core.currentSkipReward(P,st));
   setHTML($('arm'),EN?(!afford?`🙈 Not enough spirit: pass<small>Pass to recover spirit (spirit +${gain})</small>`:st.turnArmed?`👀 Turn when the chant ends<small>spirit -${cost}</small>`:`🙈 Let it pass<small>spirit +${gain}</small>`)
     :!afford?`🙈 気力が足りないので見送り<small>見送って気力をためよう（気力+${gain}）</small>`:st.turnArmed?`👀 唱え終わったら振り向く<small>気力 -${cost}</small>`:`🙈 振り向かずに見送る<small>気力 +${gain}</small>`);
@@ -725,6 +727,7 @@ function tutShow(b,e,hold){
 }
 function tutNextBeat(){
   tut.i++;tut.hold=false;const b=tutCur();if(!b){endTut();return}
+  if(st)renderCtl();   // 振り向くだけの間が終わったら、オーラ・テンポ・見送りを押せるように戻す
   if(b.dm)tutDm=b.dm;
   if(b.type==='do')tutShow(b,null,false);
   else if(b.on==='now'){tut.hold=true;tutShow(b,null,true)}
@@ -746,11 +749,13 @@ function tutTick(){
   if(b.nudge&&b.nudge()&&nudged!==st.cycle*1000+st.resolvedCycles){nudged=st.cycle*1000+st.resolvedCycles;showMsg(b.nudgeMsg||L('そろそろ離そう','Let go soon'),900)}
   tutEv('tick');
 }
+// だるま役の練習で、振り向くのを見せている間（「気力」の説明まで）：振り向く以外は選べない（2026-10-31）
+function tutTurnOnly(){return !!tut&&role==='daruma'&&tut.i<tut.steps.findIndex(b=>b.key==='stamina')}
 // 子ども役の練習中、CPU のだるまの振り向き方を手順に合わせる
 function tutDaruma(){
   if(!tut)return;
-  // だるま役：「気力」の説明までは気力を満タンに（オーラを変えても振り向けなくならないように）
-  if(role==='daruma'){const qi=tut.steps.findIndex(b=>b.key==='stamina');if(tut.i<qi)st.stamina=st.staminaMax;return}
+  // だるま役：「気力」の説明までは気力を満タンにして、振り向くに固定
+  if(role==='daruma'){if(tutTurnOnly()){st.stamina=st.staminaMax;st.turnArmed=true}return}
   if(tutDm==='never')st.turnArmed=false;
   else if(tutDm==='always'){st.stamina=st.staminaMax;st.turnArmed=true}
   else if(tutDm==='skip'){st.reward='max';st.turnArmed=false}
@@ -792,12 +797,12 @@ $('pauseBtn').onclick=togglePause;
 $('titleBtn').onclick=()=>quit();   // 結果画面から、はじめの画面へ
 $('endBtn').onclick=()=>{if(confirm(L('このゲームを終了して、はじめの画面に戻りますか？','Quit this game and go back to the start screen?')))quit()};$('pause2').onclick=()=>{tunePaused=false;togglePause()};$('quitBtn').onclick=quit;
 // だるま役：オーラは、ひと休み中はすぐ変わり、唱えている間は予約（次の「だ」かひと休みで変わる）。ボタンは描き直すので押した瞬間に拾う
-$('lvRow').addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||!st||role!=='daruma'||phase==='over'||phase==='setup'||paused)return
+$('lvRow').addEventListener('pointerdown',e=>{const b=e.target.closest('button');if(!b||!st||role!=='daruma'||phase==='over'||phase==='setup'||paused||tutTurnOnly())return
   if(window.DARUMA_ONLINE){sendAura(b.dataset.r);return}   // みんなで遊ぶとき：サーバーに送る;
   const r=b.dataset.r;if(phase==='prep')st.reward=r;else st.nextReward=(r===st.reward||r===st.nextReward)?null:r;renderCtl();if(phase!=='prep')tutEv('reserve')});
 $('go').onclick=()=>{if(phase==='prep'&&role==='daruma'&&!paused){ac();toCue()}};
-$('arm').onclick=()=>{if(!st||phase==='over'||paused)return;st.turnArmed=!st.turnArmed;renderCtl()};
-$('tempo').oninput=()=>{if(!st||paused){renderCtl();return}const want=+$('tempo').value;
+$('arm').onclick=()=>{if(!st||phase==='over'||paused||tutTurnOnly())return;st.turnArmed=!st.turnArmed;renderCtl()};
+$('tempo').oninput=()=>{if(!st||paused||tutTurnOnly()){renderCtl();return}const want=+$('tempo').value;
   if(phase==='chant'){const got=Core.applyTempoChange(P,st,want);if(got!==want)$('tempo').value=got;tutEv('tempo')}else st.tempoValue=want;renderCtl()};
 // 子ども役：押している間だけ走る
 // 押した場所（横）が目標の速さ：左はしで歩く（1割）、右はしで全力。押したまま左右に動かせる
