@@ -424,8 +424,8 @@ function renderCtl(){
   // 気力が足りないときは、どちらを選んでも見送りになるので、押せない灰色にして理由を出す（押しても見た目が変わらず、壊れたように見えていた）
   $('arm').disabled=!afford;$('arm').classList.toggle('on',st.turnArmed&&afford);
   const gain=Math.round(Core.currentSkipReward(P,st));
-  setHTML($('arm'),EN?(!afford?`🙈 Not enough spirit: pass<small>${st.reward==='low'?'Pass to recover spirit':'A stronger aura lets you turn'} (spirit +${gain})</small>`:st.turnArmed?`👀 Turn when the chant ends<small>spirit -${cost}</small>`:`🙈 Let it pass<small>spirit +${gain}</small>`)
-    :!afford?`🙈 気力が足りないので見送り<small>${st.reward==='low'?'見送って気力をためよう':'オーラを強くすると振り向ける'}（気力+${gain}）</small>`:st.turnArmed?`👀 唱え終わったら振り向く<small>気力 -${cost}</small>`:`🙈 振り向かずに見送る<small>気力 +${gain}</small>`);
+  setHTML($('arm'),EN?(!afford?`🙈 Not enough spirit: pass<small>Pass to recover spirit (spirit +${gain})</small>`:st.turnArmed?`👀 Turn when the chant ends<small>spirit -${cost}</small>`:`🙈 Let it pass<small>spirit +${gain}</small>`)
+    :!afford?`🙈 気力が足りないので見送り<small>見送って気力をためよう（気力+${gain}）</small>`:st.turnArmed?`👀 唱え終わったら振り向く<small>気力 -${cost}</small>`:`🙈 振り向かずに見送る<small>気力 +${gain}</small>`);
   $('go').disabled=!prep||paused;
   $('tempo').value=Math.round(st.tempoValue);$('tempoTxt').textContent=tempoName(st.tempoValue)+(phase==='chant'?L('（途中で変えると気力を使う）',' (changing it mid-chant costs spirit)'):'');
 
